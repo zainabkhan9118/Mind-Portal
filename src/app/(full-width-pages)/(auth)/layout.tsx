@@ -31,7 +31,7 @@ export default function AuthLayout({
           {/* Right side video content */}
           <div className="lg:w-1/2 w-full h-full flex items-center justify-center hidden lg:flex relative overflow-hidden bg-white dark:bg-gray-900">
             <div className="relative flex items-center justify-center w-full h-full">
-                <video
+                {/* <video
                   src="/videos/HOlographic Sphere.mp4"
                   autoPlay
                   loop
@@ -40,6 +40,15 @@ export default function AuthLayout({
                   poster="/videos/Background.png"
                   className="object-cover w-full h-full"
                   style={{ height: '100%', width: '100%' }}
+                /> */}
+
+                <Image
+                  src="/videos/Feature 3.jpg"
+                  // src="/videos/vr.png"
+                  alt="Background"
+                  layout="fill"
+                  objectFit="cover"
+                  className="absolute"
                 />
             </div>
           </div>
