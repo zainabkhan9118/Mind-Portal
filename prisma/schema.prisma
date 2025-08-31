@@ -1,0 +1,34 @@
+// This is your Prisma schema file
+// Learn more about it: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - existing model for authentication
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("student") // admin, teacher, student
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Course model for storing course information
+model Course {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String   @db.Text
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// You can add more models (like for teacher classes, enrollments, etc.) here as needed

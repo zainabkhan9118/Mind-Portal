@@ -1,0 +1,5 @@
+.env.local
+.env.development.local
+node_modules
+README.md
+.next

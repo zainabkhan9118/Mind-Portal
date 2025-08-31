@@ -1,0 +1,28 @@
+{
+  "..\\node_modules\\next\\dist\\client\\index.js -> ../pages/_app": {
+    "id": 472,
+    "files": [
+      "static/chunks/472.a3826d29d6854395.js"
+    ]
+  },
+  "..\\node_modules\\next\\dist\\client\\index.js -> ../pages/_error": {
+    "id": 9341,
+    "files": [
+      "static/chunks/9341.48099055d616fd0a.js"
+    ]
+  },
+  "components\\charts\\bar\\BarChartOne.tsx -> react-apexcharts": {
+    "id": 8699,
+    "files": [
+      "static/chunks/477d4af2.342e367e990eb33e.js",
+      "static/chunks/8699.a66ea80a6958d029.js"
+    ]
+  },
+  "components\\charts\\line\\LineChartOne.tsx -> react-apexcharts": {
+    "id": 8699,
+    "files": [
+      "static/chunks/477d4af2.342e367e990eb33e.js",
+      "static/chunks/8699.a66ea80a6958d029.js"
+    ]
+  }
+}
