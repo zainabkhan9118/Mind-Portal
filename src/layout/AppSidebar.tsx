@@ -1,24 +1,18 @@
 "use client";
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
 import {
   CalenderIcon,
   ChevronDownIcon,
-  GridIcon,
   HorizontaLDots,
-  ListIcon,
-  PageIcon,
-  TableIcon,
   UserCircleIcon,
 } from "../icons/index";
 // Lucide React icons for subItems
-import { Music,Volume, Brain, Globe, ListMusic, UploadCloud, Star, CalendarClock, BarChart2, Clock, Repeat, TrendingUp, Smartphone, Users, UserCog, UserCheck, Globe2, UserPlus, DollarSign, CreditCard, ShoppingCart, Building2, TrendingDown, Activity, Shield, ToggleRight, FileText, Bell, MessageCircle } from "lucide-react";
+import {  BarChart2,  Users,  LayoutDashboard, FolderOpen, ShoppingBag, Heart, Settings, LogOut, ChevronRight, Search, ChevronLeft } from "lucide-react";
 
-import SidebarWidget from "./SidebarWidget";
 
 // Define the type for navigation items
 type NavItem = {
@@ -48,86 +42,45 @@ const DefaultSubIcon = React.createElement(ChevronDownIcon, { className: "w-4 h-
 
 const adminNavItems: NavItem[] = [
   {
-    icon: <GridIcon />, 
+    icon: <LayoutDashboard className="w-6 h-6" />,
+    name: "Dashboard",
+    path: "/dashboard/admin",
+  },
+  {
+    icon: <FolderOpen className="w-6 h-6" />,
     name: "Content Management",
     path: "/dashboard/admin/content",
-    // subItems: [
-    //   { name: "Music", path: "/dashboard/admin/content/music", icon: React.createElement(Music, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-    //   { name: "Sounds", path: "/dashboard/admin/content/sounds", icon: React.createElement(Volume, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-    //   { name: "Mind Sessions", path: "/dashboard/admin/content/sessions", icon: React.createElement(Brain, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-    //   { name: "VR Environments", path: "/dashboard/admin/content/vr", icon: React.createElement(Globe, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-    //   { name: "Subliminal Messages", path: "/dashboard/admin/content/environments/sounds", icon: <MessageCircle className="w-5 h-5" /> },
-    //   { name: "Playlists", path: "/dashboard/admin/content/playlists", icon: React.createElement(ListMusic, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-    //   { name: "Publish/Unpublish", path: "/dashboard/admin/content/publish", icon: React.createElement(UploadCloud, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-    //   { name: "Premium/Free", path: "/dashboard/admin/content/premium", icon: React.createElement(Star, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-    //   { name: "Schedule Release", path: "/dashboard/admin/content/schedule", icon: React.createElement(CalendarClock, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-    // ],
   },
   {
-    icon: <GridIcon />, 
+    icon: <BarChart2 className="w-6 h-6" />,
     name: "Statistics & Analytics",
-    path:"/dashboard/admin/statistics",
-  //   subItems: [
-  // { name: "Plays by Content", path: "/dashboard/admin/analytics/plays", icon: React.createElement(BarChart2, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  // { name: "Listening Time", path: "/dashboard/admin/analytics/time", icon: React.createElement(Clock, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  // { name: "Retention Rate", path: "/dashboard/admin/analytics/retention", icon: React.createElement(Repeat, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  // { name: "Repetition Rate", path: "/dashboard/admin/analytics/repetition", icon: React.createElement(Repeat, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  // { name: "Top 10 Contents", path: "/dashboard/admin/analytics/top10", icon: React.createElement(TrendingUp, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  // { name: "Trends", path: "/dashboard/admin/analytics/trends", icon: React.createElement(TrendingUp, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  // { name: "VR vs Mobile", path: "/dashboard/admin/analytics/vr-vs-mobile", icon: React.createElement(Smartphone, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  //   ],
+    path: "/dashboard/admin/statistics",
   },
   {
-    icon: <UserCircleIcon />, 
+    icon: <Users className="w-6 h-6" />,
     name: "Users",
-    subItems: [
-  { name: "User Stats", path: "/dashboard/admin/users/stats", icon: React.createElement(Users, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  { name: "Segmentation", path: "/dashboard/admin/users/segmentation", icon: React.createElement(UserCog, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  { name: "Premium vs Free", path: "/dashboard/admin/users/premium", icon: React.createElement(UserCheck, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  { name: "VR vs Mobile", path: "/dashboard/admin/users/vr-vs-mobile", icon: React.createElement(Smartphone, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  { name: "Top Countries", path: "/dashboard/admin/users/countries", icon: React.createElement(Globe2, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  { name: "Switch to Mind Expert", path: "/dashboard/admin/users/switch-expert", icon: React.createElement(UserPlus, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-    ],
+    path: "/dashboard/admin/users",
   },
   {
-    icon: <PageIcon />, 
+    icon: <ShoppingBag className="w-6 h-6" />,
     name: "Monetization",
-    subItems: [
-  { name: "Revenue Overview", path: "/dashboard/admin/monetization/revenue", icon: React.createElement(DollarSign, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  { name: "By Subscription Type", path: "/dashboard/admin/monetization/subscription", icon: React.createElement(CreditCard, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  { name: "By Market", path: "/dashboard/admin/monetization/market", icon: React.createElement(ShoppingCart, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  { name: "B2B Revenue", path: "/dashboard/admin/monetization/b2b", icon: React.createElement(Building2, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  { name: "Churn Rate", path: "/dashboard/admin/monetization/churn", icon: React.createElement(TrendingDown, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  { name: "LTV", path: "/dashboard/admin/monetization/ltv", icon: React.createElement(Activity, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  { name: "CAC", path: "/dashboard/admin/monetization/cac", icon: React.createElement(Activity, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-    ],
+    path: "/dashboard/admin/monetization",
   },
   {
-    icon: <ListIcon />, 
-    name: "Community Management",
-    subItems: [
-  { name: "Active Groups", path: "/dashboard/admin/community/groups", icon: React.createElement(Users, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  { name: "Group Sessions", path: "/dashboard/admin/community/sessions", icon: React.createElement(UserCog, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  { name: "Participants", path: "/dashboard/admin/community/participants", icon: React.createElement(UserCheck, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  { name: "Active Groups Ranking", path: "/dashboard/admin/community/ranking", icon: React.createElement(TrendingUp, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  { name: "Chat Volume", path: "/dashboard/admin/community/chat", icon: React.createElement(Users, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-    ],
+    icon: <Heart className="w-6 h-6" />,
+    name: "Community",
+    path: "/dashboard/admin/community",
   },
   {
-    icon: <TableIcon />, 
-    name: "Admin Controls",
-    subItems: [
-  { name: "Permissions", path: "/dashboard/admin/controls/permissions", icon: React.createElement(Shield, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  { name: "Feature Toggles", path: "/dashboard/admin/controls/features", icon: React.createElement(ToggleRight, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  { name: "Change Logs", path: "/dashboard/admin/controls/logs", icon: React.createElement(FileText, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-  { name: "Push Notifications", path: "/dashboard/admin/controls/notifications", icon: React.createElement(Bell, { className: "w-4 h-4 text-gray-400 mr-2" }) },
-    ],
+    icon: <Settings className="w-6 h-6" />,
+    name: "Settings",
+    path: "/dashboard/admin/settings",
   },
 ];
 
 
 const AppSidebar: React.FC = () => {
-  const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
+  const { isExpanded, isMobileOpen, isHovered, setIsHovered, toggleSidebar } = useSidebar();
   const { user } = useAuth();
   const pathname = usePathname();
   const [navItems, setNavItems] = useState<NavItem[]>([]);
@@ -148,22 +101,19 @@ const AppSidebar: React.FC = () => {
           {nav.subItems ? (
             <button
               onClick={() => handleSubmenuToggle(index, menuType)}
-              className={`menu-item group  ${
-                openSubmenu?.type === menuType && openSubmenu?.index === index
-                  ? "menu-item-active"
-                  : "menu-item-inactive"
-              } cursor-pointer ${
-                !isExpanded && !isHovered
+              className={`menu-item group  ${openSubmenu?.type === menuType && openSubmenu?.index === index
+                ? "menu-item-active"
+                : "menu-item-inactive"
+                } cursor-pointer ${!isExpanded && !isHovered
                   ? "lg:justify-center"
                   : "lg:justify-start"
-              }`}
+                }`}
             >
               <span
-                className={` ${
-                  openSubmenu?.type === menuType && openSubmenu?.index === index
-                    ? "menu-item-icon-active"
-                    : "menu-item-icon-inactive"
-                }`}
+                className={` ${openSubmenu?.type === menuType && openSubmenu?.index === index
+                  ? "menu-item-icon-active"
+                  : "menu-item-icon-inactive"
+                  }`}
               >
                 {nav.icon}
               </span>
@@ -172,12 +122,11 @@ const AppSidebar: React.FC = () => {
               )}
               {(isExpanded || isHovered || isMobileOpen) && (
                 <ChevronDownIcon
-                  className={`ml-auto w-5 h-5 transition-transform duration-200  ${
-                    openSubmenu?.type === menuType &&
+                  className={`ml-auto w-5 h-5 transition-transform duration-200  ${openSubmenu?.type === menuType &&
                     openSubmenu?.index === index
-                      ? "rotate-180 text-brand-500"
-                      : ""
-                  }`}
+                    ? "rotate-180 text-brand-500"
+                    : ""
+                    }`}
                 />
               )}
             </button>
@@ -185,16 +134,14 @@ const AppSidebar: React.FC = () => {
             nav.path && (
               <Link
                 href={nav.path}
-                className={`menu-item group ${
-                  isActive(nav.path) ? "menu-item-active" : "menu-item-inactive"
-                }`}
+                className={`menu-item group ${isActive(nav.path) ? "bg-[#9810FA] text-white shadow-md shadow-purple-500/20" : "menu-item-inactive"
+                  }`}
               >
                 <span
-                  className={`${
-                    isActive(nav.path)
-                      ? "menu-item-icon-active"
-                      : "menu-item-icon-inactive"
-                  }`}
+                  className={`${isActive(nav.path)
+                    ? "text-white"
+                    : "menu-item-icon-inactive"
+                    }`}
                 >
                   {nav.icon}
                 </span>
@@ -222,33 +169,30 @@ const AppSidebar: React.FC = () => {
                   <li key={subItem.name}>
                     <Link
                       href={subItem.path}
-                      className={`menu-dropdown-item flex items-center ${
-                        isActive(subItem.path)
-                          ? "menu-dropdown-item-active"
-                          : "menu-dropdown-item-inactive"
-                      }`}
+                      className={`menu-dropdown-item flex items-center ${isActive(subItem.path)
+                        ? "menu-dropdown-item-active"
+                        : "menu-dropdown-item-inactive"
+                        }`}
                     >
                       <span className="mr-2 flex-shrink-0">{subItem.icon}</span>
                       <span className="flex-1 text-left">{subItem.name}</span>
                       <span className="flex items-center gap-1 ml-auto">
                         {subItem.new && (
                           <span
-                            className={`ml-auto ${
-                              isActive(subItem.path)
-                                ? "menu-dropdown-badge-active"
-                                : "menu-dropdown-badge-inactive"
-                            } menu-dropdown-badge `}
+                            className={`ml-auto ${isActive(subItem.path)
+                              ? "menu-dropdown-badge-active"
+                              : "menu-dropdown-badge-inactive"
+                              } menu-dropdown-badge `}
                           >
                             new
                           </span>
                         )}
                         {subItem.pro && (
                           <span
-                            className={`ml-auto ${
-                              isActive(subItem.path)
-                                ? "menu-dropdown-badge-active"
-                                : "menu-dropdown-badge-inactive"
-                            } menu-dropdown-badge `}
+                            className={`ml-auto ${isActive(subItem.path)
+                              ? "menu-dropdown-badge-active"
+                              : "menu-dropdown-badge-inactive"
+                              } menu-dropdown-badge `}
                           >
                             pro
                           </span>
@@ -331,10 +275,9 @@ const AppSidebar: React.FC = () => {
   return (
     <aside
       className={`fixed mt-16 flex flex-col lg:mt-0 top-0 px-5 left-0 bg-white dark:bg-gray-900 dark:border-gray-800 text-gray-900 h-screen transition-all duration-300 ease-in-out z-50 border-r border-gray-200 
-        ${
-          isExpanded || isMobileOpen
-            ? "w-[290px]"
-            : isHovered
+        ${isExpanded || isMobileOpen
+          ? "w-[290px]"
+          : isHovered
             ? "w-[290px]"
             : "w-[90px]"
         }
@@ -343,29 +286,81 @@ const AppSidebar: React.FC = () => {
       onMouseEnter={() => !isExpanded && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-  <div className="py-8 flex justify-start">
-        <Link href="/">
-          <span
-            className="text-2xl font-bold tracking-wide text-purple-700 dark:text-purple-300 select-none"
-            style={{ letterSpacing: '2px' }}
-          >
-            Mind Player
-          </span>
-        </Link>
+      <div className={`py-6 flex flex-col ${!isExpanded && !isHovered ? 'items-center justify-center' : 'w-full'}`}>
+        <div className={`flex items-center justify-between ${!isExpanded && !isHovered ? 'w-auto' : 'w-full px-6'}`}>
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-inherit flex items-center justify-center">
+              {/* Simple approximation of the logo icon - Grid of dots */}
+              <div className="grid grid-cols-2 gap-0.5">
+                <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                <div className="w-2 h-2 rounded-full bg-orange-400"></div>
+                <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                <div className="w-2 h-2 rounded-full bg-orange-400"></div>
+              </div>
+            </div>
+            {(isExpanded || isHovered || isMobileOpen) && <span
+              className="text-2xl font-bold tracking-wide text-purple-700 dark:text-purple-300 select-none whitespace-nowrap"
+            >
+              Mind Player
+            </span>}
+          </Link>
+
+
+
+          {(isExpanded || isHovered || isMobileOpen) && (
+            <button
+              onClick={toggleSidebar}
+              className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+
+        {/* Collapsed State Controls */}
+        {!isExpanded && !isHovered && !isMobileOpen && (
+          <div className="flex flex-col items-center gap-6 mt-8 w-full">
+            <button
+              onClick={toggleSidebar}
+              className="w-12 h-12 bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-100 dark:border-gray-700 flex items-center justify-center text-[#9810FA] hover:bg-gray-50 transition-transform hover:scale-105"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+            <button className="w-12 h-12 rounded-full border border-gray-200 dark:border-gray-700 flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors">
+              <Search className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+
+        {/* Expanded State Search Bar */}
+        {/* Expanded State Toggle & Search */}
+        {(isExpanded || isHovered || isMobileOpen) && (
+          <div className="flex flex-col gap-4 mt-8 w-full px-5">
+
+
+            <div className="relative w-full">
+              <input
+                type="text"
+                placeholder="Search here"
+                className="w-full pl-4 pr-10 py-2.5 rounded-3xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-600 focus:outline-none focus:border-purple-500 transition-all font-light"
+              />
+              <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+            </div>
+          </div>
+        )}
       </div>
-      <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
+      <div className="flex flex-col flex-1 overflow-y-auto duration-300 ease-linear no-scrollbar">
         <nav className="mb-6">
           <div className="flex flex-col gap-4">
             <div>
               <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
-                  !isExpanded && !isHovered
-                    ? "lg:justify-center"
-                    : "justify-start"
-                }`}
+                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${!isExpanded && !isHovered
+                  ? "lg:justify-center"
+                  : "justify-start px-5 text-transparent h-0 mb-0" // Hide "Menu" text in expanded mode as per design
+                  }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
-                  "Menu"
+                  ""
                 ) : (
                   <HorizontaLDots />
                 )}
@@ -393,7 +388,17 @@ const AppSidebar: React.FC = () => {
             */}
           </div>
         </nav>
-        {isExpanded || isHovered || isMobileOpen ? <SidebarWidget /> : null}
+        {isExpanded || isHovered || isMobileOpen ? <div className="mt-auto p-4">
+          <Link href="/signin" className="flex items-center gap-3 text-red-500 hover:text-red-700 transition-colors">
+            <LogOut className="w-5 h-5" />
+            <span className="font-medium">Logout</span>
+          </Link>
+        </div> : <div className="mt-auto p-4 flex justify-center">
+          <Link href="/signin" className="text-red-500 hover:text-red-700 transition-colors">
+            <LogOut className="w-5 h-5" />
+          </Link>
+        </div>
+        }
       </div>
     </aside>
   );
