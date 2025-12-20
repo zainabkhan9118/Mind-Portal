@@ -12,27 +12,34 @@ const nextConfig: NextConfig = {
     });
     return config;
   },
-  experimental: {
-    typedRoutes: false,
-    optimizeCss: false // Disable lightningcss optimizer
-  },
-  // Remove custom distDir to prevent routes-manifest.json error
-  // distDir: '.vercel_build_output',
-  
-  // Additional configuration specific to Vercel deployment
 
-  eslint: {
-    ignoreDuringBuilds: true,
+  // turbopack: {} is required when using custom webpack config in Next.js 16+
+  // to acknowledge that you are using a custom webpack configuration.
+  turbopack: {
+    rules: {
+      "*.svg": {
+        loaders: ["@svgr/webpack"],
+        as: "*.js",
+      },
+    },
+  },
+
+  typedRoutes: false,
+
+  experimental: {
+    optimizeCss: false // Disable lightningcss optimizer
   },
 
   typescript: {
     ignoreBuildErrors: true,
   },
 
-  
   images: {
-    domains: ['localhost'],
     remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+      },
       {
         protocol: 'https',
         hostname: '**',
