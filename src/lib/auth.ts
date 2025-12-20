@@ -1,6 +1,5 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import prisma from "./prisma";
 import { compare } from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
@@ -17,23 +16,27 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        // Find the user in the database
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
-        });
+        // Hardcoded admin user for static site
+        // You can add more users here or use environment variables
+        const staticUser = {
+          id: "1",
+          email: "admin@example.com",
+          name: "Admin User",
+          password: "password", // In production, use env vars or hash checking
+          role: "admin"
+        };
 
-        // If user doesn't exist or password doesn't match
-        if (!user || !(await compare(credentials.password, user.password))) {
-          return null;
+        // Simple check against hardcoded user
+        if (credentials.email === staticUser.email && credentials.password === staticUser.password) {
+          return {
+            id: staticUser.id,
+            email: staticUser.email,
+            name: staticUser.name,
+            role: staticUser.role
+          };
         }
 
-        // Return the user object (excluding password)
-        return {
-          id: user.id.toString(),
-          email: user.email,
-          name: user.name,
-          role: user.role
-        };
+        return null;
       }
     })
   ],
@@ -71,7 +74,7 @@ declare module "next-auth" {
     id: string;
     role: string;
   }
-  
+
   interface Session {
     user: {
       id: string;
