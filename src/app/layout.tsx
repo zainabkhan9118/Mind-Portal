@@ -1,10 +1,11 @@
 "use client"
 // Import CSS for fonts instead of using next/font/google
 import './globals.css';
+import 'flatpickr/dist/flatpickr.min.css';
 
 import { SidebarProvider } from '@/context/SidebarContext';
 import { ThemeProvider } from '@/context/ThemeContext';
-import { AuthProvider } from '@/context/AuthContext'; 
+import { AuthProvider } from '@/context/AuthContext';
 
 export default function RootLayout({
   children,
@@ -14,7 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="font-outfit dark:bg-gray-900">
-        <AuthProvider> 
+        <AuthProvider>
           <ThemeProvider>
             <SidebarProvider>
               {children}

@@ -1,4 +1,5 @@
 import React, { ReactNode } from "react";
+import { twMerge } from "tailwind-merge";
 
 interface ButtonProps {
   children: ReactNode; // Button text or content
@@ -37,11 +38,13 @@ const Button: React.FC<ButtonProps> = ({
 
   return (
     <button
-      className={`inline-flex items-center justify-center font-medium gap-2 rounded-lg transition ${className} ${
-        sizeClasses[size]
-      } ${variantClasses[variant]} ${
+      className={twMerge(
+        "inline-flex items-center justify-center font-medium gap-2 rounded-lg transition",
+        sizeClasses[size],
+        variantClasses[variant],
+        className,
         disabled ? "cursor-not-allowed opacity-50" : ""
-      }`}
+      )}
       onClick={onClick}
       disabled={disabled}
     >
