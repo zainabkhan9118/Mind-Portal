@@ -14,7 +14,7 @@ const ContentPlaysTab: React.FC = () => {
             
             <ComponentPlaysChart />
             
-            <AvgListeningTimeChart />
+            {/* <AvgListeningTimeChart /> */}
         </div>
     );
 };

@@ -1,137 +1,93 @@
 import React from "react";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
+import { Upload } from "lucide-react";
+import Button from "@/components/ui/button/Button";
 
 interface BasicInfoProps {
     isEnvironmentSound?: boolean;
     isMindSession?: boolean;
     isEnvironmentVisual?: boolean;
+    onCreateSubCategory?: () => void;
 }
 
 const BasicInfo: React.FC<BasicInfoProps> = ({
     isEnvironmentSound = false,
     isMindSession = false,
     isEnvironmentVisual = false,
+    onCreateSubCategory,
 }) => {
     return (
-        <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                Basic Info
-            </h3>
+        <div className="space-y-6">
+            <div>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+                    Basic Info
+                </h3>
 
-            {isMindSession ? (
-                // Mind Session Layout
-                <>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
-                            <Label htmlFor="title">Title</Label>
-                            <Input type="text" id="title" placeholder="Placeholder" />
-                        </div>
-                        <div>
-                            <Label htmlFor="voice">Voice (Name of Professional)</Label>
-                            <Input type="text" id="voice" placeholder="Placeholder" />
-                        </div>
-                    </div>
-                    <div>
-                        <Label htmlFor="musicLink">Music Link (URL)</Label>
-                        <Input type="url" id="musicLink" placeholder="Placeholder" />
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
-                            <Label htmlFor="category">Category</Label>
-                            <Input type="text" id="category" placeholder="Placeholder" />
-                        </div>
-                        <div>
-                            <Label htmlFor="subCategory">Sub Category</Label>
-                            <Input type="text" id="subCategory" placeholder="Placeholder" />
-                        </div>
-                    </div>
-                    <div>
-                        <Label htmlFor="addDetail">Add Detail</Label>
-                        <Input type="text" id="addDetail" placeholder="Placeholder" />
-                    </div>
-                </>
-            ) : isEnvironmentVisual ? (
-                // Environment Visual Layout
-                <>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
-                            <Label htmlFor="title">Title</Label>
-                            <Input type="text" id="title" placeholder="Placeholder" />
-                        </div>
-                        <div>
-                            <Label htmlFor="author">Author</Label>
-                            <Input type="text" id="author" placeholder="Placeholder" />
-                        </div>
-                    </div>
-
-                    <div>
-                        <Label htmlFor="musicLink">Music Link (URL)</Label>
-                        <Input type="url" id="musicLink" placeholder="Placeholder" />
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
-                            <Label htmlFor="category">Category</Label>
-                            <Input type="text" id="category" placeholder="Placeholder" />
-                        </div>
-                        <div>
-                            <Label htmlFor="subCategory">Sub Category</Label>
-                            <Input type="text" id="subCategory" placeholder="Placeholder" />
-                        </div>
-                    </div>
-                    <div>
-                        <Label htmlFor="addDetail">Add Detail</Label>
-                        <Input type="text" id="addDetail" placeholder="Placeholder" />
-                    </div>
-                </>
-            ) : isEnvironmentSound ? (
-                // Environment Sound Layout
-                <>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                         <Label htmlFor="title">Title</Label>
                         <Input type="text" id="title" placeholder="Placeholder" />
                     </div>
                     <div>
-                        <Label htmlFor="musicLink">Music Link (URL)</Label>
-                        <Input type="url" id="musicLink" placeholder="Placeholder" />
+                        <Label htmlFor="artist">
+                            {isEnvironmentSound ? "Type" : (isMindSession ? "Voice (Name of Professional)" : (isEnvironmentVisual ? "Author" : "Artist"))}
+                        </Label>
+                        <Input type="text" id="artist" placeholder="Placeholder" />
                     </div>
+                </div>
+            </div>
 
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
-                            <Label htmlFor="category">Category</Label>
-                            <Input type="text" id="category" placeholder="Placeholder" />
+            {/* Add Files Section */}
+            <div>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+                    Add Files
+                </h3>
+                <div className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl bg-gray-50/30 dark:bg-gray-800/30 hover:bg-gray-50 transition-colors group cursor-pointer">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <div className="p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm mb-3 group-hover:scale-110 transition-transform">
+                            <Upload className="w-6 h-6 text-gray-600 dark:text-gray-400" />
                         </div>
-                        <div>
-                            <Label htmlFor="subCategory">Sub Category</Label>
-                            <Input type="text" id="subCategory" placeholder="Placeholder" />
-                        </div>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Drag & drop a file here, or click to upload</p>
+                        <Button className="bg-[#9810FA] hover:bg-[#8000E0] text-white border-none py-2 px-6 text-sm rounded-xl">
+                            Browse Files
+                        </Button>
                     </div>
-                    <div>
-                        <Label htmlFor="addDetail">Add Detail</Label>
-                        <Input type="text" id="addDetail" placeholder="Placeholder" />
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                    <Label htmlFor="category">Category</Label>
+                    <Input type="text" id="category" placeholder="Placeholder" />
+                </div>
+                <div>
+                    <div className="flex items-center justify-between mb-0">
+                        <Label htmlFor="subCategory" className="mb-0">Sub Category</Label>
+                        {(isEnvironmentSound || isMindSession || isEnvironmentVisual) && onCreateSubCategory && (
+                            <button
+                                type="button"
+                                onClick={onCreateSubCategory}
+                                className="text-[11px] font-medium text-[#9810FA] hover:text-[#8000E0]"
+                            >
+                                Create new Sub Category
+                            </button>
+                        )}
                     </div>
-                </>
-            ) : (
-                // Standard Music Layout
-                <>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
-                            <Label htmlFor="title">Title</Label>
-                            <Input type="text" id="title" placeholder="Placeholder" />
-                        </div>
-                        <div>
-                            <Label htmlFor="artist">Artist</Label>
-                            <Input type="text" id="artist" placeholder="Placeholder" />
-                        </div>
-                    </div>
-                    <div>
-                        <Label htmlFor="musicLink">Music Link (URL)</Label>
-                        <Input type="url" id="musicLink" placeholder="Placeholder" />
-                    </div>
-                </>
-            )}
+                    <Input type="text" id="subCategory" placeholder="Placeholder" />
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                    <Label htmlFor="goal">Goal</Label>
+                    <Input type="text" id="goal" placeholder="Sleep & Dreams" />
+                </div>
+                <div>
+                    <Label htmlFor="addDetail">Add Detail</Label>
+                    <Input type="text" id="addDetail" placeholder="Placeholder" />
+                </div>
+            </div>
         </div>
     );
 };

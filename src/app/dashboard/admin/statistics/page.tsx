@@ -12,7 +12,7 @@ export default function StatisticsPage() {
   const tabs = [
     { id: 'Overview', icon: <LayoutGrid className="w-4 h-4" /> },
     { id: 'Content Plays', icon: <Headphones className="w-4 h-4" /> },
-    { id: 'Retention', icon: <BarChart3 className="w-4 h-4" /> },
+    // { id: 'Retention', icon: <BarChart3 className="w-4 h-4" /> },
     { id: 'Top Rankings', icon: <Trophy className="w-4 h-4" /> },
   ];
 
@@ -50,7 +50,7 @@ export default function StatisticsPage() {
       <div className="min-h-[500px]">
         {activeTab === 'Overview' && <OverviewTab />}
         {activeTab === 'Content Plays' && <ContentPlaysTab />}
-        {activeTab === 'Retention' && <RetentionTab />}
+        {/* {activeTab === 'Retention' && <RetentionTab />} */}
         {activeTab === 'Top Rankings' && <TopRankingsTab />}
       </div>
     </div>

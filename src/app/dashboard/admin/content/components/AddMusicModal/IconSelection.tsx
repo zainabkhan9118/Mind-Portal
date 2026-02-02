@@ -16,7 +16,6 @@ import {
     CloudDrizzle,
     AudioWaveform,
     Upload,
-    Search,
     Plus
 } from "lucide-react";
 
@@ -51,28 +50,26 @@ const IconSelection: React.FC<IconSelectionProps> = ({
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
                 Icon Selection
             </h3>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between py-2 border-b border-gray-50 dark:border-gray-800 pb-4">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400">
-                        <Music className="w-5 h-5" />
-                    </div>
-                    <div>
-                        <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                            Default Music Icon
-                        </p>
-                    </div>
+                    <Music className="w-6 h-6 text-gray-900 dark:text-white" />
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                        Default Music Icon
+                    </p>
                 </div>
-                <Switch
-                    label="Use Custom Icon"
-                    defaultChecked={useCustomIcon}
-                    onChange={setUseCustomIcon}
-                    color="blue"
-                />
+                <div className="flex items-center gap-4">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Use Custom Icon</span>
+                    <Switch
+                        label=""
+                        defaultChecked={useCustomIcon}
+                        onChange={setUseCustomIcon}
+                        color="blue"
+                    />
+                </div>
             </div>
 
             {useCustomIcon && (
-                <div className="space-y-6 pt-2 mt-4 animate-fadeIn">
-
+                <div className="space-y-6 pt-4 animate-fadeIn">
                     {/* Icon Grid */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {iconGrid.map((item, index) => (
@@ -90,34 +87,29 @@ const IconSelection: React.FC<IconSelectionProps> = ({
                         ))}
                     </div>
 
-                    {/* Upload Custom Icon */}
-                    <div className="space-y-3">
-                        <Label>Upload Custom Icon</Label>
-                        <p className="text-xs text-gray-500 mb-2">Upload an icon from your device (SVG, PNG, JPG)</p>
-                        <button
-                            onClick={() => setIsUploadModalOpen(true)}
-                            className="flex items-center justify-center w-full h-12 bg-gray-50 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors group"
-                        >
-                            <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                                <Upload className="w-5 h-5 mb-0.5" />
-                                <span className="text-sm font-medium">Upload Icon</span>
-                            </div>
-                        </button>
-                    </div>
-
-                    {/* Choose from Icon Library */}
-                    <div className="space-y-3">
-                        <Label>Choose from Icon Library</Label>
-                        <p className="text-xs text-gray-500 mb-2">Search and select from a vast icon library</p>
-                        <button className="flex items-center justify-center w-full h-12 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors text-gray-500 dark:text-gray-400 gap-2">
-                            <Plus className="w-5 h-5 bg-gray-300 dark:bg-gray-600 text-white rounded-[4px] p-0.5" />
-                            <span className="text-sm font-medium">Browse Icon Library</span>
-                        </button>
+                    {/* Choose from Library or Upload */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>Upload Custom Icon</Label>
+                            <button
+                                onClick={() => setIsUploadModalOpen(true)}
+                                className="flex items-center justify-center w-full h-12 bg-gray-50/50 dark:bg-gray-800 border border-dashed border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors gap-2"
+                            >
+                                <Upload className="w-5 h-5 text-gray-400" />
+                                <span className="text-sm font-medium text-gray-500">Upload Icon</span>
+                            </button>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Icon Library</Label>
+                            <button className="flex items-center justify-center w-full h-12 bg-gray-50/50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors gap-2 text-gray-500">
+                                <Plus className="w-5 h-5 bg-gray-300 dark:bg-gray-600 text-white rounded-[4px] p-0.5" />
+                                <span className="text-sm font-medium">Browse Library</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
 
-            {/* Upload Modal */}
             <UploadIconModal
                 isOpen={isUploadModalOpen}
                 onClose={() => setIsUploadModalOpen(false)}

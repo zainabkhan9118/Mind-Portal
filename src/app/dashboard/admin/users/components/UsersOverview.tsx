@@ -8,9 +8,11 @@ import TopCountries from './TopCountries';
 import PlatformDistribution from './PlatformDistribution';
 import AvgSessionTime from './AvgSessionTime';
 
+import UserEngagementMetrics from './UserEngagementMetrics';
+
 const UsersOverview: React.FC = () => {
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
+        <div className="space-y-6 animate-in fade-in duration-500 pb-10">
             <OverviewStats />
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -28,8 +30,11 @@ const UsersOverview: React.FC = () => {
                 <PlatformDistribution />
                 <AvgSessionTime />
             </div>
+
+            <UserEngagementMetrics />
         </div>
     );
 };
+
 
 export default UsersOverview;
