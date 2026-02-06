@@ -4,7 +4,8 @@ import { Brain, Music2 } from "lucide-react";
 import ValidationStats from "./validation/ValidationStats";
 import ValidationItem, { ValidationItemData } from "./validation/ValidationItem";
 
-import ReviewModal from "./validation/ReviewModal";
+import MindReviewModal from "./validation/MindReviewModal";
+import PlaylistReviewModal from "./validation/PlaylistReviewModal";
 
 const mockMinds: ValidationItemData[] = [
     {
@@ -81,27 +82,32 @@ const mockPlaylists: ValidationItemData[] = [
 const ContentValidation: React.FC = () => {
     const [subTab, setSubTab] = useState<"minds" | "playlists">("playlists");
     const [selectedItem, setSelectedItem] = useState<ValidationItemData | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isMindModalOpen, setIsMindModalOpen] = useState(false);
+    const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
 
     const handleReview = (item: ValidationItemData) => {
         setSelectedItem(item);
-        setIsModalOpen(true);
+        if (item.type === "mind") {
+            setIsMindModalOpen(true);
+        } else {
+            setIsPlaylistModalOpen(true);
+        }
     };
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="space-y-10 animate-in fade-in duration-700">
             {/* Stats Header */}
             <ValidationStats />
 
             {/* Content Section */}
-            <div className="space-y-6">
+            <div className="space-y-8">
                 {/* Sub Tab Switcher */}
-                <div className="inline-flex p-1.5 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-theme-xs">
+                <div className="inline-flex p-1.5 bg-[#F5F5F5] dark:bg-gray-900/40 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-inner">
                     <button
                         onClick={() => setSubTab("minds")}
-                        className={`flex items-center gap-2 px-8 py-2.5 rounded-xl text-sm font-bold transition-all ${subTab === "minds"
-                            ? "bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 shadow-theme-sm border border-purple-50 dark:border-purple-900/40"
-                            : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                        className={`flex items-center gap-2 px-10 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${subTab === "minds"
+                            ? "bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 shadow-xl shadow-gray-200/50 dark:shadow-none transform scale-[1.02] border border-gray-100/50 dark:border-gray-700"
+                            : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                             }`}
                     >
                         <Brain className={`w-4 h-4 ${subTab === "minds" ? "text-purple-600 dark:text-purple-400" : "text-gray-400"}`} />
@@ -109,9 +115,9 @@ const ContentValidation: React.FC = () => {
                     </button>
                     <button
                         onClick={() => setSubTab("playlists")}
-                        className={`flex items-center gap-2 px-8 py-2.5 rounded-xl text-sm font-bold transition-all ${subTab === "playlists"
-                            ? "bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 shadow-theme-sm border border-purple-50 dark:border-purple-900/40"
-                            : "text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+                        className={`flex items-center gap-2 px-10 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${subTab === "playlists"
+                            ? "bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 shadow-xl shadow-gray-200/50 dark:shadow-none transform scale-[1.02] border border-gray-100/50 dark:border-gray-700"
+                            : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                             }`}
                     >
                         <Music2 className={`w-4 h-4 ${subTab === "playlists" ? "text-purple-600 dark:text-purple-400" : "text-gray-400"}`} />
@@ -120,7 +126,7 @@ const ContentValidation: React.FC = () => {
                 </div>
 
                 {/* List of Items */}
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 gap-5">
                     {(subTab === "minds" ? mockMinds : mockPlaylists).map((item) => (
                         <ValidationItem
                             key={item.id}
@@ -131,14 +137,21 @@ const ContentValidation: React.FC = () => {
                 </div>
             </div>
 
-            <ReviewModal
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+            <MindReviewModal
+                isOpen={isMindModalOpen}
+                onClose={() => setIsMindModalOpen(false)}
+                item={selectedItem}
+            />
+
+            <PlaylistReviewModal
+                isOpen={isPlaylistModalOpen}
+                onClose={() => setIsPlaylistModalOpen(false)}
                 item={selectedItem}
             />
         </div>
     );
 };
+
 
 
 export default ContentValidation;

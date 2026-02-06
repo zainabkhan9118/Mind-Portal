@@ -1,18 +1,18 @@
 import React from "react";
-import { X, Music2, Brain, Calendar, Clock, ChevronDown } from "lucide-react";
+import { X, Brain, Calendar, Clock, ChevronDown } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import { ValidationItemData } from "./ValidationItem";
 
-interface ReviewModalProps {
+interface MindReviewModalProps {
     isOpen: boolean;
     onClose: () => void;
     item: ValidationItemData | null;
 }
 
-const ReviewModal: React.FC<ReviewModalProps> = ({ isOpen, onClose, item }) => {
+const MindReviewModal: React.FC<MindReviewModalProps> = ({ isOpen, onClose, item }) => {
     if (!item) return null;
 
     return (
@@ -21,7 +21,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({ isOpen, onClose, item }) => {
                 {/* Header */}
                 <div className="flex justify-between items-start mb-8">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                        Review {item.type === "mind" ? "Mind" : "Playlist"}: <span className="text-purple-600 font-extrabold">{item.title}</span>
+                        Review Mind: <span className="text-purple-600 font-extrabold">{item.title}</span>
                     </h2>
                     <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-400">
                         <X className="w-6 h-6" />
@@ -31,13 +31,13 @@ const ReviewModal: React.FC<ReviewModalProps> = ({ isOpen, onClose, item }) => {
                 {/* Item Details Card */}
                 <div className="flex gap-6 mb-10">
                     <div className="w-20 h-20 rounded-2xl bg-purple-100/50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0 shadow-theme-xs">
-                        {item.type === "mind" ? <Brain className="w-10 h-10" /> : <Music2 className="w-10 h-10" />}
+                        <Brain className="w-10 h-10" />
                     </div>
                     <div className="space-y-2">
                         <div className="flex items-center gap-3">
                             <h3 className="text-xl font-bold text-gray-900 dark:text-white">{item.title}</h3>
                             <span className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[10px] font-bold rounded-lg uppercase tracking-wide border border-gray-200 dark:border-gray-700">
-                                {item.type === "mind" ? "Mind Session" : "Music Playlist"}
+                                Mind Session
                             </span>
                         </div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -74,7 +74,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({ isOpen, onClose, item }) => {
                                 </select>
                                 <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
                             </div>
-                            <p className="text-[11px] text-gray-400 mt-2 ml-1">Select the appropriate category for this {item.type === "mind" ? "mind session" : "music playlist"}</p>
+                            <p className="text-[11px] text-gray-400 mt-2 ml-1">Select the appropriate category for this mind session</p>
                         </div>
                     </div>
 
@@ -130,4 +130,4 @@ const ReviewModal: React.FC<ReviewModalProps> = ({ isOpen, onClose, item }) => {
     );
 };
 
-export default ReviewModal;
+export default MindReviewModal;
