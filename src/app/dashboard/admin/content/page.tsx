@@ -26,6 +26,9 @@ const tabs = [
 export default function ContentManagementPage() {
   const [activeTab, setActiveTab] = useState("Music");
   const [searchTerm, setSearchTerm] = useState("");
+  const [accessFilter, setAccessFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isNewContentModalOpen, setIsNewContentModalOpen] = useState(false);
 
@@ -48,14 +51,20 @@ export default function ContentManagementPage() {
         currentData = musicData;
     }
 
-    if (!searchTerm) return currentData;
+    return currentData.filter((item: any) => {
+      const matchesSearch = !searchTerm ||
+        item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.artist && item.artist.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.category && item.category.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    return currentData.filter((item: any) =>
-      item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.artist && item.artist.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.category && item.category.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-  }, [activeTab, searchTerm]);
+      const matchesAccess = !accessFilter || item.accessType === accessFilter;
+      const matchesStatus = !statusFilter || item.status === statusFilter;
+      const matchesCategory = !categoryFilter ||
+        (activeTab === "Music" ? item.artist === categoryFilter : item.category === categoryFilter);
+
+      return matchesSearch && matchesAccess && matchesStatus && matchesCategory;
+    });
+  }, [activeTab, searchTerm, accessFilter, statusFilter, categoryFilter]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -118,7 +127,13 @@ export default function ContentManagementPage() {
         <ContentFilter
           activeTab={activeTab}
           searchTerm={searchTerm}
+          accessFilter={accessFilter}
+          statusFilter={statusFilter}
+          categoryFilter={categoryFilter}
           onSearchChange={setSearchTerm}
+          onAccessChange={setAccessFilter}
+          onStatusChange={setStatusFilter}
+          onCategoryChange={setCategoryFilter}
           onAddClick={() => setIsModalOpen(true)}
         />
 

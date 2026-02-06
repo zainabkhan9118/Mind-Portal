@@ -1,6 +1,9 @@
 import React from 'react';
 
 const B2BClientsTable = () => {
+    const [searchTerm, setSearchTerm] = React.useState("");
+    const [typeFilter, setTypeFilter] = React.useState("");
+
     const clients = [
         { client: "Wellness Center NYC", type: "Gym/Club", users: 236, revenue: "$ 124.00", plan: "Annual", planColor: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
         { client: "Tech Corp", type: "Gym/Club", users: 526, revenue: "$ 124.00", plan: "Monthly", planColor: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400" },
@@ -8,15 +11,46 @@ const B2BClientsTable = () => {
         { client: "Yoga Studios LA", type: "Gym/Club", users: 63, revenue: "$ 124.00", plan: "Annually", planColor: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" },
     ];
 
+    const filteredClients = React.useMemo(() => {
+        return clients.filter(c => {
+            const matchesSearch = c.client.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesType = !typeFilter || c.type === typeFilter;
+            return matchesSearch && matchesType;
+        });
+    }, [searchTerm, typeFilter]);
+
     return (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
-            <div className="flex items-center gap-2 mb-6">
-                <div className="p-1.5 bg-orange-100 dark:bg-orange-900/20 rounded">
-                    <svg className="w-5 h-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-orange-100 dark:bg-orange-900/20 rounded">
+                        <svg className="w-5 h-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                    </div>
+                    <h3 className="text-base font-bold text-gray-900 dark:text-white">B2B Clients</h3>
                 </div>
-                <h3 className="text-base font-bold text-gray-900 dark:text-white">B2B Clients</h3>
+
+                <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <input
+                            type="text"
+                            placeholder="Search client..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="pl-4 pr-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                        />
+                    </div>
+                    <select
+                        value={typeFilter}
+                        onChange={(e) => setTypeFilter(e.target.value)}
+                        className="pl-3 pr-8 py-2 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none cursor-pointer"
+                    >
+                        <option value="">All Types</option>
+                        <option value="Gym/Club">Gym/Club</option>
+                        <option value="Corporate">Corporate</option>
+                    </select>
+                </div>
             </div>
 
             <div className="overflow-x-auto">
@@ -31,7 +65,7 @@ const B2BClientsTable = () => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                        {clients.map((client, index) => (
+                        {filteredClients.map((client, index) => (
                             <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors h-16">
                                 <td className="pl-4 text-sm font-bold text-gray-900 dark:text-white">{client.client}</td>
                                 <td className="text-center">

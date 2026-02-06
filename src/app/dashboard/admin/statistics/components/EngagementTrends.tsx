@@ -7,9 +7,14 @@ import { Sun, Utensils, Moon, BedDouble } from 'lucide-react';
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 const EngagementTrends: React.FC = () => {
+    const [timeRange, setTimeRange] = React.useState<'daily' | 'monthly'>('daily');
+
+    const dailyData = [250, 200, 180, 150, 280, 450, 580, 700, 850, 920, 800, 750, 680, 650, 800, 950, 1050, 1200, 1350, 1200, 900];
+    const monthlyData = [4500, 5200, 4800, 6100, 7500, 8200, 9100, 8800, 9500, 10200, 11500, 12000];
+
     const series = [{
         name: 'Active Users',
-        data: [250, 200, 180, 150, 280, 450, 580, 700, 850, 920, 800, 750, 680, 650, 800, 950, 1050, 1200, 1350, 1200, 900] // Mock data curve
+        data: timeRange === 'daily' ? dailyData : monthlyData
     }];
 
     const options: ApexOptions = {
@@ -35,7 +40,9 @@ const EngagementTrends: React.FC = () => {
             width: 3
         },
         xaxis: {
-            categories: ['12am', '2am', '4am', '6am', '8am', '10am', '12pm', '2pm', '4pm', '6pm', '8pm', '10pm'],
+            categories: timeRange === 'daily'
+                ? ['12am', '2am', '4am', '6am', '8am', '10am', '12pm', '2pm', '4pm', '6pm', '8pm', '10pm']
+                : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
             labels: {
                 style: { colors: '#9CA3AF' }
             },
@@ -53,6 +60,7 @@ const EngagementTrends: React.FC = () => {
         }
     };
 
+
     return (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
             <div className="flex justify-between items-center mb-6">
@@ -61,8 +69,18 @@ const EngagementTrends: React.FC = () => {
                     <p className="text-sm text-purple-600 dark:text-purple-400">Usage patterns and peak activity times</p>
                 </div>
                 <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                    <button className="px-3 py-1 bg-white dark:bg-gray-600 rounded-md text-xs font-medium shadow-sm transition-all text-gray-900 dark:text-white">Daily</button>
-                    <button className="px-3 py-1 rounded-md text-xs font-medium text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-all">Monthly</button>
+                    <button
+                        onClick={() => setTimeRange('daily')}
+                        className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${timeRange === 'daily' ? 'bg-white dark:bg-gray-600 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+                    >
+                        Daily
+                    </button>
+                    <button
+                        onClick={() => setTimeRange('monthly')}
+                        className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${timeRange === 'monthly' ? 'bg-white dark:bg-gray-600 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+                    >
+                        Monthly
+                    </button>
                 </div>
             </div>
 

@@ -45,6 +45,18 @@ const rankingData: RankingItem[] = [
 
 const TopRankingsTable: React.FC = () => {
     const [searchTerm, setSearchTerm] = useState("");
+    const [timeFilter, setTimeFilter] = useState("");
+    const [analysisFilter, setAnalysisFilter] = useState("");
+
+    const filteredData = React.useMemo(() => {
+        return rankingData.filter(item => {
+            const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                item.type.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesType = !analysisFilter || item.type === analysisFilter;
+            // Time filter logic would go here in a real app (sorting by sessionAvg or plays)
+            return matchesSearch && matchesType;
+        });
+    }, [searchTerm, analysisFilter, timeFilter]);
 
     const getBadgeStyle = (type: string) => {
         switch (type) {
@@ -73,14 +85,34 @@ const TopRankingsTable: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-4 px-6 py-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 transition-all">
-                        Time
-                        <ChevronDown className="w-4 h-4 text-gray-400" />
-                    </button>
-                    <button className="flex items-center gap-4 px-6 py-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 transition-all">
-                        Analysis
-                        <ChevronDown className="w-4 h-4 text-gray-400" />
-                    </button>
+                    <div className="relative">
+                        <select
+                            value={timeFilter}
+                            onChange={(e) => setTimeFilter(e.target.value)}
+                            className="appearance-none flex items-center gap-4 pl-4 pr-10 py-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 transition-all cursor-pointer focus:outline-none"
+                        >
+                            <option value="">Time</option>
+                            <option value="today">Today</option>
+                            <option value="week">This Week</option>
+                            <option value="month">This Month</option>
+                        </select>
+                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
+
+                    <div className="relative">
+                        <select
+                            value={analysisFilter}
+                            onChange={(e) => setAnalysisFilter(e.target.value)}
+                            className="appearance-none flex items-center gap-4 pl-4 pr-10 py-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 transition-all cursor-pointer focus:outline-none"
+                        >
+                            <option value="">Analysis</option>
+                            <option value="Music">Music</option>
+                            <option value="Sound">Sound</option>
+                            <option value="VR">VR</option>
+                            <option value="360">360°</option>
+                        </select>
+                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
                 </div>
             </div>
 
@@ -108,7 +140,7 @@ const TopRankingsTable: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
-                            {rankingData.map((item, index) => (
+                            {filteredData.map((item, index) => (
                                 <tr key={index} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors group">
                                     <td className="px-6 py-4">
                                         <input type="checkbox" className="w-5 h-5 rounded border-gray-200 text-purple-600 focus:ring-purple-500 cursor-pointer" />
@@ -146,8 +178,8 @@ const TopRankingsTable: React.FC = () => {
                                     </td>
                                     <td className="px-4 py-4">
                                         <div className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold gap-0.5 ${item.growthType === "increase"
-                                                ? "bg-emerald-50 text-emerald-500 dark:bg-emerald-900/20 dark:text-emerald-400"
-                                                : "bg-rose-50 text-rose-400 dark:bg-rose-900/20 dark:text-rose-400"
+                                            ? "bg-emerald-50 text-emerald-500 dark:bg-emerald-900/20 dark:text-emerald-400"
+                                            : "bg-rose-50 text-rose-400 dark:bg-rose-900/20 dark:text-rose-400"
                                             }`}>
                                             {item.growthType === "increase" ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
                                             {item.growth}

@@ -1,13 +1,32 @@
 "use client";
 import React from "react";
 import dynamic from "next/dynamic";
-import { Users, Calendar, MessageSquare, Clock, Activity, ArrowUpRight, CheckCircle2, Circle } from "lucide-react";
+import { Users, Calendar, MessageSquare, Clock, Activity, ArrowUpRight, CheckCircle2, Circle, Search } from "lucide-react";
 import { ApexOptions } from "apexcharts";
 
 // Dynamically import ApexCharts to avoid SSR issues
 const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
 
 export default function CommunityPage() {
+    const [searchTerm, setSearchTerm] = React.useState("");
+
+    const groups = [
+        { rank: 1, name: "Morning meditation for boost your focus", members: 236, sessions: 15, messages: "1,524", activity: "Low Activity", activityColor: "bg-[#F2F4F7] text-[#344054] dark:bg-gray-800 dark:text-gray-400" },
+        { rank: 2, name: "Evening Calm & Sleep", members: 526, sessions: 12, messages: "12", activity: "High", activityColor: "bg-[#ECFDF3] text-[#027A48] dark:bg-green-900/20 dark:text-green-400" },
+        { rank: 3, name: "Deep Focus Flow", members: 52, sessions: 36, messages: "36", activity: "Medium", activityColor: "bg-[#FFF7E6] text-[#FF9F0A] dark:bg-orange-900/20 dark:text-orange-400" },
+        { rank: 4, name: "Guided Breathwork", members: 63, sessions: 85, messages: "85", activity: "Low Activity", activityColor: "bg-[#F2F4F7] text-[#344054] dark:bg-gray-800 dark:text-gray-400" },
+        { rank: 5, name: "VR Space Explorers", members: 23, sessions: 96, messages: "96", activity: "High", activityColor: "bg-[#ECFDF3] text-[#027A48] dark:bg-green-900/20 dark:text-green-400" },
+        { rank: 6, name: "360 Nature Walk", members: 32, sessions: 12, messages: "12", activity: "Medium", activityColor: "bg-[#FFF7E6] text-[#FF9F0A] dark:bg-orange-900/20 dark:text-orange-400" },
+        { rank: 7, name: "Mindfulness for Beginners", members: 54, sessions: 20, messages: "20", activity: "High", activityColor: "bg-[#ECFDF3] text-[#027A48] dark:bg-green-900/20 dark:text-green-400" },
+        { rank: 8, name: "Zen Garden Group", members: 325, sessions: "09", messages: "09", activity: "Medium", activityColor: "bg-[#FFF7E6] text-[#FF9F0A] dark:bg-orange-900/20 dark:text-orange-400" },
+        { rank: 9, name: "Ocean Ambience", members: 326, sessions: 23, messages: "23", activity: "High", activityColor: "bg-[#ECFDF3] text-[#027A48] dark:bg-green-900/20 dark:text-green-400" },
+        { rank: 10, name: "Stress Relief Circle", members: 74, sessions: 220, messages: "220", activity: "Medium", activityColor: "bg-[#FFF7E6] text-[#FF9F0A] dark:bg-orange-900/20 dark:text-orange-400" },
+    ];
+
+    const filteredGroups = React.useMemo(() => {
+        return groups.filter(g => g.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    }, [searchTerm, groups]);
+
     // Chart Data
     const growthChartOptions: ApexOptions = {
         chart: {
@@ -165,52 +184,54 @@ export default function CommunityPage() {
 
             {/* Most Active Groups */}
             <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
-                <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">Most Active Groups</h3>
-                    <div className="flex gap-2">
-                        <span className="px-3 py-1 bg-[#FFF7E6] text-[#FF9F0A] rounded-full text-xs font-medium dark:bg-orange-900/20 dark:text-orange-400">Medium Activity</span>
-                        <span className="px-3 py-1 bg-[#F2F4F7] text-[#344054] rounded-full text-xs font-medium dark:bg-gray-800 dark:text-gray-400">Low Activity</span>
-                        <span className="px-3 py-1 bg-[#ECFDF3] text-[#027A48] rounded-full text-xs font-medium dark:bg-green-900/20 dark:text-green-400">High Activity</span>
+                <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white whitespace-nowrap">Most Active Groups</h3>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                        <div className="relative">
+                            <input
+                                type="text"
+                                placeholder="Search groups..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-10 pr-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 w-full md:w-64"
+                            />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        </div>
+                        <div className="flex gap-2">
+                            <span className="px-3 py-1 bg-[#FFF7E6] text-[#FF9F0A] rounded-full text-[10px] font-bold uppercase dark:bg-orange-900/20 dark:text-orange-400">Medium</span>
+                            <span className="px-3 py-1 bg-[#F2F4F7] text-[#344054] rounded-full text-[10px] font-bold uppercase dark:bg-gray-800 dark:text-gray-400">Low</span>
+                            <span className="px-3 py-1 bg-[#ECFDF3] text-[#027A48] rounded-full text-[10px] font-bold uppercase dark:bg-green-900/20 dark:text-green-400">High</span>
+                        </div>
                     </div>
                 </div>
 
                 <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="border-b border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
-                                <th className="font-medium p-4 pl-6">Rank</th>
-                                <th className="font-medium p-4">Group Name</th>
-                                <th className="font-medium p-4">Members</th>
-                                <th className="font-medium p-4">Sessions</th>
-                                <th className="font-medium p-4">Messages</th>
-                                <th className="font-medium p-4 pr-6">Activity</th>
+                            <tr className="border-b border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                                <th className="p-4 pl-6">Rank</th>
+                                <th className="p-4">Group Name</th>
+                                <th className="p-4 text-center">Members</th>
+                                <th className="p-4 text-center">Sessions</th>
+                                <th className="p-4 text-center">Messages</th>
+                                <th className="p-4 pr-6 text-center">Activity</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
-                            {[
-                                { rank: 1, name: "Morning meditation for boost your focus", members: 236, sessions: 15, messages: "1,524", activity: "Low Activity", activityColor: "bg-[#F2F4F7] text-[#344054] dark:bg-gray-800 dark:text-gray-400" },
-                                { rank: 2, name: "Morning meditation for boost your focus", members: 526, sessions: 12, messages: "12", activity: "High", activityColor: "bg-[#ECFDF3] text-[#027A48] dark:bg-green-900/20 dark:text-green-400" },
-                                { rank: 3, name: "Morning meditation for boost your focus", members: 52, sessions: 36, messages: "36", activity: "Medium", activityColor: "bg-[#FFF7E6] text-[#FF9F0A] dark:bg-orange-900/20 dark:text-orange-400" },
-                                { rank: 4, name: "Morning meditation for boost your focus", members: 63, sessions: 85, messages: "85", activity: "Low Activity", activityColor: "bg-[#F2F4F7] text-[#344054] dark:bg-gray-800 dark:text-gray-400" },
-                                { rank: 5, name: "Morning meditation for boost your focus", members: 23, sessions: 96, messages: "96", activity: "High", activityColor: "bg-[#ECFDF3] text-[#027A48] dark:bg-green-900/20 dark:text-green-400" },
-                                { rank: 6, name: "Morning meditation for boost your focus", members: 32, sessions: 12, messages: "12", activity: "Medium", activityColor: "bg-[#FFF7E6] text-[#FF9F0A] dark:bg-orange-900/20 dark:text-orange-400" },
-                                { rank: 7, name: "Morning meditation for boost your focus", members: 54, sessions: 20, messages: "20", activity: "High", activityColor: "bg-[#ECFDF3] text-[#027A48] dark:bg-green-900/20 dark:text-green-400" },
-                                { rank: 8, name: "Morning meditation for boost your focus", members: 325, sessions: "09", messages: "09", activity: "Medium", activityColor: "bg-[#FFF7E6] text-[#FF9F0A] dark:bg-orange-900/20 dark:text-orange-400" },
-                                { rank: 9, name: "Morning meditation for boost your focus", members: 326, sessions: 23, messages: "23", activity: "Sound", activityColor: "bg-[#ECFDF3] text-[#027A48] dark:bg-green-900/20 dark:text-green-400" },
-                                { rank: 10, name: "Morning meditation for boost your focus", members: 74, sessions: 220, messages: "220", activity: "Medium", activityColor: "bg-[#FFF7E6] text-[#FF9F0A] dark:bg-orange-900/20 dark:text-orange-400" },
-                            ].map((group, index) => (
+                            {filteredGroups.map((group, index) => (
                                 <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                                     <td className="p-4 pl-6">
                                         <span className="w-8 h-8 rounded-full bg-[#9810FA]/10 text-[#9810FA] flex items-center justify-center text-xs font-bold">
                                             {group.rank < 10 ? `0${group.rank}` : group.rank}
                                         </span>
                                     </td>
-                                    <td className="p-4 text-sm font-medium text-gray-900 dark:text-white">{group.name}</td>
-                                    <td className="p-4 text-sm text-gray-600 dark:text-gray-400">{group.members}</td>
-                                    <td className="p-4 text-sm text-gray-600 dark:text-gray-400">{group.sessions}</td>
-                                    <td className="p-4 text-sm text-gray-600 dark:text-gray-400">{group.messages}</td>
-                                    <td className="p-4 pr-6">
-                                        <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${group.activityColor}`}>
+                                    <td className="p-4 text-sm font-semibold text-gray-900 dark:text-white">{group.name}</td>
+                                    <td className="p-4 text-center text-sm text-gray-600 dark:text-gray-400">{group.members}</td>
+                                    <td className="p-4 text-center text-sm text-gray-600 dark:text-gray-400">{group.sessions}</td>
+                                    <td className="p-4 text-center text-sm text-gray-600 dark:text-gray-400">{group.messages}</td>
+                                    <td className="p-4 pr-6 text-center">
+                                        <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-bold uppercase ${group.activityColor}`}>
                                             {group.activity}
                                         </span>
                                     </td>
@@ -233,7 +254,6 @@ export default function CommunityPage() {
                         { title: "Midnight Calm", status: "Completed", statusColor: "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400", time: "Yesterday, 11:00 PM", group: "Night Owls", host: "Olivia D.", participants: 21 },
                     ].map((session, index) => (
                         <div key={index} className="flex flex-col p-4 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-[#9810FA]/30 hover:shadow-sm transition-all bg-gray-50/50 dark:bg-gray-900/50 gap-3">
-                            {/* Row 1: Title, Badge, Time */}
                             <div className="flex items-center justify-between w-full">
                                 <div className="flex items-center gap-3">
                                     <h4 className="font-semibold text-gray-900 dark:text-white">{session.title}</h4>
@@ -245,8 +265,6 @@ export default function CommunityPage() {
                                     {session.time}
                                 </span>
                             </div>
-
-                            {/* Row 2: Group, Host, Participants */}
                             <div className="flex flex-wrap items-center gap-6 text-xs text-gray-500 dark:text-gray-400">
                                 <div className="flex items-center gap-2">
                                     <Users className="w-4 h-4 text-gray-400" />
@@ -268,7 +286,6 @@ export default function CommunityPage() {
 
             {/* Bottom Metrics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Metric 1 */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col h-[180px] relative">
                     <h4 className="text-sm font-medium text-gray-900 dark:text-white absolute top-6 left-6">Engagement Rate</h4>
                     <div className="flex-1 flex items-center justify-center">
@@ -276,7 +293,6 @@ export default function CommunityPage() {
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 text-center pb-2">of group members actively participate</p>
                 </div>
-                {/* Metric 2 */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col h-[180px] relative">
                     <h4 className="text-sm font-medium text-gray-900 dark:text-white absolute top-6 left-6">Most Popular Time</h4>
                     <div className="flex-1 flex items-center justify-center">
@@ -284,7 +300,6 @@ export default function CommunityPage() {
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 text-center pb-2">Peak session activity hour</p>
                 </div>
-                {/* Metric 3 */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col h-[180px] relative">
                     <h4 className="text-sm font-medium text-gray-900 dark:text-white absolute top-6 left-6">Session Duration</h4>
                     <div className="flex-1 flex items-center justify-center">
@@ -293,7 +308,6 @@ export default function CommunityPage() {
                     <p className="text-xs text-gray-500 dark:text-gray-400 text-center pb-2">Average group session length</p>
                 </div>
             </div>
-
         </div>
     );
 }

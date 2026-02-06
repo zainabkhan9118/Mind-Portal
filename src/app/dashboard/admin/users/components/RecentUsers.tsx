@@ -13,13 +13,40 @@ const RecentUsers: React.FC = () => {
     const [selectedUserForSwitch, setSelectedUserForSwitch] = useState<User | null>(null);
 
     const filteredUsers = useMemo(() => {
-        return mockUsers.filter(user => {
+        const result = mockUsers.filter(user => {
             const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 user.email.toLowerCase().includes(searchQuery.toLowerCase());
             const matchesType = typeFilter ? user.type === typeFilter : true;
-            // Time filter is mocked (no actual date sorting logic implemented on string '2 hrs ago')
             return matchesSearch && matchesType;
         });
+
+        if (timeFilter === 'newest') {
+            return [...result].sort((a, b) => {
+                const getTimeValue = (str: string) => {
+                    const val = parseInt(str);
+                    if (str.includes('min')) return val;
+                    if (str.includes('hr')) return val * 60;
+                    if (str.includes('day')) return val * 60 * 24;
+                    return val * 60 * 24 * 30; // month
+                };
+                return getTimeValue(a.joined) - getTimeValue(b.joined);
+            });
+        }
+
+        if (timeFilter === 'oldest') {
+            return [...result].sort((a, b) => {
+                const getTimeValue = (str: string) => {
+                    const val = parseInt(str);
+                    if (str.includes('min')) return val;
+                    if (str.includes('hr')) return val * 60;
+                    if (str.includes('day')) return val * 60 * 24;
+                    return val * 60 * 24 * 30;
+                };
+                return getTimeValue(b.joined) - getTimeValue(a.joined);
+            });
+        }
+
+        return result;
     }, [searchQuery, typeFilter, timeFilter]);
 
     const handleSwitchExpert = (user: User) => {
