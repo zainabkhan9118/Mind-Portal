@@ -2,10 +2,12 @@
 import React, { useState } from "react";
 import {
     LayoutGrid,
-    ListChecks
+    ListChecks,
+    Image as ImageIcon
 } from "lucide-react";
 import AdminOverview from "./components/AdminOverview";
 import ContentValidation from "./components/ContentValidation";
+import ImagesManagement from "./components/ImagesManagement";
 
 export default function SettingsPage() {
     const [activeTab, setActiveTab] = useState("Overview");
@@ -13,6 +15,7 @@ export default function SettingsPage() {
     const tabs = [
         { id: "Overview", icon: <LayoutGrid className="w-4 h-4" /> },
         { id: "Content Validation", icon: <ListChecks className="w-4 h-4" /> },
+        { id: "Images Management", icon: <ImageIcon className="w-4 h-4" /> },
     ];
 
     return (
@@ -47,7 +50,9 @@ export default function SettingsPage() {
 
             {/* Tab content */}
             <div className="min-h-[500px]">
-                {activeTab === "Overview" ? <AdminOverview /> : <ContentValidation />}
+                {activeTab === "Overview" && <AdminOverview />}
+                {activeTab === "Content Validation" && <ContentValidation />}
+                {activeTab === "Images Management" && <ImagesManagement />}
             </div>
         </div>
     );
