@@ -1,56 +1,71 @@
 import React from "react";
-import { Upload, Search, Filter, Plus } from "lucide-react";
-import ImageCard from "./images/ImageCard";
+import { Upload, Trash2, Image as ImageIcon } from "lucide-react";
 
 const ImagesManagement: React.FC = () => {
     const images = [
-        { id: "1", name: "Zen Garden Background", url: "https://images.unsplash.com/photo-1542002422-96d20bc16298?q=80&w=800&auto=format&fit=crop", size: "1.2 MB", dimensions: "1920x1080" },
-        { id: "2", name: "Misty Mountains", url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=800&auto=format&fit=crop", size: "2.4 MB", dimensions: "3840x2160" },
-        { id: "3", name: "Ocean Waves", url: "https://images.unsplash.com/photo-1505118380757-91f5f45d8de0?q=80&w=800&auto=format&fit=crop", size: "850 KB", dimensions: "1280x720" },
-        { id: "4", name: "Forest Path", url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?q=80&w=800&auto=format&fit=crop", size: "1.8 MB", dimensions: "2560x1440" },
+        { id: "1", name: "Serene Beach Sunset", url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=400" },
+        { id: "2", name: "Mountain Peak", url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=400" },
+        { id: "3", name: "Serene Beach Sunset", url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=400" },
+        { id: "4", name: "Mountain Peak", url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=400" },
+        { id: "5", name: "Serene Beach Sunset", url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=400" },
+        { id: "6", name: "Mountain Peak", url: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=400" },
+        { id: "7", name: "Serene Beach Sunset", url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=400" },
+        { id: "8", name: "Deep Forest", url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=400" },
+        { id: "9", name: "Urban Night", url: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&q=80&w=400" },
+        { id: "10", name: "Deep Forest", url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=400" },
+        { id: "11", name: "Urban Night", url: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&q=80&w=400" },
+        { id: "12", name: "Deep Forest", url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=400" },
+        { id: "13", name: "Urban Night", url: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?auto=format&fit=crop&q=80&w=400" },
+        { id: "14", name: "Deep Forest", url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&q=80&w=400" },
+        { id: "15", name: "Desert Dunes", url: "https://images.unsplash.com/photo-1473580044384-7ba9967e16a0?auto=format&fit=crop&q=80&w=400" },
+        { id: "16", name: "Arctic Aurora", url: "https://images.unsplash.com/photo-1483347756197-71ef80e95f73?auto=format&fit=crop&q=80&w=400" },
+        { id: "17", name: "Desert Dunes", url: "https://images.unsplash.com/photo-1473580044384-7ba9967e16a0?auto=format&fit=crop&q=80&w=400" },
+        { id: "18", name: "Arctic Aurora", url: "https://images.unsplash.com/photo-1483347756197-71ef80e95f73?auto=format&fit=crop&q=80&w=400" },
+        { id: "19", name: "Desert Dunes", url: "https://images.unsplash.com/photo-1473580044384-7ba9967e16a0?auto=format&fit=crop&q=80&w=400" },
+        { id: "20", name: "Arctic Aurora", url: "https://images.unsplash.com/photo-1483347756197-71ef80e95f73?auto=format&fit=crop&q=80&w=400" },
+        { id: "21", name: "Desert Dunes", url: "https://images.unsplash.com/photo-1473580044384-7ba9967e16a0?auto=format&fit=crop&q=80&w=400" },
     ];
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
-            {/* Header / Actions */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden animate-in fade-in duration-500">
+            {/* Header */}
+            <div className="p-8 pb-4">
                 <div className="flex items-center gap-3">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Search images..."
-                            className="pl-10 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 w-full md:w-64 transition-all"
-                        />
+                    <div className="p-2.5 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
+                        <ImageIcon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                     </div>
-                    <button className="flex items-center gap-2 px-4 py-2 border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-750 transition-all">
-                        <Filter className="w-4 h-4" />
-                        All Formats
-                    </button>
+                    <div>
+                        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Mind Player's Gallery</h2>
+                    </div>
                 </div>
-                <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-750 transition-all">
-                        <Upload className="w-4 h-4" />
-                        Bulk Upload
-                    </button>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-[#9810FA] text-white rounded-xl text-sm font-bold hover:bg-[#8000E0] shadow-lg shadow-purple-500/20 transition-all">
-                        <Plus className="w-4 h-4" />
-                        Add Image
-                    </button>
-                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 ml-14">Images available for users to use across the platform</p>
             </div>
+
+            <div className="border-t border-gray-100 dark:border-gray-700 mx-8" />
 
             {/* Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {images.map((img) => (
-                    <ImageCard key={img.id} {...img} />
-                ))}
-            </div>
+            <div className="p-8">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4 auto-rows-fr">
+                    {images.map((img) => (
+                        <div key={img.id} className="group relative aspect-video rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all">
+                            <img src={img.url} alt={img.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80" />
+                            <span className="absolute bottom-2 left-2 text-[10px] font-bold text-white leading-tight pr-2">{img.name}</span>
+                            <button className="absolute top-2 right-2 p-1.5 text-white/60 hover:text-white transition-colors">
+                                <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    ))}
 
-            {/* Placeholder for empty state / more images */}
-            <button className="w-full py-8 border-2 border-dashed border-gray-100 dark:border-gray-800 rounded-3xl text-gray-400 hover:border-purple-200 dark:hover:border-purple-900/40 hover:text-purple-500 transition-all font-medium">
-                Click to upload or drag and drop more assets
-            </button>
+                    {/* Upload New Card */}
+                    <button className="aspect-video rounded-xl border-2 border-dashed border-gray-100 dark:border-gray-700 hover:border-purple-600 hover:bg-purple-50/50 dark:hover:bg-purple-900/10 transition-all flex flex-col items-center justify-center gap-2 group">
+                        <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded-xl group-hover:bg-white dark:group-hover:bg-purple-900/30 transition-colors shadow-xs">
+                            <ImageIcon className="w-4 h-4 text-gray-400 group-hover:text-purple-600" />
+                        </div>
+                        <span className="text-[10px] font-bold text-gray-400 group-hover:text-purple-600 uppercase tracking-widest">Upload New</span>
+                    </button>
+                </div>
+            </div>
         </div>
     );
 };

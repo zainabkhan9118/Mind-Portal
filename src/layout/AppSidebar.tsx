@@ -73,7 +73,7 @@ const adminNavItems: NavItem[] = [
   },
   {
     icon: <Settings className="w-6 h-6" />,
-    name: "Settings",
+    name: "Admin Controls",
     path: "/dashboard/admin/settings",
   },
 ];
