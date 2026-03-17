@@ -1,21 +1,25 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { authenticateUser } from "../lib/authService";
+"use client";
 
-// Define our types
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { authApi } from "@/lib/api";
+import type { AdminProfile } from "@/lib/api";
+
+// ── Types ────────────────────────────────────────────────────────────────
 interface User {
   id: number;
   email: string;
   name: string;
   role: string;
-  phone?: string;
-  address?: string;
+  first_name?: string;
+  last_name?: string;
+  permissions?: string[];
 }
 
 interface AuthContextType {
   user: User | null;
   signin: (email: string, password: string) => Promise<void>;
   signup: (userData: SignupData) => Promise<void>;
-  signout: () => void;
+  signout: () => Promise<void>;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
@@ -30,43 +34,28 @@ interface SignupData {
   role: string;
 }
 
-// Predefined static users with different roles
-const PREDEFINED_USERS = [
-  {
-    id: 1,
-    email: "test@admin.com",
-    password: "admin123",
-    firstName: "Admin",
-    lastName: "User",
-    role: "admin"
-  },
-  // {
-  //   id: 2,
-  //   email: "teacher@zaraschool.com",
-  //   password: "teacher123",
-  //   firstName: "Teacher",
-  //   lastName: "Smith",
-  //   role: "teacher"
-  // },
-  // {
-  //   id: 3,
-  //   email: "student@zaraschool.com",
-  //   password: "student123",
-  //   firstName: "Student",
-  //   lastName: "Jones",
-  //   role: "student"
-  // }
-];
-
-// Define dashboard paths for each role
+// ── Dashboard paths per role ─────────────────────────────────────────────
 const ROLE_DASHBOARD_PATHS: Record<string, string> = {
   admin: "/dashboard/admin",
-  // teacher: "/dashboard/teacher",
-  // student: "/dashboard/student",
-  default: "/dashboard" 
+  default: "/dashboard",
 };
 
-// Create the context
+
+
+// ── Helper: convert AdminProfile/login response to User ──────────────────
+function profileToUser(profile: AdminProfile): User {
+  return {
+    id: profile.id,
+    email: profile.email,
+    name: `${profile.first_name} ${profile.last_name}`.trim() || profile.email,
+    role: profile.role?.toLowerCase() ?? "admin",
+    first_name: profile.first_name,
+    last_name: profile.last_name,
+    permissions: profile.permissions,
+  };
+}
+
+// ── Context ──────────────────────────────────────────────────────────────
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -74,159 +63,119 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Check for existing user session on initial load
+  // Hydrate and verify from API on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    async function restoreSession() {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        // Import dynamic to avoid circular dependencies if any
+        const { globalApi } = await import("@/lib/api");
+        const profile = await globalApi.getMe();
+        const userObj = profileToUser(profile);
+        setUser(userObj);
+        localStorage.setItem("user", JSON.stringify(userObj));
+      } catch (err) {
+        console.warn("Session verification failed:", err);
+        // If it's a 401/403, we should clear local storage
+        // axios interceptor might handle the redirect, but we clear state here
+        localStorage.removeItem("user");
+        localStorage.removeItem("authToken");
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
     }
-    setIsLoading(false);
-    
-    // Initialize predefined users in localStorage if they don't exist
-    const storedUsers = localStorage.getItem('users');
-    if (!storedUsers) {
-      // Store predefined users without their passwords
-      const usersForStorage = PREDEFINED_USERS.map(user => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { password, ...userWithoutPassword } = user;
-        return userWithoutPassword;
-      });
-      localStorage.setItem('users', JSON.stringify(usersForStorage));
-    }
+
+    restoreSession();
   }, []);
 
-  // Return the appropriate redirect path based on user role
+  // Role-based redirect path
   const getRedirectPath = () => {
-    if (!user) return '/signin';
-    
-    // Make role comparison case-insensitive
+    if (!user) return "/signin";
     const normalizedRole = user.role.toLowerCase();
     return ROLE_DASHBOARD_PATHS[normalizedRole] || ROLE_DASHBOARD_PATHS.default;
   };
 
+  // ── Sign In ────────────────────────────────────────────────────────
   const signin = async (email: string, password: string) => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       if (!email || !password) {
-        throw new Error('Email and password are required');
+        throw new Error("Email and password are required");
       }
-      
-      // First check against predefined users for development/testing
-      const predefinedUser = PREDEFINED_USERS.find(
-        u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-      );
-      
-      if (predefinedUser) {
-        // Destructure to exclude password
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { password, ...userWithoutPassword } = predefinedUser;
-        
-        // Normalize the role to lowercase when storing the user
-        const userWithNormalizedRole = {
-          ...userWithoutPassword,
-          name: `${userWithoutPassword.firstName} ${userWithoutPassword.lastName}`, // Add name property
-          role: userWithoutPassword.role.toLowerCase()
-        };
-        
-        // Set a mock token for development purposes
-        localStorage.setItem('authToken', `mock-token-${Date.now()}`);
-        
-        setUser(userWithNormalizedRole);
-        localStorage.setItem('user', JSON.stringify(userWithNormalizedRole));
-        console.log("Signed in as predefined user:", userWithNormalizedRole);
-        return;
-      }
-      
-      try {
-        // Use the API authentication service
-        const authenticatedUser = await authenticateUser(email, password);
-        
-        if (authenticatedUser) {
-          // Create a user object without the password
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { password, ...userWithoutPassword } = authenticatedUser;
-          
-          const userObj = {
-            id: userWithoutPassword.id,
-            email: userWithoutPassword.email,
-            name: userWithoutPassword.name,
-            role: userWithoutPassword.role.toLowerCase(), // Normalize the role to lowercase
-            phone: userWithoutPassword.phone,
-            address: userWithoutPassword.address
-          };
-          
-          // The token should have been stored by the authenticateUser function
-          
-          setUser(userObj);
-          localStorage.setItem('user', JSON.stringify(userObj));
-          console.log("Signed in via API:", userObj);
-        } else {
-          // Instead of throwing an error, just set the error state
-          setError('Invalid credentials. Please check your email and password.');
-        }
-      } catch (apiError) {
-        console.error('API authentication error:', apiError);
-        setError('Authentication service is unavailable. Please try again later or use a predefined account.');
-      }
+
+      // Try the login
+      const { user: apiUser } = await authApi.login({ email, password });
+
+      // authApi.login already stores the token/user in localStorage via axiosInstance interceptor/authApi logic
+      const userObj = profileToUser(apiUser);
+      setUser(userObj);
+      localStorage.setItem("user", JSON.stringify(userObj));
+      console.log("Signed in via API:", userObj);
+
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Authentication failed');
-      console.error('Signin error:', err);
+      setError(err instanceof Error ? err.message : "Authentication failed");
+      console.error("Signin error:", err);
     } finally {
       setIsLoading(false);
     }
   };
 
+  // ── Sign Up (kept for backward compatibility) ──────────────────────
+  // ── Sign Up ────────────────────────────────────────────────────────
   const signup = async (userData: SignupData) => {
     try {
       setIsLoading(true);
       setError(null);
-      if (!userData.email || !userData.password || !userData.role) {
-        throw new Error('Email, password, and role are required');
+
+      const response = await fetch("/api/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: userData.email,
+          password: userData.password,
+          name: `${userData.firstName} ${userData.lastName}`,
+          role: userData.role,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Registration failed");
       }
-      
-      // Check if email already exists in predefined users
-      const emailExists = PREDEFINED_USERS.some(user => user.email === userData.email);
-      if (emailExists) {
-        throw new Error('Email is already in use');
-      }
-      
-      // Check if email exists in stored users
-      const storedUsers = JSON.parse(localStorage.getItem('users') || '[]');
-      const emailExistsInStored = storedUsers.some((user: User) => user.email === userData.email);
-      if (emailExistsInStored) {
-        throw new Error('Email is already in use');
-      }
-      
-      const newUser = { 
-        id: parseInt("user" + Date.now()), // Convert to number 
-        email: userData.email,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        name: `${userData.firstName} ${userData.lastName}`, // Add name property
-        role: userData.role 
-      };
-      
-      storedUsers.push(newUser);
-      localStorage.setItem('users', JSON.stringify(storedUsers));
-      setUser(newUser);
-      localStorage.setItem('user', JSON.stringify(newUser));
-      console.log("Signed up as:", newUser);
+
+      // Automatically sign in the user if the API returns enough info
+      // Or just signal success. Here we'll treat it as a success and the form can redirect.
+      console.log("Signup success:", data);
+
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
-      console.error('Signup error:', err);
+      setError(err instanceof Error ? err.message : "Registration failed");
+      throw err; // Re-throw so the form can handle it
     } finally {
       setIsLoading(false);
     }
   };
 
-  const signout = () => {
+  // ── Sign Out ───────────────────────────────────────────────────────
+  const signout = async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      // Even if the API call fails, clear local state
+    }
     setUser(null);
-    localStorage.removeItem('user');
-    console.log("Signed out");
+    localStorage.removeItem("user");
+    localStorage.removeItem("authToken");
   };
-  
+
   const isAuthenticated = !!user;
 
   return (
@@ -239,7 +188,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isAuthenticated,
         isLoading,
         error,
-        getRedirectPath
+        getRedirectPath,
       }}
     >
       {children}

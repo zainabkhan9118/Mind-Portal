@@ -12,8 +12,8 @@ export default function UserDropdown() {
   const router = useRouter();
 
   // Handle sign out action
-  const handleSignOut = () => {
-    signout();
+  const handleSignOut = async () => {
+    await signout();
     closeDropdown();
     // Add redirection to sign-in page
     router.push('/signin');
@@ -29,14 +29,14 @@ export default function UserDropdown() {
   }
 
   // Get user's display name
-  const displayName = user ? 
-    (user.name ? user.name : user.email.split('@')[0]) 
+  const displayName = user ?
+    (user.name ? user.name : user.email.split('@')[0])
     : 'Guest User';
 
   // Get user avatar based on role - using existing images from the project
   const getUserAvatar = () => {
     if (!user) return '/images/user/user-01.jpg';
-    
+
     // Map roles to specific existing user images
     switch (user.role) {
       case 'admin':
@@ -48,13 +48,13 @@ export default function UserDropdown() {
         return '/images/user/user-01.jpg';
     }
   };
-  
+
   const userAvatar = getUserAvatar();
-  
+
   return (
     <div className="relative">
       <button
-        onClick={toggleDropdown} 
+        onClick={toggleDropdown}
         className="flex items-center text-gray-700 dark:text-gray-400 dropdown-toggle"
       >
         <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
@@ -69,9 +69,8 @@ export default function UserDropdown() {
         <span className="block mr-1 font-medium text-theme-sm">{displayName}</span>
 
         <svg
-          className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${
-            isOpen ? "rotate-180" : ""
-          }`}
+          className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${isOpen ? "rotate-180" : ""
+            }`}
           width="18"
           height="20"
           viewBox="0 0 18 20"

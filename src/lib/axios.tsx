@@ -1,7 +1,10 @@
 import axios, { AxiosInstance } from "axios";
 
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "https://d-api.mindplayer.com";
+
 const axiosInstance: AxiosInstance = axios.create({
-  baseURL: "https://zaraschool-05bf2031623e.herokuapp.com",
+  baseURL: `${API_BASE_URL}/api/v1/`,
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
@@ -13,12 +16,12 @@ axiosInstance.interceptors.request.use(
   (config) => {
     // Get the token from localStorage if it exists
     const token = typeof window !== 'undefined' ? localStorage.getItem('authToken') : null;
-    
+
     // If token exists, add it to the authorization header
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
-    
+
     return config;
   },
   (error) => {
@@ -37,12 +40,12 @@ axiosInstance.interceptors.response.use(
         // Clear any stored authentication data
         localStorage.removeItem('authToken');
         localStorage.removeItem('user');
-        
+
         // Redirect to login page
         window.location.href = '/signin';
       }
     }
-    
+
     return Promise.reject(error);
   }
 );

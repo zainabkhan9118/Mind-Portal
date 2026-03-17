@@ -3,6 +3,9 @@
 import Sidebar from '../../layout/AppSidebar'
 import Header from '../../layout/AppHeader'
 import { useSidebar } from '@/context/SidebarContext';
+import { PermissionsProvider } from '@/context/PermissionsContext';
+
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 export default function DashboardLayout({
   children,
@@ -15,21 +18,25 @@ export default function DashboardLayout({
   const mainContentMargin = isMobileOpen
     ? "ml-0"
     : isExpanded || isHovered
-    ? "lg:ml-[290px]"
-    : "lg:ml-[90px]";
+      ? "lg:ml-[290px]"
+      : "lg:ml-[90px]";
 
   return (
-    <div className="min-h-screen w-full">
-      {/* Sidebar */}
-      <Sidebar />
-      
-      {/* Main Content Area */}
-      <div className={`transition-all duration-300 ease-in-out ${mainContentMargin}`}>
-        {/* Header */}
-        <Header />
-        {/* Page Content */}
-        <main className="p-4 md:p-6 overflow-x-hidden">{children}</main>
-      </div>
-    </div>
+    <ProtectedRoute>
+      <PermissionsProvider>
+        <div className="min-h-screen w-full">
+          {/* Sidebar */}
+          <Sidebar />
+
+          {/* Main Content Area */}
+          <div className={`transition-all duration-300 ease-in-out ${mainContentMargin}`}>
+            {/* Header */}
+            <Header />
+            {/* Page Content */}
+            <main className="p-4 md:p-6 overflow-x-hidden">{children}</main>
+          </div>
+        </div>
+      </PermissionsProvider>
+    </ProtectedRoute>
   )
 }
