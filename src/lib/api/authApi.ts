@@ -13,8 +13,8 @@ import type {
  *   POST auth/login/
  *   POST auth/logout/
  *   POST auth/logout-all/
- *   POST auth/forgot-password/
- *   POST auth/reset-password/
+ *   POST auth/users/password-reset-otp/
+ *   POST auth/users/reset-password/
  */
 const authApi = {
     /**
@@ -22,22 +22,29 @@ const authApi = {
      * Returns a Knox token + user profile.
      */
     login: async (data: LoginRequest): Promise<LoginResponse> => {
-        const response = await apiClient.post<LoginResponse>("admin/auth/login/", data);
+        const tokenResponse = await apiClient.post<{ token: string }>("auth/login/", data);
+        const token = tokenResponse.data.token;
 
-        // Persist the token for subsequent requests
-        if (typeof window !== "undefined" && response.data.token) {
-            localStorage.setItem("authToken", response.data.token);
-            localStorage.setItem("user", JSON.stringify(response.data.user));
+        // Persist the token so the subsequent getMe call is authenticated
+        if (typeof window !== "undefined") {
+            localStorage.setItem("authToken", token);
         }
 
-        return response.data;
+        // Fetch the full admin profile
+        const profileResponse = await apiClient.get<LoginResponse["user"]>("admin/me/");
+
+        if (typeof window !== "undefined") {
+            localStorage.setItem("user", JSON.stringify(profileResponse.data));
+        }
+
+        return { token, user: profileResponse.data };
     },
 
     /**
      * Revokes the current token.
      */
     logout: async (): Promise<void> => {
-        await apiClient.post("admin/auth/logout/");
+        await apiClient.post("auth/logout/");
         if (typeof window !== "undefined") {
             localStorage.removeItem("authToken");
             localStorage.removeItem("user");
@@ -48,7 +55,7 @@ const authApi = {
      * Revokes all tokens for the current user.
      */
     logoutAll: async (): Promise<void> => {
-        await apiClient.post("admin/auth/logout-all/");
+        await apiClient.post("auth/logout-all/");
         if (typeof window !== "undefined") {
             localStorage.removeItem("authToken");
             localStorage.removeItem("user");
@@ -59,14 +66,14 @@ const authApi = {
      * Sends a password reset OTP to the given email.
      */
     forgotPassword: async (data: ForgotPasswordRequest): Promise<void> => {
-        await apiClient.post("admin/auth/forgot-password/", data);
+        await apiClient.post("auth/users/password-reset-otp/", data);
     },
 
     /**
-     * Resets the password using the OTP.
+     * Resets the password using the verified OTP.
      */
     resetPassword: async (data: ResetPasswordRequest): Promise<void> => {
-        await apiClient.post("admin/auth/reset-password/", data);
+        await apiClient.post("auth/users/reset-password/", data);
     },
 };
 

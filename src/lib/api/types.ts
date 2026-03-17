@@ -62,8 +62,7 @@ export interface ForgotPasswordRequest {
 
 export interface ResetPasswordRequest {
     email: string;
-    otp: string;
-    new_password: string;
+    password: string;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -127,7 +126,7 @@ export interface SubscriptionDistribution {
     count: number;
 }
 
-export type UserStatus = "active" | "suspended" | "banned";
+export type UserStatus = "active" | "inactive" | "suspended" | "banned";
 
 export interface ApiUser {
     id: number;
@@ -141,8 +140,9 @@ export interface ApiUser {
         plan: string;
         expires_at: string;
     };
-    created_at: string;
-    updated_at: string;
+    date_joined?: string;
+    created_at?: string;
+    updated_at?: string;
 }
 
 export interface UserDetail extends ApiUser {
@@ -179,7 +179,6 @@ export interface UserNotifyRequest {
 
 export interface UserListParams extends PaginationParams, SearchParams, OrderingParams {
     status?: UserStatus;
-    is_premium?: boolean;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -188,85 +187,216 @@ export interface UserListParams extends PaginationParams, SearchParams, Ordering
 
 export type ContentType = "music" | "guided_session" | "env_sound" | "env_visual";
 export type ContentTypeEndpoint = "music" | "guided-sessions" | "env-sounds" | "env-visuals";
-export type ContentStatus = "published" | "draft" | "archived";
+export type ContentStatus = "published" | "draft" | "archived" | "review";
 
-export interface ContentListParams extends PaginationParams, SearchParams, OrderingParams {
-    type?: ContentType;
+export interface ContentListParams extends PaginationParams, OrderingParams {
+    q?: string;
+    search?: string;
     status?: ContentStatus;
     is_premium?: boolean;
-    category?: string;
+    category?: number;
+    goal_ids?: string;
+    tags?: string;
+    created_after?: string;
+    created_before?: string;
 }
 
-export interface ContentItemBase {
-    id: number;
-    title: string;
-    description?: string;
-    status: ContentStatus;
-    is_premium: boolean;
-    category?: string;
-    tags?: string[];
-    created_at: string;
-    updated_at: string;
-}
-
-export interface MusicContent extends ContentItemBase {
-    type: "music";
+export interface MusicListParams extends ContentListParams {
     artist?: string;
-    audio_url?: string;
-    cover_image_url?: string;
-    duration?: string;
+    genre?: string;
+    album?: number;
+    created_by?: number;
 }
 
-export interface GuidedSessionContent extends ContentItemBase {
-    type: "guided_session";
-    voice?: string;
-    duration?: string;
-    goal?: string;
+export interface GuidedSessionListParams extends ContentListParams {
+    instructor?: string;
+    difficulty?: string;
+    session_type?: string;
+    created_by?: number;
 }
 
-export interface EnvSoundContent extends ContentItemBase {
-    type: "env_sound";
-    frequency?: string;
-    icon_url?: string;
-    goal?: string;
+export interface EnvSoundListParams extends ContentListParams {
+    sound_type?: string;
+    is_loopable?: boolean;
+    is_mixable?: boolean;
 }
 
-export interface EnvVisualContent extends ContentItemBase {
-    type: "env_visual";
-    author?: string;
-    media_url?: string;
-    icon_url?: string;
-    goal?: string;
+export interface EnvVisualListParams extends ContentListParams {
+    visual_type?: string;
+    mood?: string;
 }
 
-export type AnyContentItem =
-    | MusicContent
-    | GuidedSessionContent
-    | EnvSoundContent
-    | EnvVisualContent;
+// Categories
+export interface AdminCategory {
+    id: number;
+    name: string;
+    language?: string | null;
+    item_count: number;
+}
+
+// Keep ContentCategory as alias for backward compat
+export type ContentCategory = AdminCategory;
 
 // Sub-resources
 export interface SoundLayer {
     id: number;
-    name: string;
-    audio_url?: string;
-    volume?: number;
+    environment_sound: number;
+    file_url: string;
+    volume?: string;
+    label: string;
+    sort_order?: number;
+    created_at: string;
+    updated_at: string;
 }
 
 export interface SessionStep {
     id: number;
+    session: number;
+    step_order: number;
     title: string;
-    description?: string;
-    duration?: string;
+    duration_seconds: number;
     audio_url?: string;
-    order: number;
+    text_content?: string;
+    created_at: string;
+    updated_at: string;
 }
 
+export interface AdminMusic {
+    id: number;
+    name: string;
+    description: string;
+    artist: string;
+    image: string;
+    audio_clip: string;
+    duration: number;
+    music_category?: number[];
+    sub_category?: string | null;
+    album?: number | null;
+    goals: number[];
+    status?: ContentStatus;
+    tags?: string[];
+    is_premium?: boolean;
+    sort_order?: number;
+    file_size_bytes?: number | null;
+    mime_type?: string;
+    published_at?: string | null;
+    deleted_at: string | null;
+    genre?: string;
+    bpm?: number | null;
+    musical_key?: string;
+    composer?: string;
+    license_type?: string;
+    license_expires?: string | null;
+    like_count: number;
+    play_count: number;
+    music_category_names: string;
+    is_mind_player_original?: boolean;
+    created_by: number;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface AdminMindSession {
+    id: number;
+    name: string;
+    description: string;
+    artist: string;
+    image: string;
+    audio_clip: string;
+    duration: number;
+    mind_session_category?: number[];
+    mind_session_type?: string | null;
+    goals: number[];
+    status?: ContentStatus;
+    tags?: string[];
+    is_premium?: boolean;
+    sort_order?: number;
+    file_size_bytes?: number | null;
+    mime_type?: string;
+    published_at?: string | null;
+    deleted_at: string | null;
+    instructor_name?: string;
+    instructor_avatar?: string;
+    difficulty?: string;
+    background_audio?: number | null;
+    completion_rate?: string | null;
+    recommended_time?: string;
+    like_count: number;
+    play_count: number;
+    category_names: string;
+    steps: SessionStep[];
+    is_mind_player_original?: boolean;
+    created_by: number;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface AdminEnvironmentSound {
+    id: number;
+    name: string;
+    description?: string | null;
+    audio_clip: string;
+    image: string;
+    frequency?: string | null;
+    environment_sound_type?: string | null;
+    category?: number[];
+    goals: number[];
+    status?: ContentStatus;
+    tags?: string[];
+    is_premium?: boolean;
+    sort_order?: number;
+    file_size_bytes?: number | null;
+    mime_type?: string;
+    published_at?: string | null;
+    deleted_at: string | null;
+    is_loopable?: boolean;
+    fade_in_ms?: number | null;
+    fade_out_ms?: number | null;
+    is_mixable?: boolean;
+    default_volume?: string;
+    like_count: number;
+    play_count: number;
+    category_names: string;
+    layers: SoundLayer[];
+    created_at: string;
+    updated_at: string;
+}
+
+export interface AdminEnvironmentVisual {
+    id: number;
+    name: string;
+    description?: string | null;
+    visual_file: string;
+    image: string;
+    environment_visual_type?: string | null;
+    category?: number[];
+    goals: number[];
+    status?: ContentStatus;
+    tags?: string[];
+    is_premium?: boolean;
+    sort_order?: number;
+    file_size_bytes?: number | null;
+    mime_type?: string;
+    published_at?: string | null;
+    deleted_at: string | null;
+    resolution?: string;
+    aspect_ratio?: string;
+    color_palette?: unknown;
+    mood?: string;
+    loop_duration_ms?: number | null;
+    like_count: number;
+    category_names: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export type AnyContentItem = AdminMusic | AdminMindSession | AdminEnvironmentSound | AdminEnvironmentVisual;
+
+// Cross-type operations
 export interface ReorderStepsRequest {
     order: number[];
 }
 
-// Cross-type operations
 export interface ContentStatusChangeRequest {
     status: ContentStatus;
 }
@@ -274,12 +404,6 @@ export interface ContentStatusChangeRequest {
 export interface BulkActionRequest {
     action: "publish" | "archive" | "delete";
     items: { type: ContentType; id: number }[];
-}
-
-// Categories
-export interface ContentCategory {
-    id: number;
-    name: string;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -407,46 +531,54 @@ export interface RevenueByRegion {
 }
 
 export type SubscriptionStatus = "active" | "cancelled" | "expired";
+export type SubscriptionTier = "free" | "basic" | "premium" | "enterprise";
+export type TransactionStatus = "pending" | "completed" | "failed" | "refunded";
 
 export interface Subscription {
     id: number;
-    user: {
-        id: number;
-        email: string;
-        name: string;
-    };
-    plan: {
-        id: number;
-        name: string;
-        tier: string;
-    };
-    status: SubscriptionStatus;
-    started_at: string;
-    expires_at: string;
+    user: number;
+    user_email: string;
+    user_name: string;
+    stripe_subscription_id: string;
+    plan_name: string;
+    plan: number | null;
+    plan_tier: string;
+    status: string;
+    current_period_start: string;
+    current_period_end: string;
+    cancel_at_period_end: boolean;
+    cancelled_at: string | null;
+    expires_at: string | null;
+    created_at: string;
+    updated_at: string;
 }
 
 export interface SubscriptionPlan {
     id: number;
     name: string;
-    tier: string;
-    price: number;
-    billing_period: string;
+    tier: SubscriptionTier;
+    price_monthly: string;
+    price_yearly: string | null;
+    trial_days: number;
+    features: unknown;
+    max_downloads: number;
     is_active: boolean;
-    subscriber_count?: number;
-    features?: string[];
+    stripe_price_id: string;
+    subscriber_count: number;
+    created_at: string;
+    updated_at: string;
 }
 
 export interface Transaction {
     id: number;
-    user: {
-        id: number;
-        email: string;
-        name: string;
-    };
-    amount: number;
+    user: number;
+    user_email: string;
+    subscription: number | null;
+    amount: string;
     currency: string;
-    status: string;
-    payment_method?: string;
+    status: TransactionStatus;
+    payment_provider: string;
+    provider_txn_id: string;
     created_at: string;
 }
 
@@ -460,12 +592,18 @@ export interface Payout {
 }
 
 export interface SubscriptionListParams extends PaginationParams, SearchParams {
-    status?: SubscriptionStatus;
-    plan?: string;
+    status?: string;
+    plan?: number;
+    tier?: SubscriptionTier;
+    user?: number;
+    created_after?: string;
+    created_before?: string;
 }
 
 export interface TransactionListParams extends PaginationParams, SearchParams, DateRangeParams {
-    status?: string;
+    status?: TransactionStatus;
+    subscription?: number;
+    user?: number;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -508,18 +646,21 @@ export interface CommunityMember {
 
 export interface CommunityPost {
     id: number;
-    author: {
-        id: number;
-        name: string;
-        avatar?: string;
-    };
+    user: number;
+    user_name: string;
+    user_email: string;
+    group: number | null;
+    group_name: string | null;
+    group_session: number | null;
     title: string;
     content: string;
+    images: string[];
     status: string;
-    is_pinned: boolean;
-    likes_count: number;
-    comments_count: number;
+    deleted_at: string | null;
+    like_count: number;
+    comment_count: number;
     created_at: string;
+    updated_at: string;
 }
 
 export type ReportStatus = "open" | "resolved" | "dismissed";

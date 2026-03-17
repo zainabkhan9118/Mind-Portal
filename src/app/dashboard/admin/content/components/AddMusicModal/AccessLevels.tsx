@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React from "react";
 import Radio from "@/components/form/input/Radio";
-import Label from "@/components/form/Label";
 
-const AccessLevels: React.FC = () => {
-    const [accessLevel, setAccessLevel] = useState("free");
+interface AccessLevelsProps {
+    accessLevel: string;
+    onAccessLevelChange: (v: string) => void;
+}
 
+const AccessLevels: React.FC<AccessLevelsProps> = ({ accessLevel, onAccessLevelChange }) => {
     return (
         <div className="space-y-3">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -17,7 +19,7 @@ const AccessLevels: React.FC = () => {
                     value="free"
                     label="Free"
                     checked={accessLevel === "free"}
-                    onChange={setAccessLevel}
+                    onChange={onAccessLevelChange}
                 />
                 <Radio
                     id="access-premium"
@@ -25,7 +27,7 @@ const AccessLevels: React.FC = () => {
                     value="premium"
                     label="Premium"
                     checked={accessLevel === "premium"}
-                    onChange={setAccessLevel}
+                    onChange={onAccessLevelChange}
                 />
             </div>
         </div>

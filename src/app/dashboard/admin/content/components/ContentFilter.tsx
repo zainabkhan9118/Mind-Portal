@@ -7,6 +7,7 @@ interface ContentFilterProps {
     accessFilter: string;
     statusFilter: string;
     categoryFilter: string;
+    categories: { id: number; name: string }[];
     onSearchChange: (value: string) => void;
     onAccessChange: (value: string) => void;
     onStatusChange: (value: string) => void;
@@ -15,11 +16,11 @@ interface ContentFilterProps {
 }
 
 const ContentFilter: React.FC<ContentFilterProps> = ({
-    activeTab,
     searchTerm,
     accessFilter,
     statusFilter,
     categoryFilter,
+    categories,
     onSearchChange,
     onAccessChange,
     onStatusChange,
@@ -73,12 +74,10 @@ const ContentFilter: React.FC<ContentFilterProps> = ({
                         onChange={(e) => onCategoryChange(e.target.value)}
                         className="appearance-none flex items-center gap-2 pl-3 pr-10 py-2 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-900 hover:bg-gray-50 cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-500/20"
                     >
-                        <option value="">{activeTab === "Music" ? "Artist" : (activeTab === "Environment Sound" ? "Type" : "Category")}</option>
-                        {/* Mock options based on mockData. In real app these would be dynamic */}
-                        <option value="Sleep">Sleep</option>
-                        <option value="Focus">Focus</option>
-                        <option value="Energy">Energy</option>
-                        <option value="Meditation">Meditation</option>
+                        <option value="">Category</option>
+                        {categories.map(cat => (
+                            <option key={cat.id} value={String(cat.id)}>{cat.name}</option>
+                        ))}
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>

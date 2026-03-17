@@ -4,7 +4,12 @@ import DatePicker from "@/components/form/date-picker";
 import Label from "@/components/form/Label";
 import { Clock } from "lucide-react";
 
-const VisibilitySettings: React.FC = () => {
+interface VisibilitySettingsProps {
+    status: string;
+    onStatusChange: (v: string) => void;
+}
+
+const VisibilitySettings: React.FC<VisibilitySettingsProps> = ({ status, onStatusChange }) => {
     return (
         <div className="space-y-4">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -16,12 +21,12 @@ const VisibilitySettings: React.FC = () => {
                 <Select
                     options={[
                         { value: "published", label: "Published" },
-                        { value: "scheduled", label: "Scheduled" },
-                        { value: "unpublished", label: "Unpublished" },
+                        { value: "review", label: "Scheduled" },
+                        { value: "draft", label: "Unpublished" },
                     ]}
-                    placeholder="Scheduled"
-                    onChange={(value) => console.log(value)}
-                    defaultValue="scheduled"
+                    placeholder="Select status"
+                    onChange={onStatusChange}
+                    defaultValue={status}
                 />
             </div>
 

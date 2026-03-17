@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     MoreHorizontal,
     Trash2,
     Music,
     SlidersHorizontal,
-    CloudUpload
+    Copy,
+    CheckCircle,
+    Archive,
 } from 'lucide-react';
 import { Table, TableHeader, TableBody, TableRow, TableCell } from '@/components/ui/table';
 import { ContentItem, EnvironmentSoundItem, MindSessionItem, EnvironmentVisualItem } from '../types';
@@ -15,10 +17,25 @@ import FileUploadIcon from './FileUploadIcon';
 interface ContentTableProps {
     activeTab: string;
     data: (ContentItem | EnvironmentSoundItem | MindSessionItem | EnvironmentVisualItem)[];
+    onDelete: (id: number) => void;
+    onDuplicate: (id: number) => void;
+    onChangeStatus: (id: number, status: 'published' | 'draft' | 'archived') => void;
 }
 
-const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data }) => {
+const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, onDuplicate, onChangeStatus }) => {
     const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
+    const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+                setOpenDropdownId(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const toggleSelectAll = () => {
         if (selectedItems.size === data.length) {
@@ -48,7 +65,7 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data }) => {
     };
 
     return (
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" ref={dropdownRef}>
             <Table className="w-full text-left border-collapse">
                 <TableHeader className="border-b border-gray-100 dark:border-gray-700">
                     <TableRow>
@@ -104,8 +121,6 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data }) => {
 
                         <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Status</TableCell>
                         <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Access Type</TableCell>
-
-                        {/* New Columns */}
                         <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">File Upload</TableCell>
                         <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Tags</TableCell>
 
@@ -143,7 +158,11 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data }) => {
                             {activeTab === "Music" && (
                                 <>
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300">{(item as ContentItem).artist}</TableCell>
-                                    <TableCell className="p-4 text-sm text-gray-500 dark:text-gray-400 font-mono">{(item as ContentItem).url}</TableCell>
+                                    <TableCell className="p-4 text-sm text-gray-500 dark:text-gray-400 font-mono max-w-[180px]">
+                                        <span className="block truncate" title={(item as ContentItem).url}>
+                                            {(item as ContentItem).url}
+                                        </span>
+                                    </TableCell>
                                 </>
                             )}
                             {activeTab === "Environment Sound" && (
@@ -182,7 +201,6 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data }) => {
                                 </span>
                             </TableCell>
 
-                            {/* New Column Cells */}
                             <TableCell className="p-4">
                                 <FileUploadIcon status={item.uploadStatus} />
                             </TableCell>
@@ -200,10 +218,44 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data }) => {
 
                             <TableCell className="p-4 text-right">
                                 <div className="flex items-center justify-end gap-2">
-                                    <button className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full border border-gray-300 dark:border-gray-600 text-gray-400 hover:text-gray-600 transition-colors">
-                                        <MoreHorizontal className="w-5 h-5" />
-                                    </button>
-                                    <button className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md text-gray-400 hover:text-red-600 transition-colors">
+                                    {/* More options dropdown */}
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setOpenDropdownId(openDropdownId === item.id ? null : item.id)}
+                                            className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full border border-gray-300 dark:border-gray-600 text-gray-400 hover:text-gray-600 transition-colors"
+                                        >
+                                            <MoreHorizontal className="w-5 h-5" />
+                                        </button>
+                                        {openDropdownId === item.id && (
+                                            <div className="absolute right-0 top-full mt-1 w-44 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-50 py-1 overflow-hidden">
+                                                <button
+                                                    onClick={() => { onChangeStatus(item.id, 'published'); setOpenDropdownId(null); }}
+                                                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                >
+                                                    <CheckCircle className="w-4 h-4 text-green-500" />
+                                                    Publish
+                                                </button>
+                                                <button
+                                                    onClick={() => { onChangeStatus(item.id, 'archived'); setOpenDropdownId(null); }}
+                                                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                >
+                                                    <Archive className="w-4 h-4 text-gray-400" />
+                                                    Archive
+                                                </button>
+                                                <button
+                                                    onClick={() => { onDuplicate(item.id); setOpenDropdownId(null); }}
+                                                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700"
+                                                >
+                                                    <Copy className="w-4 h-4 text-blue-400" />
+                                                    Duplicate
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <button
+                                        onClick={() => onDelete(item.id)}
+                                        className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md text-gray-400 hover:text-red-600 transition-colors"
+                                    >
                                         <Trash2 className="w-5 h-5" />
                                     </button>
                                 </div>

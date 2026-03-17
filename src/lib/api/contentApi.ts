@@ -2,17 +2,20 @@ import apiClient from "./axiosInstance";
 import type {
     PaginatedResponse,
     ContentListParams,
-    ContentItemBase,
-    MusicContent,
-    GuidedSessionContent,
-    EnvSoundContent,
-    EnvVisualContent,
+    MusicListParams,
+    GuidedSessionListParams,
+    EnvSoundListParams,
+    EnvVisualListParams,
+    AdminMusic,
+    AdminMindSession,
+    AdminEnvironmentSound,
+    AdminEnvironmentVisual,
     AnyContentItem,
     ContentTypeEndpoint,
     ContentType,
     ContentStatusChangeRequest,
     BulkActionRequest,
-    ContentCategory,
+    AdminCategory,
     SoundLayer,
     SessionStep,
     ReorderStepsRequest,
@@ -49,15 +52,17 @@ const contentApi = {
         return response.data;
     },
 
-    /** Change content status (published / draft / archived). */
+    /** Change content status (published / draft / archived / review). */
     changeStatus: async (
         type: ContentType,
         id: number,
         data: ContentStatusChangeRequest,
     ): Promise<void> => {
-        // The API uses different type slugs: music, mind_session, env_sound, env_visual
-        const typeSlug = type === "guided_session" ? "mind_session" : type;
-        await apiClient.post(`admin/content/${typeSlug}/${id}/status/`, data);
+        const typeSlug = type === "guided_session" ? "guided-sessions"
+            : type === "env_sound" ? "env-sounds"
+            : type === "env_visual" ? "env-visuals"
+            : type;
+        await apiClient.patch(`admin/content/${typeSlug}/${id}/status/`, data);
     },
 
     /** Duplicate content – creates a draft copy, returns the new item. */
@@ -65,7 +70,10 @@ const contentApi = {
         type: ContentType,
         id: number,
     ): Promise<AnyContentItem> => {
-        const typeSlug = type === "guided_session" ? "mind_session" : type;
+        const typeSlug = type === "guided_session" ? "guided-sessions"
+            : type === "env_sound" ? "env-sounds"
+            : type === "env_visual" ? "env-visuals"
+            : type;
         const response = await apiClient.post<AnyContentItem>(
             `admin/content/${typeSlug}/${id}/duplicate/`,
         );
@@ -81,24 +89,24 @@ const contentApi = {
 
     music: {
         list: async (
-            params?: ContentListParams,
-        ): Promise<PaginatedResponse<MusicContent>> => {
-            const response = await apiClient.get<PaginatedResponse<MusicContent>>(
+            params?: MusicListParams,
+        ): Promise<PaginatedResponse<AdminMusic>> => {
+            const response = await apiClient.get<PaginatedResponse<AdminMusic>>(
                 CONTENT_ENDPOINTS.music,
                 { params },
             );
             return response.data;
         },
 
-        get: async (id: number): Promise<MusicContent> => {
-            const response = await apiClient.get<MusicContent>(
+        get: async (id: number): Promise<AdminMusic> => {
+            const response = await apiClient.get<AdminMusic>(
                 `admin/content/music/${id}/`,
             );
             return response.data;
         },
 
-        create: async (data: Partial<MusicContent>): Promise<MusicContent> => {
-            const response = await apiClient.post<MusicContent>(
+        create: async (data: Partial<AdminMusic>): Promise<AdminMusic> => {
+            const response = await apiClient.post<AdminMusic>(
                 CONTENT_ENDPOINTS.music,
                 data,
             );
@@ -107,9 +115,9 @@ const contentApi = {
 
         update: async (
             id: number,
-            data: Partial<MusicContent>,
-        ): Promise<MusicContent> => {
-            const response = await apiClient.patch<MusicContent>(
+            data: Partial<AdminMusic>,
+        ): Promise<AdminMusic> => {
+            const response = await apiClient.patch<AdminMusic>(
                 `admin/content/music/${id}/`,
                 data,
             );
@@ -125,25 +133,26 @@ const contentApi = {
 
     guidedSessions: {
         list: async (
-            params?: ContentListParams,
-        ): Promise<PaginatedResponse<GuidedSessionContent>> => {
-            const response = await apiClient.get<
-                PaginatedResponse<GuidedSessionContent>
-            >(CONTENT_ENDPOINTS["guided-sessions"], { params });
+            params?: GuidedSessionListParams,
+        ): Promise<PaginatedResponse<AdminMindSession>> => {
+            const response = await apiClient.get<PaginatedResponse<AdminMindSession>>(
+                CONTENT_ENDPOINTS["guided-sessions"],
+                { params },
+            );
             return response.data;
         },
 
-        get: async (id: number): Promise<GuidedSessionContent> => {
-            const response = await apiClient.get<GuidedSessionContent>(
+        get: async (id: number): Promise<AdminMindSession> => {
+            const response = await apiClient.get<AdminMindSession>(
                 `admin/content/guided-sessions/${id}/`,
             );
             return response.data;
         },
 
         create: async (
-            data: Partial<GuidedSessionContent>,
-        ): Promise<GuidedSessionContent> => {
-            const response = await apiClient.post<GuidedSessionContent>(
+            data: Partial<AdminMindSession>,
+        ): Promise<AdminMindSession> => {
+            const response = await apiClient.post<AdminMindSession>(
                 CONTENT_ENDPOINTS["guided-sessions"],
                 data,
             );
@@ -152,9 +161,9 @@ const contentApi = {
 
         update: async (
             id: number,
-            data: Partial<GuidedSessionContent>,
-        ): Promise<GuidedSessionContent> => {
-            const response = await apiClient.patch<GuidedSessionContent>(
+            data: Partial<AdminMindSession>,
+        ): Promise<AdminMindSession> => {
+            const response = await apiClient.patch<AdminMindSession>(
                 `admin/content/guided-sessions/${id}/`,
                 data,
             );
@@ -206,7 +215,7 @@ const contentApi = {
             sessionId: number,
             data: ReorderStepsRequest,
         ): Promise<void> => {
-            await apiClient.post(
+            await apiClient.patch(
                 `admin/content/guided-sessions/${sessionId}/steps/reorder/`,
                 data,
             );
@@ -217,25 +226,26 @@ const contentApi = {
 
     envSounds: {
         list: async (
-            params?: ContentListParams,
-        ): Promise<PaginatedResponse<EnvSoundContent>> => {
-            const response = await apiClient.get<
-                PaginatedResponse<EnvSoundContent>
-            >(CONTENT_ENDPOINTS["env-sounds"], { params });
+            params?: EnvSoundListParams,
+        ): Promise<PaginatedResponse<AdminEnvironmentSound>> => {
+            const response = await apiClient.get<PaginatedResponse<AdminEnvironmentSound>>(
+                CONTENT_ENDPOINTS["env-sounds"],
+                { params },
+            );
             return response.data;
         },
 
-        get: async (id: number): Promise<EnvSoundContent> => {
-            const response = await apiClient.get<EnvSoundContent>(
+        get: async (id: number): Promise<AdminEnvironmentSound> => {
+            const response = await apiClient.get<AdminEnvironmentSound>(
                 `admin/content/env-sounds/${id}/`,
             );
             return response.data;
         },
 
         create: async (
-            data: Partial<EnvSoundContent>,
-        ): Promise<EnvSoundContent> => {
-            const response = await apiClient.post<EnvSoundContent>(
+            data: Partial<AdminEnvironmentSound>,
+        ): Promise<AdminEnvironmentSound> => {
+            const response = await apiClient.post<AdminEnvironmentSound>(
                 CONTENT_ENDPOINTS["env-sounds"],
                 data,
             );
@@ -244,9 +254,9 @@ const contentApi = {
 
         update: async (
             id: number,
-            data: Partial<EnvSoundContent>,
-        ): Promise<EnvSoundContent> => {
-            const response = await apiClient.patch<EnvSoundContent>(
+            data: Partial<AdminEnvironmentSound>,
+        ): Promise<AdminEnvironmentSound> => {
+            const response = await apiClient.patch<AdminEnvironmentSound>(
                 `admin/content/env-sounds/${id}/`,
                 data,
             );
@@ -287,25 +297,26 @@ const contentApi = {
 
     envVisuals: {
         list: async (
-            params?: ContentListParams,
-        ): Promise<PaginatedResponse<EnvVisualContent>> => {
-            const response = await apiClient.get<
-                PaginatedResponse<EnvVisualContent>
-            >(CONTENT_ENDPOINTS["env-visuals"], { params });
+            params?: EnvVisualListParams,
+        ): Promise<PaginatedResponse<AdminEnvironmentVisual>> => {
+            const response = await apiClient.get<PaginatedResponse<AdminEnvironmentVisual>>(
+                CONTENT_ENDPOINTS["env-visuals"],
+                { params },
+            );
             return response.data;
         },
 
-        get: async (id: number): Promise<EnvVisualContent> => {
-            const response = await apiClient.get<EnvVisualContent>(
+        get: async (id: number): Promise<AdminEnvironmentVisual> => {
+            const response = await apiClient.get<AdminEnvironmentVisual>(
                 `admin/content/env-visuals/${id}/`,
             );
             return response.data;
         },
 
         create: async (
-            data: Partial<EnvVisualContent>,
-        ): Promise<EnvVisualContent> => {
-            const response = await apiClient.post<EnvVisualContent>(
+            data: Partial<AdminEnvironmentVisual>,
+        ): Promise<AdminEnvironmentVisual> => {
+            const response = await apiClient.post<AdminEnvironmentVisual>(
                 CONTENT_ENDPOINTS["env-visuals"],
                 data,
             );
@@ -314,9 +325,9 @@ const contentApi = {
 
         update: async (
             id: number,
-            data: Partial<EnvVisualContent>,
-        ): Promise<EnvVisualContent> => {
-            const response = await apiClient.patch<EnvVisualContent>(
+            data: Partial<AdminEnvironmentVisual>,
+        ): Promise<AdminEnvironmentVisual> => {
+            const response = await apiClient.patch<AdminEnvironmentVisual>(
                 `admin/content/env-visuals/${id}/`,
                 data,
             );
@@ -331,15 +342,23 @@ const contentApi = {
     // ── Categories ──────────────────────────────────────────────────────
 
     categories: {
-        list: async (): Promise<ContentCategory[]> => {
-            const response = await apiClient.get<ContentCategory[]>(
+        list: async (params?: ContentListParams): Promise<PaginatedResponse<AdminCategory>> => {
+            const response = await apiClient.get<PaginatedResponse<AdminCategory>>(
                 "admin/content/categories/",
+                { params },
             );
             return response.data;
         },
 
-        create: async (data: { name: string }): Promise<ContentCategory> => {
-            const response = await apiClient.post<ContentCategory>(
+        get: async (id: number): Promise<AdminCategory> => {
+            const response = await apiClient.get<AdminCategory>(
+                `admin/content/categories/${id}/`,
+            );
+            return response.data;
+        },
+
+        create: async (data: { name: string; language?: string }): Promise<AdminCategory> => {
+            const response = await apiClient.post<AdminCategory>(
                 "admin/content/categories/",
                 data,
             );
@@ -348,9 +367,9 @@ const contentApi = {
 
         update: async (
             id: number,
-            data: { name: string },
-        ): Promise<ContentCategory> => {
-            const response = await apiClient.put<ContentCategory>(
+            data: { name: string; language?: string },
+        ): Promise<AdminCategory> => {
+            const response = await apiClient.put<AdminCategory>(
                 `admin/content/categories/${id}/`,
                 data,
             );

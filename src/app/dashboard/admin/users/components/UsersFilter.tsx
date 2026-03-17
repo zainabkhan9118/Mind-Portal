@@ -3,11 +3,11 @@ import { Search, ChevronDown } from 'lucide-react';
 
 interface UsersFilterProps {
     onSearch: (query: string) => void;
-    onTypeChange: (type: string) => void;
-    onTimeChange: (time: string) => void;
+    onStatusChange: (status: string) => void;
+    onOrderingChange: (ordering: string) => void;
 }
 
-const UsersFilter: React.FC<UsersFilterProps> = ({ onSearch, onTypeChange, onTimeChange }) => {
+const UsersFilter: React.FC<UsersFilterProps> = ({ onSearch, onStatusChange, onOrderingChange }) => {
     return (
         <div className="flex flex-col sm:flex-row gap-4 items-center justify-end mb-6">
             <div className="relative w-full sm:w-auto max-w-md">
@@ -26,13 +26,13 @@ const UsersFilter: React.FC<UsersFilterProps> = ({ onSearch, onTypeChange, onTim
                 <div className="relative">
                     <select
                         className="appearance-none pl-4 pr-10 py-2.5 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none cursor-pointer hover:bg-gray-50 transition-colors shadow-sm"
-                        onChange={(e) => onTypeChange(e.target.value)}
+                        onChange={(e) => onStatusChange(e.target.value)}
                     >
-                        <option value="">Type</option>
-                        <option value="Music">Music</option>
-                        <option value="360">360</option>
-                        <option value="VR">VR</option>
-                        <option value="Sound">Sound</option>
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="suspended">Suspended</option>
+                        <option value="banned">Banned</option>
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
@@ -40,11 +40,11 @@ const UsersFilter: React.FC<UsersFilterProps> = ({ onSearch, onTypeChange, onTim
                 <div className="relative">
                     <select
                         className="appearance-none pl-4 pr-10 py-2.5 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 focus:outline-none cursor-pointer hover:bg-gray-50 transition-colors shadow-sm"
-                        onChange={(e) => onTimeChange(e.target.value)}
+                        onChange={(e) => onOrderingChange(e.target.value)}
                     >
-                        <option value="">Time</option>
-                        <option value="newest">Newest</option>
-                        <option value="oldest">Oldest</option>
+                        <option value="">Sort</option>
+                        <option value="-date_joined">Newest</option>
+                        <option value="date_joined">Oldest</option>
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>

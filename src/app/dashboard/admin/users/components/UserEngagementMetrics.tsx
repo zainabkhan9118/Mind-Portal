@@ -1,29 +1,10 @@
 import React from "react";
-import { Clock, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Users, Activity, BarChart2 } from "lucide-react";
+import type { EngagementMetrics } from "@/lib/api/types";
 
-const engagementMetrics = [
-    {
-        id: "immersion",
-        label: "Avg. Immersion Time",
-        value: "15m 47s",
-        icon: <Clock className="w-5 h-5 text-yellow-500" />,
-        color: "text-purple-600"
-    },
-    {
-        id: "return",
-        label: "Return Rate",
-        value: "68%",
-        icon: <RefreshCw className="w-5 h-5 text-red-500" />,
-        color: "text-purple-600"
-    },
-    {
-        id: "completion",
-        label: "Session Completion",
-        value: "72%",
-        icon: <CheckCircle2 className="w-5 h-5 text-emerald-500" />,
-        color: "text-purple-600"
-    }
-];
+interface UserEngagementMetricsProps {
+    engagement: EngagementMetrics | null;
+}
 
 const focusAreas = [
     { label: "Mental Health", percentage: "37%", users: "9,200 Users" },
@@ -33,7 +14,28 @@ const focusAreas = [
     { label: "Personal Growth", percentage: "6%", users: "1,200 Users" },
 ];
 
-const UserEngagementMetrics: React.FC = () => {
+const UserEngagementMetrics: React.FC<UserEngagementMetricsProps> = ({ engagement }) => {
+    const metrics = [
+        {
+            id: "dau",
+            label: "Daily Active Users (DAU)",
+            value: engagement ? engagement.dau.toLocaleString() : "–",
+            icon: <Users className="w-5 h-5 text-yellow-500" />,
+        },
+        {
+            id: "wau",
+            label: "Weekly Active Users (WAU)",
+            value: engagement ? engagement.wau.toLocaleString() : "–",
+            icon: <Activity className="w-5 h-5 text-red-500" />,
+        },
+        {
+            id: "mau",
+            label: "Monthly Active Users (MAU)",
+            value: engagement ? engagement.mau.toLocaleString() : "–",
+            icon: <BarChart2 className="w-5 h-5 text-emerald-500" />,
+        },
+    ];
+
     return (
         <div className="space-y-8 mt-12">
             {/* Top Focus Area Section */}
@@ -50,15 +52,15 @@ const UserEngagementMetrics: React.FC = () => {
                 </div>
             </div>
 
-            {/* VR Immersion & Return Analytics Section */}
+            {/* Active Users Section */}
             <div className="bg-white dark:bg-gray-900 rounded-[32px] border border-purple-100/50 dark:border-purple-900/30 p-8 shadow-sm">
                 <div className="mb-10">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">VR Immersion & Return Analytics</h3>
-                    <p className="text-sm text-purple-600/80 dark:text-purple-400/80">Virtual reality engagement metrics</p>
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1">Active User Engagement</h3>
+                    <p className="text-sm text-purple-600/80 dark:text-purple-400/80">Daily, weekly, and monthly active user counts</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {engagementMetrics.map((metric) => (
+                    {metrics.map((metric) => (
                         <div key={metric.id} className="bg-gray-50/50 dark:bg-gray-800/40 rounded-3xl p-8 border border-transparent hover:border-purple-100 dark:hover:border-purple-900/40 transition-all">
                             <div className="flex items-center gap-3 mb-4">
                                 <div className="p-2 rounded-lg">

@@ -1,20 +1,22 @@
 import React, { useState } from "react";
-import Input from "@/components/form/input/InputField";
-import Label from "@/components/form/Label";
 import { X } from "lucide-react";
 
-const AddTags: React.FC = () => {
-    const [tags, setTags] = useState(["relax", "Peace"]);
+interface AddTagsProps {
+    tags: string[];
+    onTagsChange: (tags: string[]) => void;
+}
+
+const AddTags: React.FC<AddTagsProps> = ({ tags, onTagsChange }) => {
     const [inputValue, setInputValue] = useState("");
 
     const removeTag = (tagToRemove: string) => {
-        setTags(tags.filter(tag => tag !== tagToRemove));
+        onTagsChange(tags.filter(tag => tag !== tagToRemove));
     };
 
     const addTag = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && inputValue.trim()) {
             if (!tags.includes(inputValue.trim())) {
-                setTags([...tags, inputValue.trim()]);
+                onTagsChange([...tags, inputValue.trim()]);
             }
             setInputValue("");
         }

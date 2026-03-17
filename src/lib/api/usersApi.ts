@@ -38,11 +38,12 @@ const usersApi = {
         granularity: GrowthGranularity = "daily",
         params?: DateRangeParams,
     ): Promise<GrowthPoint[]> => {
-        const response = await apiClient.get<{ results: GrowthPoint[] }>(
+        const response = await apiClient.get<GrowthPoint[] | { results: GrowthPoint[] }>(
             "admin/users/dashboard/growth/",
             { params: { granularity, ...params } },
         );
-        return response.data.results;
+        const data = response.data;
+        return Array.isArray(data) ? data : (data.results ?? []);
     },
 
     /** DAU / WAU / MAU engagement metrics. */

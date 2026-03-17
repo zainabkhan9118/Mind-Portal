@@ -9,6 +9,17 @@ interface BasicInfoProps {
     isMindSession?: boolean;
     isEnvironmentVisual?: boolean;
     onCreateSubCategory?: () => void;
+    title: string;
+    onTitleChange: (v: string) => void;
+    artist: string;
+    onArtistChange: (v: string) => void;
+    categoryId: string;
+    onCategoryChange: (v: string) => void;
+    categories: { id: number; name: string }[];
+    goal: string;
+    onGoalChange: (v: string) => void;
+    details: string;
+    onDetailsChange: (v: string) => void;
 }
 
 const BasicInfo: React.FC<BasicInfoProps> = ({
@@ -16,6 +27,17 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
     isMindSession = false,
     isEnvironmentVisual = false,
     onCreateSubCategory,
+    title,
+    onTitleChange,
+    artist,
+    onArtistChange,
+    categoryId,
+    onCategoryChange,
+    categories,
+    goal,
+    onGoalChange,
+    details,
+    onDetailsChange,
 }) => {
     return (
         <div className="space-y-6">
@@ -27,13 +49,25 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                         <Label htmlFor="title">Title</Label>
-                        <Input type="text" id="title" placeholder="Placeholder" />
+                        <Input
+                            type="text"
+                            id="title"
+                            placeholder="Placeholder"
+                            value={title}
+                            onChange={(e) => onTitleChange(e.target.value)}
+                        />
                     </div>
                     <div>
                         <Label htmlFor="artist">
                             {isEnvironmentSound ? "Type" : (isMindSession ? "Voice (Name of Professional)" : (isEnvironmentVisual ? "Author" : "Artist"))}
                         </Label>
-                        <Input type="text" id="artist" placeholder="Placeholder" />
+                        <Input
+                            type="text"
+                            id="artist"
+                            placeholder="Placeholder"
+                            value={artist}
+                            onChange={(e) => onArtistChange(e.target.value)}
+                        />
                     </div>
                 </div>
             </div>
@@ -59,7 +93,17 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                     <Label htmlFor="category">Category</Label>
-                    <Input type="text" id="category" placeholder="Placeholder" />
+                    <select
+                        id="category"
+                        value={categoryId}
+                        onChange={(e) => onCategoryChange(e.target.value)}
+                        className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 bg-transparent text-gray-800 dark:text-white border-gray-300 dark:border-gray-700 dark:bg-gray-900"
+                    >
+                        <option value="">Select category...</option>
+                        {categories.map(cat => (
+                            <option key={cat.id} value={String(cat.id)}>{cat.name}</option>
+                        ))}
+                    </select>
                 </div>
                 <div>
                     <div className="flex items-center justify-between mb-0">
@@ -81,11 +125,23 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                     <Label htmlFor="goal">Goal</Label>
-                    <Input type="text" id="goal" placeholder="Sleep & Dreams" />
+                    <Input
+                        type="text"
+                        id="goal"
+                        placeholder="Sleep & Dreams"
+                        value={goal}
+                        onChange={(e) => onGoalChange(e.target.value)}
+                    />
                 </div>
                 <div>
                     <Label htmlFor="addDetail">Add Detail</Label>
-                    <Input type="text" id="addDetail" placeholder="Placeholder" />
+                    <Input
+                        type="text"
+                        id="addDetail"
+                        placeholder="Placeholder"
+                        value={details}
+                        onChange={(e) => onDetailsChange(e.target.value)}
+                    />
                 </div>
             </div>
         </div>

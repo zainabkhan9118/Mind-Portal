@@ -40,34 +40,38 @@ const monetizationApi = {
         granularity: GrowthGranularity = "monthly",
         params?: DateRangeParams,
     ): Promise<RevenueTimeseriesPoint[]> => {
-        const response = await apiClient.get<{
-            results: RevenueTimeseriesPoint[];
-        }>("admin/monetization/revenue/timeseries/", {
+        const response = await apiClient.get<
+            RevenueTimeseriesPoint[] | { results: RevenueTimeseriesPoint[] }
+        >("admin/monetization/revenue/timeseries/", {
             params: { granularity, ...params },
         });
-        return response.data.results;
+        const data = response.data;
+        if (Array.isArray(data)) return data;
+        return (data as { results: RevenueTimeseriesPoint[] }).results ?? [];
     },
 
-    /** Revenue by plan (pie/donut chart). */
+    /** Revenue by plan (breakdown bars). */
     getRevenueByPlan: async (
         params?: DateRangeParams,
     ): Promise<RevenueByPlan[]> => {
-        const response = await apiClient.get<{ results: RevenueByPlan[] }>(
-            "admin/monetization/revenue/by-plan/",
-            { params },
-        );
-        return response.data.results;
+        const response = await apiClient.get<
+            RevenueByPlan[] | { results: RevenueByPlan[] }
+        >("admin/monetization/revenue/by-plan/", { params });
+        const data = response.data;
+        if (Array.isArray(data)) return data;
+        return (data as { results: RevenueByPlan[] }).results ?? [];
     },
 
     /** Revenue by region. */
     getRevenueByRegion: async (
         params?: DateRangeParams,
     ): Promise<RevenueByRegion[]> => {
-        const response = await apiClient.get<{ results: RevenueByRegion[] }>(
-            "admin/monetization/revenue/by-region/",
-            { params },
-        );
-        return response.data.results;
+        const response = await apiClient.get<
+            RevenueByRegion[] | { results: RevenueByRegion[] }
+        >("admin/monetization/revenue/by-region/", { params });
+        const data = response.data;
+        if (Array.isArray(data)) return data;
+        return (data as { results: RevenueByRegion[] }).results ?? [];
     },
 
     // ── Subscriptions ───────────────────────────────────────────────────
@@ -114,10 +118,13 @@ const monetizationApi = {
 
     // ── Plans ───────────────────────────────────────────────────────────
 
-    /** List all plans. */
-    getPlans: async (): Promise<SubscriptionPlan[]> => {
-        const response = await apiClient.get<SubscriptionPlan[]>(
+    /** List all plans (paginated). */
+    getPlans: async (
+        params?: PaginationParams,
+    ): Promise<PaginatedResponse<SubscriptionPlan>> => {
+        const response = await apiClient.get<PaginatedResponse<SubscriptionPlan>>(
             "admin/monetization/plans/",
+            { params },
         );
         return response.data;
     },
@@ -145,8 +152,8 @@ const monetizationApi = {
         return response.data;
     },
 
-    /** Deactivate plan (soft-delete: sets is_active=false). */
-    deactivatePlan: async (id: number): Promise<void> => {
+    /** Delete a plan. */
+    deletePlan: async (id: number): Promise<void> => {
         await apiClient.delete(`admin/monetization/plans/${id}/`);
     },
 
