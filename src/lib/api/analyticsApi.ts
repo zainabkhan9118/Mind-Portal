@@ -20,6 +20,13 @@ import type {
     PaginationParams,
 } from "./types";
 
+/** Safely unwrap API responses that may be a plain array or a { results: [] } envelope. */
+function unwrapArray<T>(data: T[] | { results: T[] } | null | undefined): T[] {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    return (data as { results: T[] }).results ?? [];
+}
+
 /**
  * Statistics & Analytics API Service
  *
@@ -41,11 +48,10 @@ const analyticsApi = {
     getDistributions: async (
         params?: DateRangeParams,
     ): Promise<ContentDistribution[]> => {
-        const response = await apiClient.get<{ results: ContentDistribution[] }>(
-            "admin/analytics/overview/distributions/",
-            { params },
-        );
-        return response.data.results;
+        const response = await apiClient.get<
+            ContentDistribution[] | { results: ContentDistribution[] }
+        >("admin/analytics/overview/distributions/", { params });
+        return unwrapArray(response.data);
     },
 
     // ── Plays Analytics ─────────────────────────────────────────────────
@@ -63,32 +69,30 @@ const analyticsApi = {
         granularity: GrowthGranularity = "daily",
         params?: AnalyticsParams,
     ): Promise<PlaysTimeseriesPoint[]> => {
-        const response = await apiClient.get<{
-            results: PlaysTimeseriesPoint[];
-        }>("admin/analytics/plays/timeseries/", {
+        const response = await apiClient.get<
+            PlaysTimeseriesPoint[] | { results: PlaysTimeseriesPoint[] }
+        >("admin/analytics/plays/timeseries/", {
             params: { granularity, ...params },
         });
-        return response.data.results;
+        return unwrapArray(response.data);
     },
 
     /** Plays grouped by content type (bar chart). */
     getPlaysByType: async (params?: AnalyticsParams): Promise<PlaysByType[]> => {
-        const response = await apiClient.get<{ results: PlaysByType[] }>(
-            "admin/analytics/plays/by-type/",
-            { params },
-        );
-        return response.data.results;
+        const response = await apiClient.get<
+            PlaysByType[] | { results: PlaysByType[] }
+        >("admin/analytics/plays/by-type/", { params });
+        return unwrapArray(response.data);
     },
 
     /** Plays grouped by region/country (map or table). */
     getPlaysByRegion: async (
         params?: AnalyticsParams,
     ): Promise<PlaysByRegion[]> => {
-        const response = await apiClient.get<{ results: PlaysByRegion[] }>(
-            "admin/analytics/plays/by-region/",
-            { params },
-        );
-        return response.data.results;
+        const response = await apiClient.get<
+            PlaysByRegion[] | { results: PlaysByRegion[] }
+        >("admin/analytics/plays/by-region/", { params });
+        return unwrapArray(response.data);
     },
 
     /** Top played content — paginated table. */
@@ -109,41 +113,38 @@ const analyticsApi = {
         content_type?: ContentType;
         limit?: number;
     }): Promise<RankedContent[]> => {
-        const response = await apiClient.get<{ results: RankedContent[] }>(
-            "admin/analytics/rankings/content/",
-            { params },
-        );
-        return response.data.results;
+        const response = await apiClient.get<
+            RankedContent[] | { results: RankedContent[] }
+        >("admin/analytics/rankings/content/", { params });
+        return unwrapArray(response.data);
     },
 
     /** Top creators by total plays / listeners. */
     getTopCreators: async (params?: {
         limit?: number;
     }): Promise<RankedCreator[]> => {
-        const response = await apiClient.get<{ results: RankedCreator[] }>(
-            "admin/analytics/rankings/creators/",
-            { params },
-        );
-        return response.data.results;
+        const response = await apiClient.get<
+            RankedCreator[] | { results: RankedCreator[] }
+        >("admin/analytics/rankings/creators/", { params });
+        return unwrapArray(response.data);
     },
 
     /** Top categories by play count. */
     getTopCategories: async (params?: {
         limit?: number;
     }): Promise<RankedCategory[]> => {
-        const response = await apiClient.get<{ results: RankedCategory[] }>(
-            "admin/analytics/rankings/categories/",
-            { params },
-        );
-        return response.data.results;
+        const response = await apiClient.get<
+            RankedCategory[] | { results: RankedCategory[] }
+        >("admin/analytics/rankings/categories/", { params });
+        return unwrapArray(response.data);
     },
 
     /** Trending content (last 7 days). */
     getTrending: async (): Promise<TrendingContent[]> => {
-        const response = await apiClient.get<{ results: TrendingContent[] }>(
-            "admin/analytics/rankings/trending/",
-        );
-        return response.data.results;
+        const response = await apiClient.get<
+            TrendingContent[] | { results: TrendingContent[] }
+        >("admin/analytics/rankings/trending/");
+        return unwrapArray(response.data);
     },
 
     // ── Export ──────────────────────────────────────────────────────────

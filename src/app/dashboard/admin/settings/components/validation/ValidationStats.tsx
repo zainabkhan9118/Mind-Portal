@@ -21,27 +21,36 @@ const StatCard: React.FC<StatCardProps> = ({ icon, label, value, iconBg, iconCol
     </div>
 );
 
-const ValidationStats: React.FC = () => {
+interface ValidationStatsProps {
+    total: number;
+    pendingMinds: number;
+    pendingPlaylists: number;
+    isLoading?: boolean;
+}
+
+const ValidationStats: React.FC<ValidationStatsProps> = ({ total, pendingMinds, pendingPlaylists, isLoading }) => {
+    const display = (n: number) => isLoading ? '—' : n.toLocaleString();
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <StatCard
                 icon={<Users className="w-7 h-7" />}
-                label="Total"
-                value="22"
+                label="Total Pending"
+                value={display(total)}
                 iconBg="bg-green-50 dark:bg-green-900/10"
                 iconColor="text-green-500"
             />
             <StatCard
                 icon={<Brain className="w-7 h-7" />}
                 label="Pending Minds"
-                value="82"
+                value={display(pendingMinds)}
                 iconBg="bg-purple-50 dark:bg-purple-900/10"
                 iconColor="text-purple-500"
             />
             <StatCard
                 icon={<LayoutList className="w-7 h-7" />}
                 label="Pending Playlists"
-                value="489"
+                value={display(pendingPlaylists)}
                 iconBg="bg-blue-50 dark:bg-blue-900/10"
                 iconColor="text-blue-500"
             />

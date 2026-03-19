@@ -1,72 +1,78 @@
-import React, { useState } from "react";
-import {
-    Search,
-    ChevronDown,
-    AudioWaveform,
-    CloudRain,
-    Trees,
-    Waves,
-    CloudLightning,
-    Flame,
-    Wind,
-    Sparkles,
-    Bell,
-    ArrowUpRight,
-    ArrowDownRight,
-    ArrowUpDown
-} from "lucide-react";
+"use client";
+import { useEffect, useMemo, useState } from 'react';
+import { Search, ChevronDown, ArrowUpDown } from 'lucide-react';
+import analyticsApi from '@/lib/api/analyticsApi';
+import type { PlaysByContent, ContentType } from '@/lib/api/types';
 
-interface RankingItem {
-    rank: string;
-    title: string;
-    icon: React.ReactNode;
-    retention: number;
-    sessionAvg: string;
-    avgTimeSpent: string;
-    plays: string;
-    growth: string;
-    growthType: "increase" | "decrease";
-    type: string;
-}
+const PAGE_SIZE = 10;
 
-const rankingData: RankingItem[] = [
-    { rank: "01", title: "White Noise", icon: <AudioWaveform className="w-5 h-5" />, retention: 78, sessionAvg: "1.4k", avgTimeSpent: "1.4k", plays: "1.4k", growth: "+5.3%", growthType: "increase", type: "Music" },
-    { rank: "02", title: "Rainfall", icon: <CloudRain className="w-5 h-5" />, retention: 78, sessionAvg: "67.0K", avgTimeSpent: "67.0K", plays: "67.0K", growth: "+5.3%", growthType: "increase", type: "Music" },
-    { rank: "03", title: "Forest Birds", icon: <Trees className="w-5 h-5" />, retention: 68, sessionAvg: "67.0K", avgTimeSpent: "67.0K", plays: "67.0K", growth: "+5.3%", growthType: "increase", type: "360" },
-    { rank: "04", title: "Ocean Waves", icon: <Waves className="w-5 h-5" />, retention: 78, sessionAvg: "786", avgTimeSpent: "786", plays: "786", growth: "-3%", growthType: "decrease", type: "Music" },
-    { rank: "05", title: "Thunderstorm", icon: <CloudLightning className="w-5 h-5" />, retention: 88, sessionAvg: "987", avgTimeSpent: "987", plays: "987", growth: "+5.3%", growthType: "increase", type: "Sound" },
-    { rank: "06", title: "Crackling Fire", icon: <Flame className="w-5 h-5" />, retention: 78, sessionAvg: "123", avgTimeSpent: "123", plays: "123", growth: "+5.3%", growthType: "increase", type: "VR" },
-    { rank: "07", title: "Mountain Wind", icon: <Wind className="w-5 h-5" />, retention: 78, sessionAvg: "54", avgTimeSpent: "54", plays: "54", growth: "-3%", growthType: "decrease", type: "Sound" },
-    { rank: "08", title: "Ocean Breeze", icon: <Wind className="w-5 h-5" />, retention: 88, sessionAvg: "1.7k", avgTimeSpent: "1.7k", plays: "1.7k", growth: "+5.3%", growthType: "increase", type: "Free" },
-    { rank: "09", title: "City Night", icon: <Sparkles className="w-5 h-5" />, retention: 88, sessionAvg: "23.78k", avgTimeSpent: "23.78k", plays: "23.78k", growth: "-3%", growthType: "decrease", type: "Sound" },
-    { rank: "10", title: "Jungle Rain", icon: <CloudRain className="w-5 h-5" />, retention: 88, sessionAvg: "456", avgTimeSpent: "456", plays: "456", growth: "-3%", growthType: "decrease", type: "360" },
-    { rank: "11", title: "Ding dong Bell", icon: <Bell className="w-5 h-5" />, retention: 78, sessionAvg: "342", avgTimeSpent: "342", plays: "342", growth: "+5.3%", growthType: "increase", type: "VR" },
+const TYPE_OPTIONS: { label: string; value: ContentType | '' }[] = [
+    { label: 'All Types', value: '' },
+    { label: 'Music', value: 'music' },
+    { label: 'Guided Session', value: 'guided_session' },
+    { label: 'Env Sound', value: 'env_sound' },
+    { label: 'Env Visual', value: 'env_visual' },
 ];
 
+const TYPE_LABELS: Record<string, string> = {
+    music: 'Music',
+    guided_session: 'Guided',
+    env_sound: 'Sound',
+    env_visual: 'VR/360',
+};
+
+const getBadgeStyle = (type: string) => {
+    switch (type) {
+        case 'music': return 'bg-blue-50 text-blue-500 dark:bg-blue-900/20 dark:text-blue-400';
+        case 'env_visual': return 'bg-purple-50 text-purple-500 dark:bg-purple-900/20 dark:text-purple-400';
+        case 'env_sound': return 'bg-green-50 text-green-500 dark:bg-green-900/20 dark:text-green-400';
+        case 'guided_session': return 'bg-orange-50 text-orange-400 dark:bg-orange-900/20 dark:text-orange-400';
+        default: return 'bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400';
+    }
+};
+
 const TopRankingsTable: React.FC = () => {
-    const [searchTerm, setSearchTerm] = useState("");
-    const [timeFilter, setTimeFilter] = useState("");
-    const [analysisFilter, setAnalysisFilter] = useState("");
+    const [allData, setAllData] = useState<PlaysByContent[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [typeFilter, setTypeFilter] = useState<ContentType | ''>('');
+    const [page, setPage] = useState(1);
 
-    const filteredData = React.useMemo(() => {
-        return rankingData.filter(item => {
-            const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                item.type.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesType = !analysisFilter || item.type === analysisFilter;
-            // Time filter logic would go here in a real app (sorting by sessionAvg or plays)
-            return matchesSearch && matchesType;
-        });
-    }, [searchTerm, analysisFilter, timeFilter]);
+    useEffect(() => {
+        analyticsApi.getPlaysByContent({ size: 500 })
+            .then((res) => setAllData(res.results ?? []))
+            .catch(console.error)
+            .finally(() => setIsLoading(false));
+    }, []);
 
-    const getBadgeStyle = (type: string) => {
-        switch (type) {
-            case "Music": return "bg-blue-50 text-blue-500 dark:bg-blue-900/20 dark:text-blue-400";
-            case "360": return "bg-purple-50 text-purple-500 dark:bg-purple-900/20 dark:text-purple-400";
-            case "Sound": return "bg-green-50 text-green-500 dark:bg-green-900/20 dark:text-green-400";
-            case "VR": return "bg-orange-50 text-orange-400 dark:bg-orange-900/20 dark:text-orange-400";
-            case "Free": return "bg-indigo-50 text-indigo-400 dark:bg-indigo-900/20 dark:text-indigo-400";
-            default: return "bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400";
+    const filteredData = useMemo(() => {
+        let result = allData;
+        if (typeFilter) {
+            result = result.filter((item) => item.content_type === typeFilter);
         }
+        if (searchTerm.trim()) {
+            const q = searchTerm.toLowerCase();
+            result = result.filter((item) =>
+                item.content_name?.toLowerCase().includes(q)
+            );
+        }
+        return result;
+    }, [allData, searchTerm, typeFilter]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredData.length / PAGE_SIZE));
+    const pageNumbers = Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1);
+    const start = (page - 1) * PAGE_SIZE + 1;
+    const end = Math.min(page * PAGE_SIZE, filteredData.length);
+    const pageData = filteredData.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+    const handleSearch = (value: string) => {
+        setSearchTerm(value);
+        setPage(1);
+    };
+
+    const handleTypeFilter = (value: ContentType | '') => {
+        setTypeFilter(value);
+        setPage(1);
     };
 
     return (
@@ -76,124 +82,128 @@ const TopRankingsTable: React.FC = () => {
                 <div className="relative w-full md:w-80">
                     <input
                         type="text"
-                        placeholder="Search here"
+                        placeholder="Search content..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e) => handleSearch(e.target.value)}
                         className="w-full pl-6 pr-10 py-3 rounded-full border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 placeholder:text-gray-400"
                     />
                     <Search className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <div className="relative">
-                        <select
-                            value={timeFilter}
-                            onChange={(e) => setTimeFilter(e.target.value)}
-                            className="appearance-none flex items-center gap-4 pl-4 pr-10 py-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 transition-all cursor-pointer focus:outline-none"
-                        >
-                            <option value="">Time</option>
-                            <option value="today">Today</option>
-                            <option value="week">This Week</option>
-                            <option value="month">This Month</option>
-                        </select>
-                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                    </div>
-
-                    <div className="relative">
-                        <select
-                            value={analysisFilter}
-                            onChange={(e) => setAnalysisFilter(e.target.value)}
-                            className="appearance-none flex items-center gap-4 pl-4 pr-10 py-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 transition-all cursor-pointer focus:outline-none"
-                        >
-                            <option value="">Analysis</option>
-                            <option value="Music">Music</option>
-                            <option value="Sound">Sound</option>
-                            <option value="VR">VR</option>
-                            <option value="360">360°</option>
-                        </select>
-                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                    </div>
+                <div className="relative">
+                    <select
+                        value={typeFilter}
+                        onChange={(e) => handleTypeFilter(e.target.value as ContentType | '')}
+                        className="appearance-none flex items-center gap-4 pl-4 pr-10 py-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 transition-all cursor-pointer focus:outline-none"
+                    >
+                        {TYPE_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                    </select>
+                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 </div>
             </div>
 
-            {/* Table Container */}
+            {/* Table */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
                             <tr className="border-b border-gray-50 dark:border-gray-800">
-                                <th className="px-6 py-4 w-12">
-                                    <input type="checkbox" className="w-5 h-5 rounded border-gray-200 text-purple-600 focus:ring-purple-500 cursor-pointer" />
-                                </th>
-                                <th className="px-4 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Rank</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider w-12">#</th>
                                 <th className="px-4 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                                    <div className="flex items-center gap-1 cursor-pointer hover:text-gray-600">
-                                        Title <ArrowUpDown className="w-3 h-3" />
-                                    </div>
+                                    <div className="flex items-center gap-1">Title <ArrowUpDown className="w-3 h-3" /></div>
                                 </th>
-                                <th className="px-4 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Retention</th>
-                                <th className="px-4 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Session Avg</th>
-                                <th className="px-4 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Avg Time Spent</th>
+                                <th className="px-4 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Type</th>
                                 <th className="px-4 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Plays</th>
-                                <th className="px-4 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Growth</th>
-                                <th className="px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Type</th>
+                                <th className="px-6 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Unique Listeners</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
-                            {filteredData.map((item, index) => (
-                                <tr key={index} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors group">
-                                    <td className="px-6 py-4">
-                                        <input type="checkbox" className="w-5 h-5 rounded border-gray-200 text-purple-600 focus:ring-purple-500 cursor-pointer" />
-                                    </td>
-                                    <td className="px-4 py-4 text-sm font-bold text-gray-900 dark:text-white">
-                                        {item.rank}
-                                    </td>
-                                    <td className="px-4 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="text-gray-900 dark:text-gray-300">
-                                                {item.icon}
-                                            </div>
-                                            <span className="text-sm font-semibold text-gray-900 dark:text-white">{item.title}</span>
+                            {isLoading ? (
+                                <tr>
+                                    <td colSpan={5} className="py-16 text-center">
+                                        <div className="flex justify-center">
+                                            <div className="w-7 h-7 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
                                         </div>
-                                    </td>
-                                    <td className="px-4 py-4">
-                                        <div className="flex items-center gap-3 min-w-[120px]">
-                                            <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                                                <div
-                                                    className="h-full bg-emerald-400 rounded-full"
-                                                    style={{ width: `${item.retention}%` }}
-                                                />
-                                            </div>
-                                            <span className="text-xs font-bold text-gray-700 dark:text-gray-300 w-8">{item.retention}%</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-4 text-sm font-medium text-gray-600 dark:text-gray-400">
-                                        {item.sessionAvg}
-                                    </td>
-                                    <td className="px-4 py-4 text-sm font-medium text-gray-600 dark:text-gray-400">
-                                        {item.avgTimeSpent}
-                                    </td>
-                                    <td className="px-4 py-4 text-sm font-medium text-gray-600 dark:text-gray-400">
-                                        {item.plays}
-                                    </td>
-                                    <td className="px-4 py-4">
-                                        <div className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-bold gap-0.5 ${item.growthType === "increase"
-                                            ? "bg-emerald-50 text-emerald-500 dark:bg-emerald-900/20 dark:text-emerald-400"
-                                            : "bg-rose-50 text-rose-400 dark:bg-rose-900/20 dark:text-rose-400"
-                                            }`}>
-                                            {item.growthType === "increase" ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                                            {item.growth}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-bold tracking-wide ${getBadgeStyle(item.type)}`}>
-                                            {item.type}
-                                        </span>
                                     </td>
                                 </tr>
-                            ))}
+                            ) : pageData.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} className="py-16 text-center text-sm text-gray-400">
+                                        No content found
+                                    </td>
+                                </tr>
+                            ) : (
+                                pageData.map((item, index) => (
+                                    <tr key={`${item.content_id}-${index}`} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
+                                        <td className="px-6 py-4 text-sm font-bold text-gray-900 dark:text-white">
+                                            {String((page - 1) * PAGE_SIZE + index + 1).padStart(2, '0')}
+                                        </td>
+                                        <td className="px-4 py-4 text-sm font-semibold text-gray-900 dark:text-white">
+                                            {item.content_name}
+                                        </td>
+                                        <td className="px-4 py-4">
+                                            <span className={`inline-flex items-center px-3 py-1 rounded-lg text-[10px] font-bold tracking-wide ${getBadgeStyle(item.content_type)}`}>
+                                                {TYPE_LABELS[item.content_type] ?? item.content_type}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-4 text-sm font-medium text-gray-600 dark:text-gray-400">
+                                            {(item.plays ?? 0).toLocaleString()}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm font-medium text-gray-600 dark:text-gray-400">
+                                            {(item.unique_listeners ?? 0).toLocaleString()}
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
+                </div>
+
+                {/* Pagination */}
+                <div className="flex flex-col sm:flex-row justify-between items-center px-6 py-4 border-t border-gray-50 dark:border-gray-800">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4 sm:mb-0">
+                        {filteredData.length > 0
+                            ? <>Showing <span className="font-medium text-gray-900 dark:text-white">{start}–{end}</span> of <span className="font-medium text-gray-900 dark:text-white">{filteredData.length}</span></>
+                            : 'No results'}
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setPage((p) => Math.max(1, p - 1))}
+                            disabled={page === 1}
+                            className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 transition-colors"
+                        >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                        </button>
+                        {pageNumbers.map((p) => (
+                            <button
+                                key={p}
+                                onClick={() => setPage(p)}
+                                className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-medium transition-colors ${p === page ? 'bg-[#9810FA] text-white' : 'border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                            >
+                                {p}
+                            </button>
+                        ))}
+                        {totalPages > 5 && (
+                            <>
+                                <span className="text-gray-400">...</span>
+                                <button
+                                    onClick={() => setPage(totalPages)}
+                                    className={`w-8 h-8 flex items-center justify-center rounded-lg border text-sm font-medium transition-colors ${page === totalPages ? 'bg-[#9810FA] text-white border-transparent' : 'border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'}`}
+                                >
+                                    {totalPages}
+                                </button>
+                            </>
+                        )}
+                        <button
+                            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                            disabled={page === totalPages}
+                            className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-40 transition-colors"
+                        >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

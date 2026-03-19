@@ -39,7 +39,7 @@ const AvgListeningTimeChart: React.FC = () => {
             categories: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
             axisBorder: { show: false },
             axisTicks: { show: false },
-            labels: { style: { colors: '#9CA3AF' } }
+            labels: { style: { colors: ['#9CA3AF', '#9CA3AF', '#9CA3AF', '#9CA3AF', '#9CA3AF', '#9CA3AF', '#9CA3AF'] } }
         },
         yaxis: {
             min: 0,
@@ -59,14 +59,11 @@ const AvgListeningTimeChart: React.FC = () => {
         legend: {
             position: 'bottom',
             horizontalAlign: 'center',
-            markers: {
-                // radius: 12
-            }
         },
         markers: {
             size: 4,
             strokeWidth: 2,
-            hover: { size: 6 }
+            hover: { sizeOffset: 2 }
         }
     };
 

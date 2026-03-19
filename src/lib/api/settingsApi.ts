@@ -140,10 +140,13 @@ const settingsApi = {
 
     /** List all roles with permissions and member counts. */
     getRoles: async (): Promise<Role[]> => {
-        const response = await apiClient.get<{ results: Role[] }>(
+        const response = await apiClient.get<unknown>(
             "admin/settings/roles/",
         );
-        return response.data.results;
+        const data = response.data;
+        if (Array.isArray(data)) return data as Role[];
+        const paginated = data as { results?: Role[] };
+        return paginated?.results ?? [];
     },
 
     /** Create a new role. */

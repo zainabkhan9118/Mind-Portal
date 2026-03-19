@@ -195,6 +195,7 @@ export interface ContentListParams extends PaginationParams, OrderingParams {
     status?: ContentStatus;
     is_premium?: boolean;
     category?: number;
+    type?: ContentType;
     goal_ids?: string;
     tags?: string;
     created_after?: string;
@@ -452,8 +453,8 @@ export interface PlaysByRegion {
 
 export interface PlaysByContent {
     content_id: number;
-    title: string;
-    type: string;
+    content_name: string;
+    content_type: string;
     plays: number;
     unique_listeners: number;
 }
@@ -491,6 +492,7 @@ export interface TrendingContent {
 export interface AnalyticsParams extends DateRangeParams {
     content_type?: ContentType;
     granularity?: GrowthGranularity;
+    search?: string;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -758,6 +760,7 @@ export interface NotificationTemplate {
 export interface CreateNotificationTemplateRequest {
     name: string;
     channel: string;
+    event_type: string;
     subject: string;
     body_template: string;
     variables: string[];
@@ -783,7 +786,8 @@ export interface CreateAdminRequest {
     password: string;
     first_name: string;
     last_name: string;
-    group_id: number;
+    group_id?: number;
+    event_type?: string;
 }
 
 export interface UpdateAdminRequest {
@@ -807,15 +811,14 @@ export interface CreateRoleRequest {
 
 export interface AuditLogEntry {
     id: number;
-    admin: {
-        id: number;
-        name: string;
-        email: string;
-    };
+    admin: number;
+    admin_email: string;
     action: string;
-    details?: string;
+    resource_type?: string;
+    resource_id?: string;
+    changes?: unknown;
     ip_address?: string;
-    timestamp: string;
+    created_at: string;
 }
 
 export interface AuditLogParams extends PaginationParams, DateRangeParams {

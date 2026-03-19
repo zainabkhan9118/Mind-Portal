@@ -1,59 +1,69 @@
 "use client";
-import React from 'react';
+import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { ApexOptions } from 'apexcharts';
 import { Music, Waves, Mic, Eye } from 'lucide-react';
+import analyticsApi from '@/lib/api/analyticsApi';
+import type { PlaysByType } from '@/lib/api/types';
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
-const ComponentPlaysChart: React.FC = () => {
-    const series = [{
-        name: 'Plays',
-        data: [4250, 3180, 2840, 1980]
-    }];
-    const categories = ['Music', 'Sound', 'Guided', 'VR/360'];
+const TYPE_LABELS: Record<string, string> = {
+    music: 'Music',
+    guided_session: 'Guided',
+    env_sound: 'Sound',
+    env_visual: 'VR/360',
+};
 
-    // For the custom legend/cards below
-    const stats = [
-        { label: 'Music', value: '4,250', icon: <Music className="w-5 h-5 text-purple-600" /> },
-        { label: 'Sound', value: '3,180', icon: <Waves className="w-5 h-5 text-blue-500" /> },
-        { label: 'Guided', value: '2,840', icon: <Mic className="w-5 h-5 text-cyan-500" /> },
-        { label: 'VR/360', value: '1,980', icon: <Eye className="w-5 h-5 text-indigo-500" /> },
-    ];
+const TYPE_ICONS: Record<string, React.ReactNode> = {
+    music: <Music className="w-5 h-5 text-purple-600" />,
+    guided_session: <Mic className="w-5 h-5 text-cyan-500" />,
+    env_sound: <Waves className="w-5 h-5 text-blue-500" />,
+    env_visual: <Eye className="w-5 h-5 text-indigo-500" />,
+};
+
+const COLORS = ['#A855F7', '#3B82F6', '#06B6D4', '#8B5CF6'];
+
+const ComponentPlaysChart: React.FC = () => {
+    const [byType, setByType] = useState<PlaysByType[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        analyticsApi.getPlaysByType()
+            .then(setByType)
+            .catch(console.error)
+            .finally(() => setIsLoading(false));
+    }, []);
+
+    // Embed fillColor per data point to avoid distributed:true (which crashes under React 18 StrictMode)
+    const seriesData = byType.map((t, i) => ({
+        x: TYPE_LABELS[t.type] ?? t.type ?? `Type ${i}`,
+        y: t.plays ?? 0,
+        fillColor: COLORS[i % COLORS.length],
+    }));
+
+    const series = [{ name: 'Plays', data: seriesData }];
 
     const options: ApexOptions = {
-        chart: {
-            type: 'bar',
-            height: 300,
-            toolbar: { show: false }
-        },
+        chart: { type: 'bar', height: 300, toolbar: { show: false } },
         plotOptions: {
-            bar: {
-                borderRadius: 8,
-                columnWidth: '60%',
-                distributed: true, // Different colors per bar
-            }
+            bar: { borderRadius: 8, columnWidth: '60%' },
         },
-        colors: ["#A855F7", "#3B82F6", "#06B6D4", "#8B5CF6"],
         dataLabels: { enabled: false },
         xaxis: {
-            categories: categories,
-            labels: {
-                style: { colors: '#9CA3AF' }
-            },
+            labels: { style: { colors: '#9CA3AF' } },
             axisBorder: { show: false },
-            axisTicks: { show: false }
+            axisTicks: { show: false },
         },
         yaxis: {
             labels: {
-                style: { colors: '#9CA3AF' }
-            }
+                style: { colors: '#9CA3AF' },
+                formatter: (v) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`,
+            },
         },
-        grid: {
-            borderColor: '#f3f4f6',
-            strokeDashArray: 4,
-        },
-        legend: { show: false }
+        grid: { borderColor: '#f3f4f6', strokeDashArray: 4 },
+        legend: { show: false },
+        tooltip: { y: { formatter: (v) => (v ?? 0).toLocaleString() } },
     };
 
     return (
@@ -64,19 +74,40 @@ const ComponentPlaysChart: React.FC = () => {
             </div>
 
             <div className="mb-8 h-[300px]">
-                <ReactApexChart options={options} series={series} type="bar" height="100%" />
+                {isLoading ? (
+                    <div className="h-full flex items-center justify-center">
+                        <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                    </div>
+                ) : byType.length === 0 ? (
+                    <div className="h-full flex items-center justify-center">
+                        <p className="text-sm text-gray-400">No data available</p>
+                    </div>
+                ) : (
+                    <ReactApexChart key={seriesData.map(d => d.y).join(',')} options={options} series={series} type="bar" height="100%" />
+                )}
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {stats.map((stat, index) => (
-                    <div key={index} className="p-4 rounded-xl bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700">
-                        <div className="flex items-center gap-2 mb-2">
-                            {stat.icon}
-                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{stat.label}</span>
+                {isLoading
+                    ? [...Array(4)].map((_, i) => (
+                        <div key={i} className="p-4 rounded-xl bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 animate-pulse">
+                            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16 mb-2" />
+                            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-12" />
                         </div>
-                        <p className="text-xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
-                    </div>
-                ))}
+                    ))
+                    : byType.map((t, i) => (
+                        <div key={t.type || String(i)} className="p-4 rounded-xl bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700">
+                            <div className="flex items-center gap-2 mb-2">
+                                {TYPE_ICONS[t.type] ?? <Eye className="w-5 h-5 text-gray-400" />}
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    {TYPE_LABELS[t.type] ?? t.type}
+                                </span>
+                            </div>
+                            <p className="text-xl font-bold text-gray-900 dark:text-white">
+                                {(t.plays ?? 0).toLocaleString()}
+                            </p>
+                        </div>
+                    ))}
             </div>
         </div>
     );

@@ -1,89 +1,59 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Brain, Music2 } from "lucide-react";
 import ValidationStats from "./validation/ValidationStats";
 import ValidationItem, { ValidationItemData } from "./validation/ValidationItem";
-
 import MindReviewModal from "./validation/MindReviewModal";
 import PlaylistReviewModal from "./validation/PlaylistReviewModal";
-
-const mockMinds: ValidationItemData[] = [
-    {
-        id: "1",
-        type: "mind",
-        title: "Peaceful Piano Collection",
-        status: "Pending",
-        category: "Music",
-        description: "A curated collection of peaceful piano pieces for relaxation and focus.",
-        creator: "Emma Williams",
-        itemCount: 12,
-        createdAt: "2026-01-10",
-    },
-    {
-        id: "2",
-        type: "mind",
-        title: "Morning Meditation Series",
-        status: "Pending",
-        category: "Music",
-        description: "A curated collection of peaceful piano pieces for relaxation and focus.",
-        creator: "Emma Williams",
-        itemCount: 12,
-        createdAt: "2026-01-10",
-    },
-    {
-        id: "3",
-        type: "mind",
-        title: "Electronic Focus Beats",
-        status: "Pending",
-        category: "Guided Session",
-        description: "Upbeat electronic music to keep you energized and focused throughout the day.",
-        creator: "Emma Williams",
-        itemCount: 12,
-        createdAt: "2026-01-10",
-    },
-    {
-        id: "4",
-        type: "mind",
-        title: "Sleep Hypnosis Collection",
-        status: "Pending",
-        category: "Music",
-        description: "Professional hypnosis sessions designed to help you achieve deep, restful sleep.",
-        creator: "Emma Williams",
-        itemCount: 12,
-        createdAt: "2026-01-10",
-    }
-];
-
-const mockPlaylists: ValidationItemData[] = [
-    {
-        id: "p1",
-        type: "playlist",
-        title: "Deep Zen Playlist",
-        status: "Pending",
-        category: "Music",
-        description: "Deep meditation sounds for advanced practitioners.",
-        creator: "Liam Johnson",
-        itemCount: 8,
-        createdAt: "2026-01-15",
-    },
-    {
-        id: "p2",
-        type: "playlist",
-        title: "Nature Ambience Mix",
-        status: "Pending",
-        category: "Music",
-        description: "High quality forest and rain recordings for stress relief.",
-        creator: "Sophia Chen",
-        itemCount: 15,
-        createdAt: "2026-01-12",
-    }
-];
+import contentApi from "@/lib/api/contentApi";
+import type { AdminMindSession, AdminMusic } from "@/lib/api/types";
 
 const ContentValidation: React.FC = () => {
+    const [minds, setMinds] = useState<ValidationItemData[]>([]);
+    const [playlists, setPlaylists] = useState<ValidationItemData[]>([]);
+    const [mindsTotal, setMindsTotal] = useState(0);
+    const [playlistsTotal, setPlaylistsTotal] = useState(0);
+    const [isLoading, setIsLoading] = useState(true);
     const [subTab, setSubTab] = useState<"minds" | "playlists">("playlists");
     const [selectedItem, setSelectedItem] = useState<ValidationItemData | null>(null);
     const [isMindModalOpen, setIsMindModalOpen] = useState(false);
     const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
+
+    useEffect(() => {
+        Promise.all([
+            contentApi.getAll({ status: 'review', type: 'guided_session', size: 20 }),
+            contentApi.getAll({ status: 'review', type: 'music', size: 20 }),
+        ]).then(([mindsRes, playlistsRes]) => {
+            const mindItems = (mindsRes.results as AdminMindSession[]).map((item): ValidationItemData => ({
+                id: String(item.id),
+                type: 'mind',
+                title: item.name,
+                description: item.description ?? '',
+                creator: item.artist ?? '',
+                itemCount: item.steps?.length ?? 0,
+                createdAt: item.created_at.split('T')[0],
+                status: 'Pending',
+                category: item.category_names || undefined,
+            }));
+
+            const playlistItems = (playlistsRes.results as AdminMusic[]).map((item): ValidationItemData => ({
+                id: String(item.id),
+                type: 'playlist',
+                title: item.name,
+                description: item.description ?? '',
+                creator: item.artist ?? '',
+                itemCount: 0,
+                createdAt: item.created_at.split('T')[0],
+                status: 'Pending',
+                category: item.music_category_names || undefined,
+            }));
+
+            setMinds(mindItems);
+            setPlaylists(playlistItems);
+            setMindsTotal(mindsRes.count ?? 0);
+            setPlaylistsTotal(playlistsRes.count ?? 0);
+        }).catch(console.error).finally(() => setIsLoading(false));
+    }, []);
 
     const handleReview = (item: ValidationItemData) => {
         setSelectedItem(item);
@@ -94,10 +64,17 @@ const ContentValidation: React.FC = () => {
         }
     };
 
+    const currentItems = subTab === "minds" ? minds : playlists;
+
     return (
         <div className="space-y-10 animate-in fade-in duration-700">
             {/* Stats Header */}
-            <ValidationStats />
+            <ValidationStats
+                total={mindsTotal + playlistsTotal}
+                pendingMinds={mindsTotal}
+                pendingPlaylists={playlistsTotal}
+                isLoading={isLoading}
+            />
 
             {/* Content Section */}
             <div className="space-y-8">
@@ -126,15 +103,35 @@ const ContentValidation: React.FC = () => {
                 </div>
 
                 {/* List of Items */}
-                <div className="grid grid-cols-1 gap-5">
-                    {(subTab === "minds" ? mockMinds : mockPlaylists).map((item) => (
-                        <ValidationItem
-                            key={item.id}
-                            item={item}
-                            onReview={handleReview}
-                        />
-                    ))}
-                </div>
+                {isLoading ? (
+                    <div className="grid grid-cols-1 gap-5">
+                        {[...Array(3)].map((_, i) => (
+                            <div key={i} className="bg-white dark:bg-gray-800 p-6 rounded-[24px] border border-gray-100 dark:border-gray-700 flex items-center gap-6 animate-pulse">
+                                <div className="w-12 h-12 rounded-xl bg-gray-200 dark:bg-gray-700 shrink-0" />
+                                <div className="flex-1 space-y-2">
+                                    <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-1/3" />
+                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3" />
+                                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+                                </div>
+                                <div className="w-24 h-10 bg-gray-200 dark:bg-gray-700 rounded-xl shrink-0" />
+                            </div>
+                        ))}
+                    </div>
+                ) : currentItems.length === 0 ? (
+                    <p className="text-sm text-gray-400 text-center py-16">
+                        No {subTab === "minds" ? "mind sessions" : "playlists"} pending review
+                    </p>
+                ) : (
+                    <div className="grid grid-cols-1 gap-5">
+                        {currentItems.map((item) => (
+                            <ValidationItem
+                                key={item.id}
+                                item={item}
+                                onReview={handleReview}
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
 
             <MindReviewModal
@@ -151,7 +148,5 @@ const ContentValidation: React.FC = () => {
         </div>
     );
 };
-
-
 
 export default ContentValidation;

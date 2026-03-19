@@ -1,21 +1,75 @@
-import React from 'react';
+"use client";
+import { useEffect, useState } from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
+import analyticsApi from '@/lib/api/analyticsApi';
+import type { AnalyticsOverview, PlaysKPI } from '@/lib/api/types';
 
-interface Metric {
-    label: string;
-    value: string;
-    trend: 'up' | 'down';
-    trendLabel: string; // The text "Button" in the screenshot, likely meant to be a trend value or label? I'll assume it's a trend value like "+12%" or just "Up"
-}
+const Skeleton = () => (
+    <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm animate-pulse">
+        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-4" />
+        <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-24 mb-4" />
+        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20" />
+    </div>
+);
 
-const metrics: Metric[] = [
-    { label: "Total Plays", value: "1.2M", trend: 'up', trendLabel: "+12.5%" },
-    { label: "Avg. Listening Time", value: "1.8m 45s", trend: 'down', trendLabel: "-2.3%" },
-    { label: "Completion Rate", value: "78.2%", trend: 'up', trendLabel: "+5.4%" },
-    { label: "Repetition Rate", value: "1.6x", trend: 'up', trendLabel: "+0.2x" },
-];
+const fmtNum = (n?: number) => {
+    if (n == null) return '—';
+    if (n >= 1_000_000) return `${((n ?? 0) / 1_000_000).toFixed(1)}M`;
+    if (n >= 1_000) return `${((n ?? 0) / 1_000).toFixed(1)}K`;
+    return (n ?? 0).toLocaleString();
+};
 
 const KeyMetricsOverview: React.FC = () => {
+    const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
+    const [kpi, setKpi] = useState<PlaysKPI | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        Promise.all([analyticsApi.getOverview(), analyticsApi.getPlaysKPI()])
+            .then(([ov, k]) => { setOverview(ov); setKpi(k); })
+            .catch(console.error)
+            .finally(() => setIsLoading(false));
+    }, []);
+
+    if (isLoading) {
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[...Array(4)].map((_, i) => <Skeleton key={i} />)}
+            </div>
+        );
+    }
+
+    const metrics = [
+        {
+            label: 'Total Plays',
+            value: fmtNum(kpi?.total_plays),
+            trend: 'up' as const,
+            trendLabel: `${fmtNum(overview?.total_plays)} all-time`,
+        },
+        {
+            label: 'Unique Listeners',
+            value: fmtNum(kpi?.unique_listeners),
+            trend: 'up' as const,
+            trendLabel: `${fmtNum(overview?.total_listeners)} total`,
+        },
+        {
+            label: 'Avg Completion Rate',
+            value: overview?.avg_completion_rate != null
+                ? `${(overview.avg_completion_rate ?? 0).toFixed(1)}%`
+                : '—',
+            trend: 'up' as const,
+            trendLabel: 'overall average',
+        },
+        {
+            label: 'Avg Plays / User',
+            value: kpi?.avg_plays_per_user != null
+                ? `${(kpi.avg_plays_per_user ?? 0).toFixed(1)}x`
+                : '—',
+            trend: 'up' as const,
+            trendLabel: 'per active user',
+        },
+    ];
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {metrics.map((metric, index) => (
