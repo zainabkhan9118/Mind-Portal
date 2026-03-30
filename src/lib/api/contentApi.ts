@@ -105,7 +105,7 @@ const contentApi = {
             return response.data;
         },
 
-        create: async (data: Partial<AdminMusic>): Promise<AdminMusic> => {
+        create: async (data: FormData | Partial<AdminMusic>): Promise<AdminMusic> => {
             const response = await apiClient.post<AdminMusic>(
                 CONTENT_ENDPOINTS.music,
                 data,
@@ -150,7 +150,7 @@ const contentApi = {
         },
 
         create: async (
-            data: Partial<AdminMindSession>,
+            data: FormData | Partial<AdminMindSession>,
         ): Promise<AdminMindSession> => {
             const response = await apiClient.post<AdminMindSession>(
                 CONTENT_ENDPOINTS["guided-sessions"],
@@ -243,7 +243,7 @@ const contentApi = {
         },
 
         create: async (
-            data: Partial<AdminEnvironmentSound>,
+            data: FormData | Partial<AdminEnvironmentSound>,
         ): Promise<AdminEnvironmentSound> => {
             const response = await apiClient.post<AdminEnvironmentSound>(
                 CONTENT_ENDPOINTS["env-sounds"],
@@ -314,7 +314,7 @@ const contentApi = {
         },
 
         create: async (
-            data: Partial<AdminEnvironmentVisual>,
+            data: FormData | Partial<AdminEnvironmentVisual>,
         ): Promise<AdminEnvironmentVisual> => {
             const response = await apiClient.post<AdminEnvironmentVisual>(
                 CONTENT_ENDPOINTS["env-visuals"],

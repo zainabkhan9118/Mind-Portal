@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
-import { Upload } from "lucide-react";
+import { Upload, X } from "lucide-react";
 import Button from "@/components/ui/button/Button";
 
 interface BasicInfoProps {
@@ -16,10 +16,11 @@ interface BasicInfoProps {
     categoryId: string;
     onCategoryChange: (v: string) => void;
     categories: { id: number; name: string }[];
-    goal: string;
-    onGoalChange: (v: string) => void;
     details: string;
     onDetailsChange: (v: string) => void;
+    audioFile: File | null;
+    onAudioFileChange: (f: File | null) => void;
+    onDurationExtracted?: (seconds: number) => void;
 }
 
 const BasicInfo: React.FC<BasicInfoProps> = ({
@@ -34,11 +35,43 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
     categoryId,
     onCategoryChange,
     categories,
-    goal,
-    onGoalChange,
     details,
     onDetailsChange,
+    audioFile,
+    onAudioFileChange,
+    onDurationExtracted,
 }) => {
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isDragging, setIsDragging] = useState(false);
+
+    const acceptType = isEnvironmentVisual ? "video/*" : "audio/*";
+
+    const extractDuration = (file: File) => {
+        if (isEnvironmentVisual || !onDurationExtracted) return;
+        const url = URL.createObjectURL(file);
+        const audio = document.createElement("audio");
+        audio.preload = "metadata";
+        audio.onloadedmetadata = () => {
+            if (isFinite(audio.duration)) {
+                onDurationExtracted(Math.round(audio.duration));
+            }
+            URL.revokeObjectURL(url);
+        };
+        audio.src = url;
+    };
+
+    const handleFileSelect = (file: File) => {
+        onAudioFileChange(file);
+        extractDuration(file);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragging(false);
+        const file = e.dataTransfer.files[0];
+        if (file) handleFileSelect(file);
+    };
+
     return (
         <div className="space-y-6">
             <div>
@@ -75,19 +108,50 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
             {/* Add Files Section */}
             <div>
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-                    Add Files
+                    {isEnvironmentVisual ? "Add Video File" : "Add Audio File"}
                 </h3>
-                <div className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl bg-gray-50/30 dark:bg-gray-800/30 hover:bg-gray-50 transition-colors group cursor-pointer">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <div className="p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm mb-3 group-hover:scale-110 transition-transform">
-                            <Upload className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept={acceptType}
+                    className="hidden"
+                    onChange={(e) => {
+                        const file = e.target.files?.[0] ?? null;
+                        if (file) handleFileSelect(file);
+                        else onAudioFileChange(null);
+                        e.target.value = "";
+                    }}
+                />
+                {audioFile ? (
+                    <div className="flex items-center justify-between w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-2xl bg-gray-50 dark:bg-gray-800">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <Upload className="w-5 h-5 text-[#9810FA] shrink-0" />
+                            <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{audioFile.name}</span>
+                            <span className="text-xs text-gray-400 shrink-0">({(audioFile.size / 1024 / 1024).toFixed(2)} MB)</span>
                         </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Drag & drop a file here, or click to upload</p>
-                        <Button className="bg-[#9810FA] hover:bg-[#8000E0] text-white border-none py-2 px-6 text-sm rounded-xl">
-                            Browse Files
-                        </Button>
+                        <button type="button" onClick={() => onAudioFileChange(null)} className="ml-2 text-gray-400 hover:text-red-500 shrink-0">
+                            <X className="w-4 h-4" />
+                        </button>
                     </div>
-                </div>
+                ) : (
+                    <div
+                        onClick={() => fileInputRef.current?.click()}
+                        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                        onDragLeave={() => setIsDragging(false)}
+                        onDrop={handleDrop}
+                        className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-2xl transition-colors group cursor-pointer ${isDragging ? "border-[#9810FA] bg-purple-50 dark:bg-purple-900/10" : "border-gray-200 dark:border-gray-700 bg-gray-50/30 dark:bg-gray-800/30 hover:bg-gray-50"}`}
+                    >
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                            <div className="p-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm mb-3 group-hover:scale-110 transition-transform">
+                                <Upload className="w-6 h-6 text-gray-600 dark:text-gray-400" />
+                            </div>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Drag & drop a file here, or click to upload</p>
+                            <Button className="bg-[#9810FA] hover:bg-[#8000E0] text-white border-none py-2 px-6 text-sm rounded-xl">
+                                Browse Files
+                            </Button>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -122,27 +186,15 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                    <Label htmlFor="goal">Goal</Label>
-                    <Input
-                        type="text"
-                        id="goal"
-                        placeholder="Sleep & Dreams"
-                        value={goal}
-                        onChange={(e) => onGoalChange(e.target.value)}
-                    />
-                </div>
-                <div>
-                    <Label htmlFor="addDetail">Add Detail</Label>
-                    <Input
-                        type="text"
-                        id="addDetail"
-                        placeholder="Placeholder"
-                        value={details}
-                        onChange={(e) => onDetailsChange(e.target.value)}
-                    />
-                </div>
+            <div>
+                <Label htmlFor="addDetail">Add Detail</Label>
+                <Input
+                    type="text"
+                    id="addDetail"
+                    placeholder="Placeholder"
+                    value={details}
+                    onChange={(e) => onDetailsChange(e.target.value)}
+                />
             </div>
         </div>
     );

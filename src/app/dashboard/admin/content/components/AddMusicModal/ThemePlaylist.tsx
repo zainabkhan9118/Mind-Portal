@@ -6,12 +6,20 @@ interface ThemePlaylistProps {
     isEnvironmentSound?: boolean;
     isMindSession?: boolean;
     isEnvironmentVisual?: boolean;
+    frequency: string;
+    onFrequencyChange: (v: string) => void;
+    contentType: string;
+    onContentTypeChange: (v: string) => void;
 }
 
 const ThemePlaylist: React.FC<ThemePlaylistProps> = ({
     isEnvironmentSound = false,
     isMindSession = false,
     isEnvironmentVisual = false,
+    frequency,
+    onFrequencyChange,
+    contentType,
+    onContentTypeChange,
 }) => {
     return (
         <div className="space-y-4">
@@ -21,59 +29,47 @@ const ThemePlaylist: React.FC<ThemePlaylistProps> = ({
 
             {isMindSession ? (
                 // Mind Session Layout
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                        <Label htmlFor="goal">Goal</Label>
-                        <Input type="text" id="goal" placeholder="Placeholder" />
-                    </div>
-                    <div>
-                        <Label htmlFor="type">Type</Label>
-                        <Input type="text" id="type" placeholder="Placeholder" />
-                    </div>
+                <div>
+                    <Label htmlFor="mindSessionType">Type</Label>
+                    <Input
+                        type="text"
+                        id="mindSessionType"
+                        placeholder="Placeholder"
+                        value={contentType}
+                        onChange={(e) => onContentTypeChange(e.target.value)}
+                    />
                 </div>
             ) : isEnvironmentVisual ? (
                 // Environment Visual Layout
+                <div>
+                    <Label htmlFor="visualType">Type</Label>
+                    <Input
+                        type="text"
+                        id="visualType"
+                        placeholder="Placeholder"
+                        value={contentType}
+                        onChange={(e) => onContentTypeChange(e.target.value)}
+                    />
+                </div>
+            ) : isEnvironmentSound ? (
+                // Environment Sound Layout
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
-                        <Label htmlFor="goal">Goal</Label>
-                        <Input type="text" id="goal" placeholder="Placeholder" />
+                        <Label htmlFor="frequency">Frequency</Label>
+                        <Input
+                            type="text"
+                            id="frequency"
+                            placeholder="Placeholder"
+                            value={frequency}
+                            onChange={(e) => onFrequencyChange(e.target.value)}
+                        />
                     </div>
                     <div>
                         <Label htmlFor="type">Type</Label>
                         <Input type="text" id="type" placeholder="Placeholder" />
                     </div>
                 </div>
-            ) : isEnvironmentSound ? (
-                // Environment Sound Layout
-                <>
-                    <div>
-                        <Label htmlFor="goal">Goal</Label>
-                        <Input type="text" id="goal" placeholder="Sleep & Dreams" />
-                    </div>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
-                            <Label htmlFor="frequency">Frequency</Label>
-                            <Input type="text" id="frequency" placeholder="Placeholder" />
-                        </div>
-                        <div>
-                            <Label htmlFor="type">Type</Label>
-                            <Input type="text" id="type" placeholder="Placeholder" />
-                        </div>
-                    </div>
-                </>
-            ) : (
-                // Music Layout
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                        <Label htmlFor="goal">Goal</Label>
-                        <Input type="text" id="goal" placeholder="Sleep & Dreams" />
-                    </div>
-                    <div>
-                        <Label htmlFor="style">Style</Label>
-                        <Input type="text" id="style" placeholder="Lullabies" />
-                    </div>
-                </div>
-            )}
+            ) : null}
         </div>
     );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
 import BasicInfo from "./BasicInfo";
@@ -10,7 +10,13 @@ import CoverImage from "./CoverImage";
 import AddTags from "./AddTags";
 import CreateSubCategoryModal from "./CreateSubCategoryModal";
 import { contentApi } from "@/lib/api";
+import apiClient from "@/lib/api/axiosInstance";
 import type { AdminCategory } from "@/lib/api/types";
+
+interface Goal {
+    id: number;
+    name: string;
+}
 
 interface AddMusicModalProps {
     isOpen: boolean;
@@ -34,6 +40,11 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
     const [useCustomIcon, setUseCustomIcon] = useState(false);
     const [isCreateSubCategoryOpen, setIsCreateSubCategoryOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
+
+    // Goals
+    const [goalsList, setGoalsList] = useState<Goal[]>([]);
+    const [selectedGoals, setSelectedGoals] = useState<number[]>([]);
 
     // Form state
     const [title, setTitle] = useState("");
@@ -42,8 +53,20 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
     const [tags, setTags] = useState<string[]>([]);
     const [status, setStatus] = useState("draft");
     const [accessLevel, setAccessLevel] = useState("free");
-    const [goal, setGoal] = useState("");
     const [details, setDetails] = useState("");
+    const [audioFile, setAudioFile] = useState<File | null>(null);
+    const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+    const [frequency, setFrequency] = useState("");
+    const [contentType, setContentType] = useState("");
+    const [duration, setDuration] = useState<number>(0);
+
+    // Fetch goals once
+    useEffect(() => {
+        apiClient
+            .get<{ results: Goal[] }>("explore/goals/", { params: { size: 100 } })
+            .then((res) => setGoalsList(res.data.results ?? []))
+            .catch(() => {});
+    }, []);
 
     const resetForm = () => {
         setTitle("");
@@ -52,8 +75,14 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
         setTags([]);
         setStatus("draft");
         setAccessLevel("free");
-        setGoal("");
         setDetails("");
+        setAudioFile(null);
+        setCoverImageFile(null);
+        setFrequency("");
+        setContentType("");
+        setDuration(0);
+        setSelectedGoals([]);
+        setSubmitError(null);
     };
 
     const handleClose = () => {
@@ -61,79 +90,114 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
         onClose();
     };
 
-    const buildPayload = (publish: boolean) => {
-        const apiStatus = publish ? "published" : (status as "published" | "draft" | "archived" | "review");
-        const catId = categoryId ? Number(categoryId) : undefined;
+    const toggleGoal = (id: number) => {
+        setSelectedGoals((prev) =>
+            prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]
+        );
+    };
+
+    const buildFormData = (publish: boolean): FormData => {
+        const apiStatus = publish ? "published" : status;
         const isPremium = accessLevel === "premium";
 
+        const fd = new FormData();
+        fd.append("name", title);
+        fd.append("description", details);
+        fd.append("status", apiStatus);
+        fd.append("is_premium", String(isPremium));
+
+        tags.forEach((tag) => fd.append("tags", tag));
+        selectedGoals.forEach((id) => fd.append("goals", String(id)));
+
+        fd.append("duration", String(duration));
+
+        if (audioFile) {
+            fd.append(isEnvironmentVisual ? "visual_file" : "audio_clip", audioFile);
+        }
+        if (coverImageFile) {
+            fd.append("image", coverImageFile);
+        }
+
         if (isEnvironmentSound) {
-            return {
-                name: title,
-                environment_sound_type: artist,
-                description: details,
-                tags,
-                status: apiStatus,
-                is_premium: isPremium,
-                ...(catId ? { category: [catId] } : {}),
-            };
+            fd.append("environment_sound_type", artist);
+            if (frequency) fd.append("frequency", frequency);
+            if (categoryId) fd.append("category", categoryId);
+        } else if (isMindSession) {
+            fd.append("instructor_name", artist);
+            if (contentType) fd.append("mind_session_type", contentType);
+            if (categoryId) fd.append("mind_session_category", categoryId);
+        } else if (isEnvironmentVisual) {
+            fd.append("mood", artist);
+            if (contentType) fd.append("environment_visual_type", contentType);
+            if (categoryId) fd.append("category", categoryId);
+        } else {
+            // Music
+            fd.append("artist", artist);
+            if (categoryId) fd.append("music_category", categoryId);
         }
-        if (isMindSession) {
-            return {
-                name: title,
-                instructor_name: artist,
-                description: details,
-                tags,
-                status: apiStatus,
-                is_premium: isPremium,
-                ...(catId ? { mind_session_category: [catId] } : {}),
-            };
-        }
-        if (isEnvironmentVisual) {
-            return {
-                name: title,
-                mood: artist,
-                description: details,
-                tags,
-                status: apiStatus,
-                is_premium: isPremium,
-                ...(catId ? { category: [catId] } : {}),
-            };
-        }
-        // Music
-        return {
-            name: title,
-            artist,
-            description: details,
-            tags,
-            status: apiStatus,
-            is_premium: isPremium,
-            ...(catId ? { music_category: [catId] } : {}),
-        };
+
+        return fd;
     };
 
     const handleSubmit = async (publish: boolean) => {
-        if (!title.trim()) return;
+        if (!title.trim()) {
+            setSubmitError("Title is required.");
+            return;
+        }
+        if (!artist.trim()) {
+            const artistLabel = isEnvironmentSound ? "Type" : isMindSession ? "Voice (Name of Professional)" : isEnvironmentVisual ? "Author" : "Artist";
+            setSubmitError(`${artistLabel} is required.`);
+            return;
+        }
+        if (!details.trim()) {
+            setSubmitError("Description is required.");
+            return;
+        }
+        if (!audioFile) {
+            setSubmitError(`Please upload a${isEnvironmentVisual ? " video" : "n audio"} file.`);
+            return;
+        }
+        if (!coverImageFile) {
+            setSubmitError("Please upload a cover image.");
+            return;
+        }
+        if (!isEnvironmentVisual && duration === 0) {
+            setSubmitError("Audio duration could not be read yet. Please wait a moment or re-upload the file.");
+            return;
+        }
+        if (selectedGoals.length === 0) {
+            setSubmitError("Please select at least one goal.");
+            return;
+        }
+        setSubmitError(null);
         setIsSubmitting(true);
         try {
-            const payload = buildPayload(publish);
+            const fd = buildFormData(publish);
             if (isEnvironmentSound) {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                await contentApi.envSounds.create(payload as any);
+                await contentApi.envSounds.create(fd as any);
             } else if (isMindSession) {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                await contentApi.guidedSessions.create(payload as any);
+                await contentApi.guidedSessions.create(fd as any);
             } else if (isEnvironmentVisual) {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                await contentApi.envVisuals.create(payload as any);
+                await contentApi.envVisuals.create(fd as any);
             } else {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                await contentApi.music.create(payload as any);
+                await contentApi.music.create(fd as any);
             }
             resetForm();
             onClose();
             onSuccess();
-        } catch (err) {
+        } catch (err: unknown) {
             console.error("Failed to create content:", err);
+            const axiosErr = err as { response?: { data?: { error?: { message?: string; details?: { field: string; message: string }[] } } } };
+            const details = axiosErr?.response?.data?.error?.details;
+            if (details?.length) {
+                setSubmitError(details.map((d) => `${d.field}: ${d.message}`).join(" | "));
+            } else {
+                setSubmitError("Failed to save. Please check all fields and try again.");
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -183,11 +247,37 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
                             categoryId={categoryId}
                             onCategoryChange={setCategoryId}
                             categories={categories}
-                            goal={goal}
-                            onGoalChange={setGoal}
                             details={details}
                             onDetailsChange={setDetails}
+                            audioFile={audioFile}
+                            onAudioFileChange={setAudioFile}
+                            onDurationExtracted={setDuration}
                         />
+
+                        {/* Goals */}
+                        {goalsList.length > 0 && (
+                            <div className="space-y-3">
+                                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
+                                    Goals <span className="text-red-500">*</span>
+                                </h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {goalsList.map((g) => (
+                                        <button
+                                            key={g.id}
+                                            type="button"
+                                            onClick={() => toggleGoal(g.id)}
+                                            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                                                selectedGoals.includes(g.id)
+                                                    ? "bg-[#9810FA] text-white border-[#9810FA]"
+                                                    : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-[#9810FA] hover:text-[#9810FA]"
+                                            }`}
+                                        >
+                                            {g.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         <AddTags tags={tags} onTagsChange={setTags} />
 
@@ -199,22 +289,34 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
                         )}
 
                         {(isEnvironmentSound || isMindSession || isEnvironmentVisual) && (
-                            <>
-                                <ThemePlaylist
-                                    isEnvironmentSound={isEnvironmentSound}
-                                    isMindSession={isMindSession}
-                                    isEnvironmentVisual={isEnvironmentVisual}
-                                />
-                                <CoverImage />
-                            </>
+                            <ThemePlaylist
+                                isEnvironmentSound={isEnvironmentSound}
+                                isMindSession={isMindSession}
+                                isEnvironmentVisual={isEnvironmentVisual}
+                                frequency={frequency}
+                                onFrequencyChange={setFrequency}
+                                contentType={contentType}
+                                onContentTypeChange={setContentType}
+                            />
                         )}
+
+                        {/* Cover image shown for all content types */}
+                        <CoverImage
+                            coverImageFile={coverImageFile}
+                            onCoverImageFileChange={setCoverImageFile}
+                        />
 
                         <VisibilitySettings status={status} onStatusChange={setStatus} />
                         <AccessLevels accessLevel={accessLevel} onAccessLevelChange={setAccessLevel} />
                     </div>
 
+                    {/* Error */}
+                    {submitError && (
+                        <p className="text-xs text-red-500 mt-3 px-1">{submitError}</p>
+                    )}
+
                     {/* Footer */}
-                    <div className="flex flex-col-reverse justify-end gap-3 pt-6 mt-6 border-t border-gray-100 dark:border-gray-800 sm:flex-row">
+                    <div className="flex flex-col-reverse justify-end gap-3 pt-6 mt-4 border-t border-gray-100 dark:border-gray-800 sm:flex-row">
                         <Button variant="outline" onClick={handleClose} disabled={isSubmitting} className="w-full sm:w-auto px-10 rounded-xl py-3 h-auto">
                             Cancel
                         </Button>

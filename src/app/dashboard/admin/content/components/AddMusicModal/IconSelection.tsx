@@ -29,6 +29,7 @@ const IconSelection: React.FC<IconSelectionProps> = ({
     setUseCustomIcon,
 }) => {
     const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+    const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
     const iconGrid = [
         { name: "Soft Noise", icon: <AudioWaveform className="w-5 h-5" /> },
@@ -75,12 +76,18 @@ const IconSelection: React.FC<IconSelectionProps> = ({
                         {iconGrid.map((item, index) => (
                             <button
                                 key={index}
-                                className="flex flex-col items-center justify-center p-3 gap-2 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-[#9810FA] hover:bg-[#9810FA]/5 transition-all group bg-white dark:bg-gray-800"
+                                type="button"
+                                onClick={() => setSelectedIndex(index === selectedIndex ? null : index)}
+                                className={`flex flex-col items-center justify-center p-3 gap-2 rounded-xl border transition-all group ${
+                                    selectedIndex === index
+                                        ? "border-[#9810FA] bg-[#9810FA]/10 text-[#9810FA]"
+                                        : "border-gray-200 dark:border-gray-700 hover:border-[#9810FA] hover:bg-[#9810FA]/5 bg-white dark:bg-gray-800"
+                                }`}
                             >
-                                <div className="text-gray-600 dark:text-gray-400 group-hover:text-[#9810FA]">
+                                <div className={selectedIndex === index ? "text-[#9810FA]" : "text-gray-600 dark:text-gray-400 group-hover:text-[#9810FA]"}>
                                     {item.icon}
                                 </div>
-                                <span className="text-xs font-medium text-gray-600 dark:text-gray-400 group-hover:text-[#9810FA]">
+                                <span className={`text-xs font-medium ${selectedIndex === index ? "text-[#9810FA]" : "text-gray-600 dark:text-gray-400 group-hover:text-[#9810FA]"}`}>
                                     {item.name}
                                 </span>
                             </button>
