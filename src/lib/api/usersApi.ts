@@ -140,6 +140,11 @@ const usersApi = {
         const response = await apiClient.post<ExportTaskResponse>("admin/users/export/");
         return response.data;
     },
+
+    /** Promote a user to Mind Expert role. */
+    switchToMindExpert: async (id: number): Promise<void> => {
+        await apiClient.post(`dashboard/users/${id}/switch-to-mind-expert/`);
+    },
 };
 
 export default usersApi;

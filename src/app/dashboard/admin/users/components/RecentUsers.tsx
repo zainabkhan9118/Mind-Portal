@@ -22,6 +22,9 @@ const RecentUsers: React.FC = () => {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<ApiUser | null>(null);
+    const [isSwitching, setIsSwitching] = useState(false);
+    const [switchError, setSwitchError] = useState<string | null>(null);
+    const [refreshKey, setRefreshKey] = useState(0);
 
     // Debounce search input by 400ms
     useEffect(() => {
@@ -59,17 +62,28 @@ const RecentUsers: React.FC = () => {
         });
 
         return () => { cancelled = true; };
-    }, [searchQuery, statusFilter, ordering, currentPage]);
+    }, [searchQuery, statusFilter, ordering, currentPage, refreshKey]);
 
     const handleSwitchExpert = (user: ApiUser) => {
         setSelectedUser(user);
+        setSwitchError(null);
         setIsModalOpen(true);
     };
 
-    const handleConfirmSwitch = () => {
-        console.log(`Switching user ${selectedUser?.id} to Mind Expert`);
-        setIsModalOpen(false);
-        setSelectedUser(null);
+    const handleConfirmSwitch = async () => {
+        if (!selectedUser) return;
+        setIsSwitching(true);
+        setSwitchError(null);
+        try {
+            await usersApi.switchToMindExpert(selectedUser.id);
+            setIsModalOpen(false);
+            setSelectedUser(null);
+            setRefreshKey(k => k + 1);
+        } catch {
+            setSwitchError('Failed to switch user. Please try again.');
+        } finally {
+            setIsSwitching(false);
+        }
     };
 
     const displayName = selectedUser
@@ -101,9 +115,11 @@ const RecentUsers: React.FC = () => {
 
             <SwitchExpertModal
                 isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                onClose={() => { setIsModalOpen(false); setSwitchError(null); }}
                 onConfirm={handleConfirmSwitch}
                 userName={displayName}
+                isLoading={isSwitching}
+                error={switchError}
             />
         </div>
     );
