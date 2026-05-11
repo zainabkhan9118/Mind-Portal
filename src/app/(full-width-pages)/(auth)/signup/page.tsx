@@ -1,17 +1,22 @@
-import SignUpForm from "@/components/auth/SignUpForm";
-import { Metadata } from "next";
-import { Suspense } from "react";
+// import SignUpForm from "@/components/auth/SignUpForm";
+// import { Metadata } from "next";
+// import { Suspense } from "react";
 
-export const metadata: Metadata = {
-  title: "Next.js SignUp Page | TailAdmin - Next.js Dashboard Template",
-  description: "This is Next.js SignUp Page TailAdmin Dashboard Template",
-  // other metadata
-};
+// export const metadata: Metadata = {
+//   title: "Next.js SignUp Page | TailAdmin - Next.js Dashboard Template",
+//   description: "This is Next.js SignUp Page TailAdmin Dashboard Template",
+// };
+
+// export default function SignUp() {
+//   return (
+//     <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+//       <SignUpForm />
+//     </Suspense>
+//   );
+// }
+
+import { redirect } from "next/navigation";
 
 export default function SignUp() {
-  return (
-    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
-      <SignUpForm />
-    </Suspense>
-  );
+  redirect("/signin");
 }

@@ -263,7 +263,7 @@ export default function SignInForm() {
                 ) : "Sign In"}
               </button>
               
-              <p className="text-sm text-center text-gray-500 dark:text-gray-400">
+              {/* <p className="text-sm text-center text-gray-500 dark:text-gray-400">
                 Don&apos;t have an account?{" "}
                 <Link
                   href="/signup"
@@ -276,7 +276,7 @@ export default function SignInForm() {
                 >
                   Sign up
                 </Link>
-              </p>
+              </p> */}
             </form>
           </div>
         </div>
