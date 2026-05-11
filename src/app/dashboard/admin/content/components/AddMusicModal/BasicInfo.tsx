@@ -27,7 +27,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
     isEnvironmentSound = false,
     isMindSession = false,
     isEnvironmentVisual = false,
-    onCreateSubCategory,
+    // onCreateSubCategory,
     title,
     onTitleChange,
     artist,
@@ -154,6 +154,17 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
                 )}
             </div>
 
+            <div>
+                <Label htmlFor="addDetail">Add Detail</Label>
+                <Input
+                    type="text"
+                    id="addDetail"
+                    placeholder="Placeholder"
+                    value={details}
+                    onChange={(e) => onDetailsChange(e.target.value)}
+                />
+            </div>
+
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                     <Label htmlFor="category">Category</Label>
@@ -169,7 +180,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
                         ))}
                     </select>
                 </div>
-                <div>
+                {/* <div>
                     <div className="flex items-center justify-between mb-0">
                         <Label htmlFor="subCategory" className="mb-0">Sub Category</Label>
                         {(isEnvironmentSound || isMindSession || isEnvironmentVisual) && onCreateSubCategory && (
@@ -183,18 +194,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
                         )}
                     </div>
                     <Input type="text" id="subCategory" placeholder="Placeholder" />
-                </div>
-            </div>
-
-            <div>
-                <Label htmlFor="addDetail">Add Detail</Label>
-                <Input
-                    type="text"
-                    id="addDetail"
-                    placeholder="Placeholder"
-                    value={details}
-                    onChange={(e) => onDetailsChange(e.target.value)}
-                />
+                </div> */}
             </div>
         </div>
     );

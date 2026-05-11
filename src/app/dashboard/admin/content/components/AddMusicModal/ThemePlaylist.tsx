@@ -53,21 +53,19 @@ const ThemePlaylist: React.FC<ThemePlaylistProps> = ({
                 </div>
             ) : isEnvironmentSound ? (
                 // Environment Sound Layout
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div>
-                        <Label htmlFor="frequency">Frequency</Label>
-                        <Input
-                            type="text"
-                            id="frequency"
-                            placeholder="Placeholder"
-                            value={frequency}
-                            onChange={(e) => onFrequencyChange(e.target.value)}
-                        />
-                    </div>
-                    <div>
+                <div>
+                    <Label htmlFor="frequency">Frequency</Label>
+                    <Input
+                        type="text"
+                        id="frequency"
+                        placeholder="Placeholder"
+                        value={frequency}
+                        onChange={(e) => onFrequencyChange(e.target.value)}
+                    />
+                    {/* <div>
                         <Label htmlFor="type">Type</Label>
                         <Input type="text" id="type" placeholder="Placeholder" />
-                    </div>
+                    </div> */}
                 </div>
             ) : null}
         </div>

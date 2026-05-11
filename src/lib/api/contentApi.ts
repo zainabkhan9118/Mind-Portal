@@ -357,10 +357,14 @@ const contentApi = {
             return response.data;
         },
 
-        create: async (data: { name: string; language?: string }): Promise<AdminCategory> => {
+        create: async (
+            data: { name: string; language?: string },
+            params?: { type?: string },
+        ): Promise<AdminCategory> => {
             const response = await apiClient.post<AdminCategory>(
                 "admin/content/categories/",
                 data,
+                { params },
             );
             return response.data;
         },

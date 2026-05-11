@@ -3,6 +3,7 @@ import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
+import { contentApi } from "@/lib/api";
 import {
     Waves,
     CloudRain,
@@ -23,10 +24,27 @@ import {
 interface AddNewContentModalProps {
     isOpen: boolean;
     onClose: () => void;
+    onSuccess?: () => void;
+    activeTab?: string;
 }
 
-const AddNewContentModal: React.FC<AddNewContentModalProps> = ({ isOpen, onClose }) => {
+const tabToType: Record<string, string> = {
+    "Music": "music",
+    "Environment Sound": "env_sound",
+    "Mind Sessions": "guided_session",
+    "Environment Visual": "env_visual",
+};
+
+const AddNewContentModal: React.FC<AddNewContentModalProps> = ({
+    isOpen,
+    onClose,
+    onSuccess,
+    activeTab = "Music",
+}) => {
     const [selectedIcon, setSelectedIcon] = useState("Night Music");
+    const [contentTypeName, setContentTypeName] = useState("");
+    const [submitError, setSubmitError] = useState<string | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const iconGrid = [
         { name: "Soft Noise", icon: <AudioWaveform className="w-5 h-5" /> },
@@ -42,6 +60,30 @@ const AddNewContentModal: React.FC<AddNewContentModalProps> = ({ isOpen, onClose
         { name: "Bell Music", icon: <Bell className="w-5 h-5" /> },
         { name: "Guitar", icon: <Guitar className="w-5 h-5" /> },
     ];
+
+    const handleSubmit = async () => {
+        if (isSubmitting) {
+            return;
+        }
+        const trimmedName = contentTypeName.trim();
+        if (!trimmedName) {
+            setSubmitError("Content type name is required.");
+            return;
+        }
+        setSubmitError(null);
+        setIsSubmitting(true);
+        try {
+            await contentApi.categories.create({ name: trimmedName }, { type: tabToType[activeTab] ?? "music" });
+            setContentTypeName("");
+            onSuccess?.();
+            onClose();
+        } catch (err) {
+            console.error("Failed to create category:", err);
+            setSubmitError("Failed to save. Please try again.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} className="max-w-[700px] m-4">
@@ -71,6 +113,8 @@ const AddNewContentModal: React.FC<AddNewContentModalProps> = ({ isOpen, onClose
                                 id="contentTypeName"
                                 placeholder="e.g., “Affirmations,” “Mind Movies,” “Stories,” etc."
                                 className="bg-gray-50/50 dark:bg-gray-800"
+                                value={contentTypeName}
+                                onChange={(event) => setContentTypeName(event.target.value)}
                             />
                         </div>
                     </div>
@@ -133,15 +177,29 @@ const AddNewContentModal: React.FC<AddNewContentModalProps> = ({ isOpen, onClose
                     </div>
                 </div>
 
+                {submitError && (
+                    <p className="text-xs text-red-500 mt-4 px-1">{submitError}</p>
+                )}
+
                 {/* Footer */}
                 <div className="flex flex-col-reverse justify-end gap-3 pt-6 mt-6 border-t border-gray-100 dark:border-gray-800 sm:flex-row">
                     <Button variant="outline" onClick={onClose} className="w-full sm:w-auto px-10 rounded-xl py-2.5 h-auto text-sm font-medium">
                         Cancel
                     </Button>
-                    <Button variant="outline" className="w-full sm:w-auto px-10 rounded-xl py-2.5 h-auto text-sm font-medium">
+                    <Button
+                        variant="outline"
+                        onClick={handleSubmit}
+                        disabled={isSubmitting}
+                        className="w-full sm:w-auto px-10 rounded-xl py-2.5 h-auto text-sm font-medium"
+                    >
                         Save
                     </Button>
-                    <Button variant="primary" onClick={onClose} className="w-full sm:w-auto bg-[#9810FA] border border-[#9810FA] hover:bg-[#8000E0] px-10 rounded-xl py-2.5 h-auto text-sm font-medium">
+                    <Button
+                        variant="primary"
+                        onClick={handleSubmit}
+                        disabled={isSubmitting}
+                        className="w-full sm:w-auto bg-[#9810FA] border border-[#9810FA] hover:bg-[#8000E0] px-10 rounded-xl py-2.5 h-auto text-sm font-medium"
+                    >
                         Save & Publish
                     </Button>
                 </div>

@@ -15,6 +15,7 @@ import {
 import ContentTable from "./components/ContentTable";
 import ContentFilter from "./components/ContentFilter";
 import { contentApi } from "@/lib/api";
+import apiClient from "@/lib/api/axiosInstance";
 import type {
   AdminMusic,
   AdminMindSession,
@@ -83,7 +84,11 @@ function adaptMusic(item: AdminMusic): ContentItem {
   };
 }
 
-function adaptEnvSound(item: AdminEnvironmentSound): EnvironmentSoundItem {
+function mapGoalNames(ids: number[], goalsMap: Record<number, string>): string {
+  return ids.map((id) => goalsMap[id] ?? String(id)).join(", ");
+}
+
+function adaptEnvSound(item: AdminEnvironmentSound, goalsMap: Record<number, string>): EnvironmentSoundItem {
   return {
     id: item.id,
     title: item.name,
@@ -91,7 +96,7 @@ function adaptEnvSound(item: AdminEnvironmentSound): EnvironmentSoundItem {
     category: item.category_names ?? "",
     frequency: item.frequency ?? "",
     type: item.environment_sound_type ?? "",
-    goal: "",
+    goal: mapGoalNames(item.goals ?? [], goalsMap),
     details: item.description ?? "",
     status: mapApiStatus(item.status),
     accessType: item.is_premium ? "Premium" : "Free",
@@ -100,14 +105,14 @@ function adaptEnvSound(item: AdminEnvironmentSound): EnvironmentSoundItem {
   };
 }
 
-function adaptMindSession(item: AdminMindSession): MindSessionItem {
+function adaptMindSession(item: AdminMindSession, goalsMap: Record<number, string>): MindSessionItem {
   return {
     id: item.id,
     title: item.name,
     category: item.category_names ?? "",
     voice: item.instructor_name ?? item.artist,
     duration: formatDuration(item.duration),
-    goal: "",
+    goal: mapGoalNames(item.goals ?? [], goalsMap),
     details: item.description,
     status: mapApiStatus(item.status),
     accessType: item.is_premium ? "Premium" : "Free",
@@ -116,14 +121,14 @@ function adaptMindSession(item: AdminMindSession): MindSessionItem {
   };
 }
 
-function adaptEnvVisual(item: AdminEnvironmentVisual): EnvironmentVisualItem {
+function adaptEnvVisual(item: AdminEnvironmentVisual, goalsMap: Record<number, string>): EnvironmentVisualItem {
   return {
     id: item.id,
     title: item.name,
     icon: null,
     category: item.category_names ?? "",
     author: item.mood ?? "",
-    goal: "",
+    goal: mapGoalNames(item.goals ?? [], goalsMap),
     details: item.description ?? "",
     status: mapApiStatus(item.status),
     accessType: item.is_premium ? "Premium" : "Free",
@@ -152,13 +157,63 @@ export default function ContentManagementPage() {
   const [totalPages, setTotalPages] = useState(1);
 
   const [categories, setCategories] = useState<AdminCategory[]>([]);
+  const [goalsMap, setGoalsMap] = useState<Record<number, string>>({});
 
   const PAGE_SIZE = 10;
 
-  // Fetch categories once on mount
+  const fetchCategories = useCallback(async () => {
+    try {
+      if (activeTab === "Music") {
+        const res = await contentApi.categories.list({ size: 100, type: "music" });
+        setCategories(res.results);
+        return;
+      }
+
+      // For other tabs the shared categories endpoint doesn't return their categories,
+      // so extract unique {id, name} pairs directly from the content list.
+      let items: Array<{ category?: number[]; mind_session_category?: number[]; category_names: string }> = [];
+
+      if (activeTab === "Mind Sessions") {
+        const res = await contentApi.guidedSessions.list({ size: 100 });
+        items = res.results;
+      } else if (activeTab === "Environment Sound") {
+        const res = await contentApi.envSounds.list({ size: 100 });
+        items = res.results;
+      } else if (activeTab === "Environment Visual") {
+        const res = await contentApi.envVisuals.list({ size: 100 });
+        items = res.results;
+      }
+
+      const seen = new Set<number>();
+      const cats: AdminCategory[] = [];
+      for (const item of items) {
+        const ids = item.mind_session_category ?? item.category ?? [];
+        const names = (Array.isArray(item.category_names) ? item.category_names : []) as string[];
+        ids.forEach((id, i) => {
+          if (!seen.has(id) && names[i]) {
+            seen.add(id);
+            cats.push({ id, name: names[i], item_count: 0 });
+          }
+        });
+      }
+      setCategories(cats);
+    } catch {
+      setCategories([]);
+    }
+  }, [activeTab]);
+
   useEffect(() => {
-    contentApi.categories.list({ size: 100 })
-      .then(res => setCategories(res.results))
+    fetchCategories();
+  }, [fetchCategories]);
+
+  useEffect(() => {
+    apiClient
+      .get<{ results: { id: number; name: string }[] }>("explore/goals/", { params: { size: 100 } })
+      .then((res) => {
+        const map: Record<number, string> = {};
+        for (const g of res.data.results ?? []) map[g.id] = g.name;
+        setGoalsMap(map);
+      })
       .catch(() => {});
   }, []);
 
@@ -184,21 +239,21 @@ export default function ContentManagementPage() {
         }
         case "Environment Sound": {
           const res = await contentApi.envSounds.list(params);
-          setData(res.results.map(adaptEnvSound));
+          setData(res.results.map((item) => adaptEnvSound(item, goalsMap)));
           setTotalCount(res.count);
           setTotalPages(res.pages_count ?? Math.ceil(res.count / PAGE_SIZE));
           break;
         }
         case "Mind Sessions": {
           const res = await contentApi.guidedSessions.list(params);
-          setData(res.results.map(adaptMindSession));
+          setData(res.results.map((item) => adaptMindSession(item, goalsMap)));
           setTotalCount(res.count);
           setTotalPages(res.pages_count ?? Math.ceil(res.count / PAGE_SIZE));
           break;
         }
         case "Environment Visual": {
           const res = await contentApi.envVisuals.list(params);
-          setData(res.results.map(adaptEnvVisual));
+          setData(res.results.map((item) => adaptEnvVisual(item, goalsMap)));
           setTotalCount(res.count);
           setTotalPages(res.pages_count ?? Math.ceil(res.count / PAGE_SIZE));
           break;
@@ -210,7 +265,7 @@ export default function ContentManagementPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [activeTab, searchTerm, accessFilter, statusFilter, categoryFilter, currentPage]);
+  }, [activeTab, searchTerm, accessFilter, statusFilter, categoryFilter, currentPage, goalsMap]);
 
   // Reset to page 1 when filters or tab change
   useEffect(() => {
@@ -415,6 +470,8 @@ export default function ContentManagementPage() {
       <AddNewContentModal
         isOpen={isNewContentModalOpen}
         onClose={() => setIsNewContentModalOpen(false)}
+        onSuccess={fetchCategories}
+        activeTab={activeTab}
       />
     </div>
   );

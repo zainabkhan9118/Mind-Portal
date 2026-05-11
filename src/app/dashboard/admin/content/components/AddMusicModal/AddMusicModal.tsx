@@ -3,7 +3,6 @@ import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
 import BasicInfo from "./BasicInfo";
 import ThemePlaylist from "./ThemePlaylist";
-import IconSelection from "./IconSelection";
 import VisibilitySettings from "./VisibilitySettings";
 import AccessLevels from "./AccessLevels";
 import CoverImage from "./CoverImage";
@@ -123,6 +122,7 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
             if (frequency) fd.append("frequency", frequency);
             if (categoryId) fd.append("category", categoryId);
         } else if (isMindSession) {
+            fd.append("artist", artist);
             fd.append("instructor_name", artist);
             if (contentType) fd.append("mind_session_type", contentType);
             if (categoryId) fd.append("mind_session_category", categoryId);
@@ -281,12 +281,10 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
 
                         <AddTags tags={tags} onTagsChange={setTags} />
 
-                        {!isEnvironmentVisual && (
-                            <IconSelection
-                                useCustomIcon={useCustomIcon}
-                                setUseCustomIcon={setUseCustomIcon}
-                            />
-                        )}
+                        {/* <IconSelection
+                            useCustomIcon={useCustomIcon}
+                            setUseCustomIcon={setUseCustomIcon}
+                        /> */}
 
                         {(isEnvironmentSound || isMindSession || isEnvironmentVisual) && (
                             <ThemePlaylist
