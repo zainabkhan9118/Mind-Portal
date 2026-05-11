@@ -134,11 +134,6 @@ export default function SignUpForm() {
       isValid = false;
     }
 
-    if (!selectedRoleFromQuery) {
-      newErrors.role = "Role selection is required";
-      isValid = false;
-    }
-
     if (!isChecked) {
       newErrors.terms = "You must agree to the terms and conditions";
       isValid = false;
