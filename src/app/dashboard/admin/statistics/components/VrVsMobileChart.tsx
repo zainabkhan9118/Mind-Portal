@@ -33,15 +33,18 @@ const VrVsMobileChart: React.FC = () => {
     };
 
     return (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm h-full flex flex-col justify-between">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm h-full flex flex-col justify-between overflow-hidden">
             {/* Header */}
-            <div>
+            <div className="px-6 pt-6 pb-4">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">VR vs Mobile Usage</h3>
-                <p className="text-sm text-purple-600 dark:text-purple-400">Platform distribution & device breakdown</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 mt-0.5">Platform distribution & device breakdown</p>
             </div>
 
+            {/* Purple dashed divider */}
+            <div className="mx-6 border-t-2 border-dashed border-purple-400 dark:border-purple-600 mb-5" />
+
             {/* Top Section: Chart + Cards */}
-            <div className="flex flex-col xl:flex-row items-center justify-between gap-6 py-4">
+            <div className="flex flex-col xl:flex-row items-center justify-between gap-6 px-6 py-4">
                 {/* Donut Chart */}
                 <div className="relative flex-none">
                     <ReactApexChart options={options} series={series} type="donut" width={300} />
@@ -68,7 +71,7 @@ const VrVsMobileChart: React.FC = () => {
             </div>
 
             {/* Middle Section: Device Breakdown */}
-            <div className="space-y-5">
+            <div className="space-y-5 px-6">
                 <h4 className="text-sm font-semibold text-gray-600 dark:text-gray-400">Device Breakdown</h4>
 
                 <div className="space-y-4">
@@ -119,7 +122,7 @@ const VrVsMobileChart: React.FC = () => {
             </div>
 
             {/* Bottom Section: Avg Session Stats */}
-            <div className="mt-8 bg-purple-50 dark:bg-purple-900/10 rounded-2xl p-6 grid grid-cols-2 gap-4">
+            <div className="mt-8 mx-6 mb-6 bg-purple-50 dark:bg-purple-900/10 rounded-2xl p-6 grid grid-cols-2 gap-4">
                 <div>
                     <p className="text-xs font-semibold text-purple-600 dark:text-purple-400 mb-1">Avg. Mobile Session</p>
                     <p className="text-lg font-bold text-gray-900 dark:text-white">6m 24s</p>

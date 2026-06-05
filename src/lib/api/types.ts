@@ -431,6 +431,13 @@ export interface PlaysKPI {
     unique_listeners: number;
     avg_plays_per_user: number;
     period_comparison: Record<string, number>;
+    total_plays_change?: number;         // % vs previous period
+    total_minds_created?: number;        // total content items created
+    total_minds_created_change?: number; // % vs previous period
+    avg_time_per_user?: number;          // seconds
+    avg_time_per_user_change?: number;   // % vs previous period
+    avg_duration_per_play?: number;      // seconds
+    avg_duration_per_play_change?: number; // % vs previous period
 }
 
 export interface PlaysTimeseriesPoint {
@@ -440,9 +447,9 @@ export interface PlaysTimeseriesPoint {
 }
 
 export interface PlaysByType {
-    type: string;
+    content_type: string;
     plays: number;
-    listeners: number;
+    unique_listeners: number;
 }
 
 export interface PlaysByRegion {
@@ -457,6 +464,10 @@ export interface PlaysByContent {
     content_type: string;
     plays: number;
     unique_listeners: number;
+    retention?: number;              // % (0–100)
+    avg_time_per_user?: number;      // seconds — total time consumed ÷ unique users
+    avg_duration_per_play?: number;  // seconds — total play time ÷ total plays
+    growth_rate?: number;            // % change vs previous period (positive or negative)
 }
 
 export interface RankedContent {
@@ -620,6 +631,13 @@ export interface CommunityDashboard {
     engagement_rate: number;
     total_groups: number;
     open_reports: number;
+    // KPI cards
+    active_groups?: number;
+    active_groups_change?: number;
+    group_sessions?: number;
+    avg_participants?: number;
+    chat_messages?: number;
+    chat_messages_change?: number;
 }
 
 export interface CommunityGrowthPoint {
@@ -769,6 +787,20 @@ export interface CreateNotificationTemplateRequest {
 export interface TestTemplateRequest {
     template_id: number;
     recipient: string;
+}
+
+export type NotificationGroup = 'all' | 'free' | 'premium' | 'mind_expert' | 'b2b';
+export type NotificationTimezoneMode = 'user' | 'utc';
+
+export interface SendNotificationRequest {
+    title: string;
+    body: string;
+    target_type: 'user' | 'group';
+    user_id?: number;
+    groups?: NotificationGroup[];
+    send_now: boolean;
+    scheduled_at?: string;
+    timezone_mode?: NotificationTimezoneMode;
 }
 
 export interface AdminAccount {

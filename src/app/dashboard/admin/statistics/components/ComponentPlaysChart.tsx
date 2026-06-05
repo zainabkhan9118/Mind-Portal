@@ -37,7 +37,7 @@ const ComponentPlaysChart: React.FC = () => {
 
     // Embed fillColor per data point to avoid distributed:true (which crashes under React 18 StrictMode)
     const seriesData = byType.map((t, i) => ({
-        x: TYPE_LABELS[t.type] ?? t.type ?? `Type ${i}`,
+        x: TYPE_LABELS[t.content_type] ?? t.content_type ?? `Type ${i}`,
         y: t.plays ?? 0,
         fillColor: COLORS[i % COLORS.length],
     }));
@@ -96,11 +96,11 @@ const ComponentPlaysChart: React.FC = () => {
                         </div>
                     ))
                     : byType.map((t, i) => (
-                        <div key={t.type || String(i)} className="p-4 rounded-xl bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700">
+                        <div key={t.content_type || String(i)} className="p-4 rounded-xl bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700">
                             <div className="flex items-center gap-2 mb-2">
-                                {TYPE_ICONS[t.type] ?? <Eye className="w-5 h-5 text-gray-400" />}
+                                {TYPE_ICONS[t.content_type] ?? <Eye className="w-5 h-5 text-gray-400" />}
                                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    {TYPE_LABELS[t.type] ?? t.type}
+                                    {TYPE_LABELS[t.content_type] ?? t.content_type}
                                 </span>
                             </div>
                             <p className="text-xl font-bold text-gray-900 dark:text-white">

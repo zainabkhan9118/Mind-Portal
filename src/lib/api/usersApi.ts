@@ -97,7 +97,7 @@ const usersApi = {
         id: number,
         data: UserStatusChangeRequest,
     ): Promise<void> => {
-        await apiClient.post(`admin/users/${id}/status/`, data);
+        await apiClient.patch(`admin/users/${id}/status/`, data);
     },
 
     /** Soft-delete a user. */

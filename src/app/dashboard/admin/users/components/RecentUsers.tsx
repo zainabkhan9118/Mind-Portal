@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import UsersFilter from './UsersFilter';
 import UserTable from './UserTable';
 import SwitchExpertModal from './SwitchExpertModal';
+import UserActionModal from './UserActionModal';
 import { usersApi } from '@/lib/api';
 import type { ApiUser, UserStatus } from '@/lib/api/types';
 
@@ -19,12 +20,19 @@ const RecentUsers: React.FC = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
+    const [refreshKey, setRefreshKey] = useState(0);
 
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    // Switch to Mind Expert modal
+    const [isSwitchModalOpen, setIsSwitchModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<ApiUser | null>(null);
     const [isSwitching, setIsSwitching] = useState(false);
     const [switchError, setSwitchError] = useState<string | null>(null);
-    const [refreshKey, setRefreshKey] = useState(0);
+
+    // Status change modal
+    const [isActionModalOpen, setIsActionModalOpen] = useState(false);
+    const [pendingStatus, setPendingStatus] = useState<UserStatus>('active');
+    const [isChangingStatus, setIsChangingStatus] = useState(false);
+    const [statusChangeError, setStatusChangeError] = useState<string | null>(null);
 
     // Debounce search input by 400ms
     useEffect(() => {
@@ -67,7 +75,7 @@ const RecentUsers: React.FC = () => {
     const handleSwitchExpert = (user: ApiUser) => {
         setSelectedUser(user);
         setSwitchError(null);
-        setIsModalOpen(true);
+        setIsSwitchModalOpen(true);
     };
 
     const handleConfirmSwitch = async () => {
@@ -76,13 +84,36 @@ const RecentUsers: React.FC = () => {
         setSwitchError(null);
         try {
             await usersApi.switchToMindExpert(selectedUser.id);
-            setIsModalOpen(false);
+            setIsSwitchModalOpen(false);
             setSelectedUser(null);
             setRefreshKey(k => k + 1);
         } catch {
             setSwitchError('Failed to switch user. Please try again.');
         } finally {
             setIsSwitching(false);
+        }
+    };
+
+    const handleStatusChange = (user: ApiUser, status: UserStatus) => {
+        setSelectedUser(user);
+        setPendingStatus(status);
+        setStatusChangeError(null);
+        setIsActionModalOpen(true);
+    };
+
+    const handleConfirmStatusChange = async () => {
+        if (!selectedUser) return;
+        setIsChangingStatus(true);
+        setStatusChangeError(null);
+        try {
+            await usersApi.changeUserStatus(selectedUser.id, { status: pendingStatus });
+            setIsActionModalOpen(false);
+            setSelectedUser(null);
+            setRefreshKey(k => k + 1);
+        } catch {
+            setStatusChangeError('Failed to update user status. Please try again.');
+        } finally {
+            setIsChangingStatus(false);
         }
     };
 
@@ -106,6 +137,7 @@ const RecentUsers: React.FC = () => {
                 <UserTable
                     users={users}
                     onSwitchExpert={handleSwitchExpert}
+                    onStatusChange={handleStatusChange}
                     currentPage={currentPage}
                     totalCount={totalCount}
                     totalPages={totalPages}
@@ -114,12 +146,22 @@ const RecentUsers: React.FC = () => {
             )}
 
             <SwitchExpertModal
-                isOpen={isModalOpen}
-                onClose={() => { setIsModalOpen(false); setSwitchError(null); }}
+                isOpen={isSwitchModalOpen}
+                onClose={() => { setIsSwitchModalOpen(false); setSwitchError(null); }}
                 onConfirm={handleConfirmSwitch}
                 userName={displayName}
                 isLoading={isSwitching}
                 error={switchError}
+            />
+
+            <UserActionModal
+                isOpen={isActionModalOpen}
+                onClose={() => { setIsActionModalOpen(false); setStatusChangeError(null); }}
+                onConfirm={handleConfirmStatusChange}
+                userName={displayName}
+                action={pendingStatus}
+                isLoading={isChangingStatus}
+                error={statusChangeError}
             />
         </div>
     );

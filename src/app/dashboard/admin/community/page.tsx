@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import dynamic from "next/dynamic";
-import { Users, MessageSquare, ArrowUpRight, Search, FileText, AlertTriangle, ThumbsUp } from "lucide-react";
+import { Users, MessageSquare, ArrowUpRight, Search, ThumbsUp, CalendarDays, UserCheck } from "lucide-react";
 import { ApexOptions } from "apexcharts";
 import communityApi from "@/lib/api/communityApi";
 import type {
@@ -107,77 +107,82 @@ export default function CommunityPage() {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* Active Members */}
+                {/* Active Group */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col justify-between h-full min-h-[160px]">
                     <div className="flex items-start gap-4">
                         <div className="w-12 h-12 rounded-2xl bg-[#F4ECFF] dark:bg-purple-900/20 flex items-center justify-center text-[#9810FA] shrink-0">
                             <Users className="w-6 h-6" />
                         </div>
                         <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Active Members</p>
+                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Active Group</p>
                             <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                                {fmt(dashboard?.active_members)}
+                                {fmt(dashboard?.active_groups ?? dashboard?.total_groups)}
                             </h3>
                         </div>
                     </div>
-                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        {dashboard ? `of ${fmt(dashboard.total_members)} total members` : "Loading..."}
-                    </div>
+                    {dashboard?.active_groups_change != null ? (
+                        <div className="flex items-center gap-1 text-sm font-medium text-[#22AD5C]">
+                            <ArrowUpRight className="w-4 h-4" />
+                            <span>+{dashboard.active_groups_change.toFixed(1)}% this month</span>
+                        </div>
+                    ) : (
+                        <div className="text-sm font-medium text-gray-500 dark:text-gray-400">This month</div>
+                    )}
                 </div>
 
-                {/* Total Posts */}
+                {/* Group Sessions */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col justify-between h-full min-h-[160px]">
                     <div className="flex items-start gap-4">
                         <div className="w-12 h-12 rounded-2xl bg-[#EAF2FF] dark:bg-blue-900/20 flex items-center justify-center text-[#2F80ED] shrink-0">
-                            <FileText className="w-6 h-6" />
+                            <CalendarDays className="w-6 h-6" />
                         </div>
                         <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Posts</p>
+                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Group Sessions</p>
                             <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                                {fmt(dashboard?.total_posts)}
+                                {fmt(dashboard?.group_sessions)}
                             </h3>
                         </div>
                     </div>
-                    <div className="flex items-center gap-1 text-sm font-medium text-[#22AD5C]">
-                        <ArrowUpRight className="w-4 h-4" />
-                        <span>{dashboard ? `${fmt(dashboard.total_groups)} groups` : "Loading..."}</span>
-                    </div>
+                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400">This month</div>
                 </div>
 
-                {/* Total Comments */}
+                {/* Average Participants */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col justify-between h-full min-h-[160px]">
                     <div className="flex items-start gap-4">
                         <div className="w-12 h-12 rounded-2xl bg-[#E6F9F0] dark:bg-green-900/20 flex items-center justify-center text-[#027A48] shrink-0">
+                            <UserCheck className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Average Participants</p>
+                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                                {fmt(dashboard?.avg_participants)}
+                            </h3>
+                        </div>
+                    </div>
+                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Per session</div>
+                </div>
+
+                {/* Chat Messages */}
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col justify-between h-full min-h-[160px]">
+                    <div className="flex items-start gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-[#FFF0EC] dark:bg-orange-900/20 flex items-center justify-center text-[#E0580C] shrink-0">
                             <MessageSquare className="w-6 h-6" />
                         </div>
                         <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Comments</p>
+                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Chat Messages</p>
                             <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                                {fmt(dashboard?.total_comments)}
+                                {fmt(dashboard?.chat_messages)}
                             </h3>
                         </div>
                     </div>
-                    <div className="text-sm font-medium text-[#22AD5C]">
-                        Community engagement
-                    </div>
-                </div>
-
-                {/* Open Reports */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col justify-between h-full min-h-[160px]">
-                    <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-[#FFF4ED] dark:bg-orange-900/20 flex items-center justify-center text-[#E0580C] shrink-0">
-                            <AlertTriangle className="w-6 h-6" />
+                    {dashboard?.chat_messages_change != null ? (
+                        <div className="flex items-center gap-1 text-sm font-medium text-[#22AD5C]">
+                            <ArrowUpRight className="w-4 h-4" />
+                            <span>+{dashboard.chat_messages_change.toFixed(1)}% this month</span>
                         </div>
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Open Reports</p>
-                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                                {fmt(dashboard?.open_reports)}
-                            </h3>
-                        </div>
-                    </div>
-                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        Pending moderation
-                    </div>
+                    ) : (
+                        <div className="text-sm font-medium text-gray-500 dark:text-gray-400">This month</div>
+                    )}
                 </div>
             </div>
 

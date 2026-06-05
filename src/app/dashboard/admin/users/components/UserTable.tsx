@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { User as UserIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { User as UserIcon, ChevronLeft, ChevronRight, MoreVertical } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
-import type { ApiUser } from '@/lib/api/types';
+import type { ApiUser, UserStatus } from '@/lib/api/types';
 
 interface UserTableProps {
     users: ApiUser[];
     onSwitchExpert: (user: ApiUser) => void;
+    onStatusChange: (user: ApiUser, status: UserStatus) => void;
     currentPage: number;
     totalCount: number;
     totalPages: number;
@@ -17,12 +18,25 @@ const PAGE_SIZE = 10;
 const UserTable: React.FC<UserTableProps> = ({
     users,
     onSwitchExpert,
+    onStatusChange,
     currentPage,
     totalCount,
     totalPages,
     onPageChange,
 }) => {
     const [selectedUsers, setSelectedUsers] = useState<Set<number>>(new Set());
+    const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+                setOpenMenuId(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const toggleSelectAll = () => {
         if (selectedUsers.size === users.length) {
@@ -78,7 +92,7 @@ const UserTable: React.FC<UserTableProps> = ({
                             <TableCell isHeader className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-left">Joined</TableCell>
                             <TableCell isHeader className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-left">Access</TableCell>
                             <TableCell isHeader className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-left">Status</TableCell>
-                            <TableCell isHeader className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-left">Action</TableCell>
+                            <TableCell isHeader className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-left">Actions</TableCell>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -95,6 +109,7 @@ const UserTable: React.FC<UserTableProps> = ({
                             const joinedDate = rawDate
                                 ? new Date(rawDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
                                 : '—';
+                            const isMenuOpen = openMenuId === user.id;
 
                             return (
                                 <TableRow key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors border-b border-gray-100 dark:border-gray-700 last:border-0">
@@ -135,15 +150,54 @@ const UserTable: React.FC<UserTableProps> = ({
                                         </span>
                                     </TableCell>
                                     <TableCell className="px-6 py-4">
-                                        <button
-                                            onClick={() => onSwitchExpert(user)}
-                                            className="flex items-center gap-1.5 text-xs font-medium text-purple-600 hover:text-purple-800 transition-colors"
-                                        >
-                                            <span className="w-4 h-4 rounded-full border border-purple-600 flex items-center justify-center text-[10px]">
-                                                ⚡
-                                            </span>
-                                            Switch to Mind Expert
-                                        </button>
+                                        <div className="relative" ref={isMenuOpen ? menuRef : null}>
+                                            <button
+                                                onClick={() => setOpenMenuId(isMenuOpen ? null : user.id)}
+                                                className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-500 dark:text-gray-400"
+                                            >
+                                                <MoreVertical className="w-4 h-4" />
+                                            </button>
+
+                                            {isMenuOpen && (
+                                                <div className="absolute right-0 top-8 z-50 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg py-1 animate-in fade-in slide-in-from-top-2 duration-150">
+                                                    {user.status !== 'active' && (
+                                                        <button
+                                                            onClick={() => { setOpenMenuId(null); onStatusChange(user, 'active'); }}
+                                                            className="w-full text-left px-4 py-2.5 text-sm text-green-600 dark:text-green-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors flex items-center gap-2"
+                                                        >
+                                                            <span className="w-2 h-2 rounded-full bg-green-500 inline-block" />
+                                                            Activate
+                                                        </button>
+                                                    )}
+                                                    {user.status !== 'suspended' && (
+                                                        <button
+                                                            onClick={() => { setOpenMenuId(null); onStatusChange(user, 'suspended'); }}
+                                                            className="w-full text-left px-4 py-2.5 text-sm text-yellow-600 dark:text-yellow-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors flex items-center gap-2"
+                                                        >
+                                                            <span className="w-2 h-2 rounded-full bg-yellow-500 inline-block" />
+                                                            Suspend
+                                                        </button>
+                                                    )}
+                                                    {user.status !== 'banned' && (
+                                                        <button
+                                                            onClick={() => { setOpenMenuId(null); onStatusChange(user, 'banned'); }}
+                                                            className="w-full text-left px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors flex items-center gap-2"
+                                                        >
+                                                            <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+                                                            Ban
+                                                        </button>
+                                                    )}
+                                                    <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
+                                                    <button
+                                                        onClick={() => { setOpenMenuId(null); onSwitchExpert(user); }}
+                                                        className="w-full text-left px-4 py-2.5 text-sm text-purple-600 dark:text-purple-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors flex items-center gap-2"
+                                                    >
+                                                        <span className="w-4 h-4 rounded-full border border-purple-600 flex items-center justify-center text-[10px]">⚡</span>
+                                                        Switch to Mind Expert
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             );

@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState } from "react";
 import {
     UserPlus,
     Shield,
-    Bell,
     Eye,
     Smartphone,
     Users,
@@ -24,6 +23,7 @@ import Switch from "@/components/form/switch/Switch";
 import settingsApi from "@/lib/api/settingsApi";
 import globalApi from "@/lib/api/globalApi";
 import type { AdminAccount, AuditLogEntry, HealthStatus, Role } from "@/lib/api/types";
+import PushNotifications from "./PushNotifications";
 
 const FEATURE_FLAG_KEYS: Record<string, string> = {
     vrMode: 'vr_mode',
@@ -109,14 +109,6 @@ const AdminOverview: React.FC = () => {
     const [flagsSaved, setFlagsSaved] = useState(false);
     const flagsSavedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    // Push notifications
-    const [notifAudience, setNotifAudience] = useState('');
-    const [notifMessage, setNotifMessage] = useState('');
-    const [notifScheduled, setNotifScheduled] = useState(false);
-    const [isSendingNotif, setIsSendingNotif] = useState(false);
-    const [notifSent, setNotifSent] = useState(false);
-    const [notifError, setNotifError] = useState('');
-    const notifSentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
         // Roles load separately so failure doesn't block the rest of the page
@@ -143,7 +135,6 @@ const AdminOverview: React.FC = () => {
 
         return () => {
             if (flagsSavedTimer.current) clearTimeout(flagsSavedTimer.current);
-            if (notifSentTimer.current) clearTimeout(notifSentTimer.current);
         };
     }, []);
 
@@ -227,35 +218,6 @@ const AdminOverview: React.FC = () => {
         }
     };
 
-    const handleSendNotification = async () => {
-        if (!notifMessage.trim()) {
-            setNotifError('Please enter a notification message.');
-            return;
-        }
-        setNotifError('');
-        setIsSendingNotif(true);
-        try {
-            await settingsApi.createTemplate({
-                name: notifAudience || 'Broadcast',
-                channel: 'push',
-                event_type: 'broadcast',
-                subject: 'Push Notification',
-                body_template: notifMessage,
-                variables: [],
-            });
-            setNotifSent(true);
-            setNotifMessage('');
-            setNotifAudience('');
-            if (notifSentTimer.current) clearTimeout(notifSentTimer.current);
-            notifSentTimer.current = setTimeout(() => setNotifSent(false), 3000);
-        } catch (err) {
-            console.error(err);
-            setNotifError('Failed to send notification. Please try again.');
-        } finally {
-            setIsSendingNotif(false);
-        }
-    };
-
     const getHealthColor = (status: string) => {
         const isGood = ['healthy', 'ok', 'connected', 'operational', 'active', 'up', 'running'].some(
             (s) => status.toLowerCase().includes(s)
@@ -331,75 +293,8 @@ const AdminOverview: React.FC = () => {
                 </div>
 
                 {/* Push Notifications */}
-                <div className="bg-white dark:bg-gray-800 p-8 rounded-[32px] border border-gray-100 dark:border-gray-700 shadow-sm space-y-8">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Bell className="w-5 h-5 text-purple-600" />
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white">Push Notifications</h3>
-                    </div>
-
-                    <div className="space-y-6">
-                        <div>
-                            <Label htmlFor="targetAudience" className="text-sm font-bold text-gray-900 dark:text-white mb-2 block">Target Audience</Label>
-                            <Input
-                                id="targetAudience"
-                                placeholder="e.g. All Users, Premium Members..."
-                                value={notifAudience}
-                                onChange={(e) => setNotifAudience(e.target.value)}
-                                className="bg-gray-50/50 dark:bg-gray-900 rounded-xl"
-                            />
-                        </div>
-
-                        <div>
-                            <Label htmlFor="message" className="text-sm font-bold text-gray-900 dark:text-white mb-2 block">Message</Label>
-                            <textarea
-                                id="message"
-                                placeholder="Enter your notification message..."
-                                rows={4}
-                                value={notifMessage}
-                                onChange={(e) => {
-                                    setNotifMessage(e.target.value);
-                                    if (notifError) setNotifError('');
-                                }}
-                                className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-[#9810FA] focus:border-transparent transition-all resize-none shadow-theme-xs placeholder:text-gray-400 text-sm"
-                            />
-                            {notifError && (
-                                <p className="mt-1.5 text-xs text-red-500 font-medium">{notifError}</p>
-                            )}
-                        </div>
-
-                        <div className="p-5 rounded-2xl border border-purple-100/50 dark:border-purple-900/40 bg-purple-50/10 dark:bg-purple-900/5 flex items-center justify-between">
-                            <div>
-                                <h5 className="text-sm font-bold text-gray-900 dark:text-white">Schedule Notification</h5>
-                                <p className="text-[11px] text-gray-500 dark:text-gray-400">Send notification at a specific time to all users</p>
-                            </div>
-                            <Switch
-                                label=""
-                                defaultChecked={notifScheduled}
-                                onChange={() => setNotifScheduled((v) => !v)}
-                                color="blue"
-                            />
-                        </div>
-                    </div>
-
-                    {notifSent && (
-                        <div className="flex items-center gap-2 px-4 py-3 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 rounded-xl text-sm font-medium">
-                            <CheckCircle className="w-4 h-4 shrink-0" />
-                            Notification sent successfully!
-                        </div>
-                    )}
-
-                    <Button
-                        onClick={handleSendNotification}
-                        disabled={isSendingNotif}
-                        className="w-full py-3.5 bg-[#9810FA] hover:bg-[#8000E0] disabled:opacity-60 text-white rounded-2xl font-bold shadow-lg shadow-purple-500/20 text-sm tracking-wide transition-all border-none flex items-center justify-center gap-2"
-                    >
-                        {isSendingNotif ? (
-                            <>
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Sending...
-                            </>
-                        ) : 'Send Notification'}
-                    </Button>
+                <div className="bg-white dark:bg-gray-800 p-8 rounded-[32px] border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <PushNotifications />
                 </div>
             </div>
 
