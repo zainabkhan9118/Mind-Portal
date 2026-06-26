@@ -1,9 +1,8 @@
 "use client";
-import React, { useState } from 'react';
-import { LayoutGrid, Headphones, Music, BarChart3, Trophy } from 'lucide-react';
+import { useState } from 'react';
+import { LayoutGrid, Headphones, Trophy } from 'lucide-react';
 import OverviewTab from './components/OverviewTab';
 import ContentPlaysTab from './components/ContentPlaysTab';
-import RetentionTab from './components/RetentionTab';
 import TopRankingsTab from './components/TopRankingsTab';
 
 export default function StatisticsPage() {
@@ -12,7 +11,6 @@ export default function StatisticsPage() {
   const tabs = [
     { id: 'Overview', icon: <LayoutGrid className="w-4 h-4" /> },
     { id: 'Content Plays', icon: <Headphones className="w-4 h-4" /> },
-    // { id: 'Retention', icon: <BarChart3 className="w-4 h-4" /> },
     { id: 'Top Rankings', icon: <Trophy className="w-4 h-4" /> },
   ];
 
@@ -50,7 +48,6 @@ export default function StatisticsPage() {
       <div className="min-h-[500px]">
         {activeTab === 'Overview' && <OverviewTab />}
         {activeTab === 'Content Plays' && <ContentPlaysTab />}
-        {/* {activeTab === 'Retention' && <RetentionTab />} */}
         {activeTab === 'Top Rankings' && <TopRankingsTab />}
       </div>
     </div>
