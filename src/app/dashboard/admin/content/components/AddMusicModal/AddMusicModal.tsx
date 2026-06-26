@@ -7,6 +7,7 @@ import VisibilitySettings from "./VisibilitySettings";
 import AccessLevels from "./AccessLevels";
 import CoverImage from "./CoverImage";
 import AddTags from "./AddTags";
+import StateEffectSelector from "./StateEffectSelector";
 import CreateSubCategoryModal from "./CreateSubCategoryModal";
 import { contentApi } from "@/lib/api";
 import apiClient from "@/lib/api/axiosInstance";
@@ -25,6 +26,8 @@ interface AddMusicModalProps {
     isEnvironmentVisual?: boolean;
     categories: AdminCategory[];
     onSuccess: () => void;
+    editItemId?: number | null;
+    activeTab?: string;
 }
 
 const AddMusicModal: React.FC<AddMusicModalProps> = ({
@@ -35,6 +38,8 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
     isEnvironmentVisual = false,
     categories,
     onSuccess,
+    editItemId = null,
+    activeTab = "Music",
 }) => {
     const [useCustomIcon, setUseCustomIcon] = useState(false);
     const [isCreateSubCategoryOpen, setIsCreateSubCategoryOpen] = useState(false);
@@ -58,6 +63,8 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
     const [frequency, setFrequency] = useState("");
     const [contentType, setContentType] = useState("");
     const [duration, setDuration] = useState<number>(0);
+    const [state, setState] = useState("");
+    const [effect, setEffect] = useState("");
 
     // Fetch goals once
     useEffect(() => {
@@ -66,6 +73,52 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
             .then((res) => setGoalsList(res.data.results ?? []))
             .catch(() => {});
     }, []);
+
+    // Pre-fill form when editing
+    useEffect(() => {
+        if (!isOpen || !editItemId) return;
+        const load = async () => {
+            try {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                let item: any;
+                if (isEnvironmentSound)       item = await contentApi.envSounds.get(editItemId);
+                else if (isMindSession)       item = await contentApi.guidedSessions.get(editItemId);
+                else if (isEnvironmentVisual) item = await contentApi.envVisuals.get(editItemId);
+                else                          item = await contentApi.music.get(editItemId);
+
+                setTitle(item.name ?? "");
+                setDetails(item.description ?? "");
+                setStatus(item.status ?? "draft");
+                setAccessLevel(item.is_premium ? "premium" : "free");
+                setTags(item.tags ?? []);
+                setSelectedGoals(item.goals ?? []);
+                setDuration(item.duration ?? 0);
+                setState(item.state ?? "");
+                setEffect(item.effect ?? "");
+
+                if (isEnvironmentSound) {
+                    setArtist(item.environment_sound_type ?? "");
+                    setFrequency(item.frequency ?? "");
+                    setCategoryId(String(item.category?.[0] ?? ""));
+                } else if (isMindSession) {
+                    setArtist(item.instructor_name || item.artist || "");
+                    setContentType(item.mind_session_type ?? "");
+                    setCategoryId(String(item.mind_session_category?.[0] ?? ""));
+                } else if (isEnvironmentVisual) {
+                    setArtist(item.mood ?? "");
+                    setContentType(item.environment_visual_type ?? "");
+                    setCategoryId(String(item.category?.[0] ?? ""));
+                } else {
+                    setArtist(item.artist ?? "");
+                    setCategoryId(String(item.music_category?.[0] ?? ""));
+                }
+            } catch {
+                // silently fail — form stays empty
+            }
+        };
+        load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, editItemId]);
 
     const resetForm = () => {
         setTitle("");
@@ -81,6 +134,8 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
         setContentType("");
         setDuration(0);
         setSelectedGoals([]);
+        setState("");
+        setEffect("");
         setSubmitError(null);
     };
 
@@ -131,10 +186,12 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
             if (contentType) fd.append("environment_visual_type", contentType);
             if (categoryId) fd.append("category", categoryId);
         } else {
-            // Music
             fd.append("artist", artist);
             if (categoryId) fd.append("music_category", categoryId);
         }
+
+        if (state)  fd.append("state", state);
+        if (effect) fd.append("effect", effect);
 
         return fd;
     };
@@ -153,15 +210,15 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
             setSubmitError("Description is required.");
             return;
         }
-        if (!audioFile) {
+        if (!editItemId && !audioFile) {
             setSubmitError(`Please upload a${isEnvironmentVisual ? " video" : "n audio"} file.`);
             return;
         }
-        if (!coverImageFile) {
+        if (!editItemId && !coverImageFile) {
             setSubmitError("Please upload a cover image.");
             return;
         }
-        if (!isEnvironmentVisual && duration === 0) {
+        if (!editItemId && !isEnvironmentVisual && duration === 0) {
             setSubmitError("Audio duration could not be read yet. Please wait a moment or re-upload the file.");
             return;
         }
@@ -173,18 +230,19 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
         setIsSubmitting(true);
         try {
             const fd = buildFormData(publish);
-            if (isEnvironmentSound) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                await contentApi.envSounds.create(fd as any);
+            if (editItemId) {
+                if (isEnvironmentSound)       await contentApi.envSounds.update(editItemId, fd as never);
+                else if (isMindSession)       await contentApi.guidedSessions.update(editItemId, fd as never);
+                else if (isEnvironmentVisual) await contentApi.envVisuals.update(editItemId, fd as never);
+                else                          await contentApi.music.update(editItemId, fd as never);
+            } else if (isEnvironmentSound) {
+                await contentApi.envSounds.create(fd as never);
             } else if (isMindSession) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                await contentApi.guidedSessions.create(fd as any);
+                await contentApi.guidedSessions.create(fd as never);
             } else if (isEnvironmentVisual) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                await contentApi.envVisuals.create(fd as any);
+                await contentApi.envVisuals.create(fd as never);
             } else {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                await contentApi.music.create(fd as any);
+                await contentApi.music.create(fd as never);
             }
             resetForm();
             onClose();
@@ -203,18 +261,24 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
         }
     };
 
-    let modalTitle = "Add Music";
-    let modalDescription = "Fill in the details to add a new music track to your collection.";
+    const isEditing = !!editItemId;
+    const tabLabel = activeTab ?? "Music";
+    const verb = isEditing ? "Edit" : "Add";
+
+    let modalTitle = `${verb} Music`;
+    let modalDescription = isEditing
+        ? `Update the details for this ${tabLabel} item.`
+        : "Fill in the details to add a new music track to your collection.";
 
     if (isEnvironmentSound) {
-        modalTitle = "Add Environment Sound";
-        modalDescription = "Fill in the details to add a new Environment Sound to your collection.";
+        modalTitle = `${verb} Environment Sound`;
+        if (!isEditing) modalDescription = "Fill in the details to add a new Environment Sound to your collection.";
     } else if (isMindSession) {
-        modalTitle = "Add Mind Sessions";
-        modalDescription = "Fill in the details to add a new mind session to your collection.";
+        modalTitle = `${verb} Mind Session`;
+        if (!isEditing) modalDescription = "Fill in the details to add a new mind session to your collection.";
     } else if (isEnvironmentVisual) {
-        modalTitle = "Add Environment Visual";
-        modalDescription = "Fill in the details to add a new environment visual to your collection.";
+        modalTitle = `${verb} Environment Visual`;
+        if (!isEditing) modalDescription = "Fill in the details to add a new environment visual to your collection.";
     }
 
     return (
@@ -278,6 +342,13 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
                                 </div>
                             </div>
                         )}
+
+                        <StateEffectSelector
+                            state={state}
+                            onStateChange={setState}
+                            effect={effect}
+                            onEffectChange={setEffect}
+                        />
 
                         <AddTags tags={tags} onTagsChange={setTags} />
 

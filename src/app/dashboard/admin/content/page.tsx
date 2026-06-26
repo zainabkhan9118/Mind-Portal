@@ -77,6 +77,8 @@ function adaptMusic(item: AdminMusic): ContentItem {
     title: item.name,
     artist: item.artist,
     url: item.audio_clip,
+    state: item.status ?? "",
+    effect: item.genre ?? "",
     status: mapApiStatus(item.status),
     accessType: item.is_premium ? "Premium" : "Free",
     uploadStatus: "Uploaded",
@@ -98,6 +100,8 @@ function adaptEnvSound(item: AdminEnvironmentSound, goalsMap: Record<number, str
     type: item.environment_sound_type ?? "",
     goal: mapGoalNames(item.goals ?? [], goalsMap),
     details: item.description ?? "",
+    state: item.state ?? "",
+    effect: item.effect ?? "",
     status: mapApiStatus(item.status),
     accessType: item.is_premium ? "Premium" : "Free",
     uploadStatus: "Uploaded",
@@ -114,6 +118,8 @@ function adaptMindSession(item: AdminMindSession, goalsMap: Record<number, strin
     duration: formatDuration(item.duration),
     goal: mapGoalNames(item.goals ?? [], goalsMap),
     details: item.description,
+    state: item.state ?? "",
+    effect: item.effect ?? "",
     status: mapApiStatus(item.status),
     accessType: item.is_premium ? "Premium" : "Free",
     uploadStatus: "Uploaded",
@@ -130,6 +136,8 @@ function adaptEnvVisual(item: AdminEnvironmentVisual, goalsMap: Record<number, s
     author: item.mood ?? "",
     goal: mapGoalNames(item.goals ?? [], goalsMap),
     details: item.description ?? "",
+    state: item.state ?? "",
+    effect: item.effect ?? "",
     status: mapApiStatus(item.status),
     accessType: item.is_premium ? "Premium" : "Free",
     uploadStatus: "Uploaded",
@@ -149,6 +157,7 @@ export default function ContentManagementPage() {
   const [categoryFilter, setCategoryFilter] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isNewContentModalOpen, setIsNewContentModalOpen] = useState(false);
+  const [editItemId, setEditItemId] = useState<number | null>(null);
 
   const [data, setData] = useState<AnyRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -301,6 +310,11 @@ export default function ContentManagementPage() {
     }
   };
 
+  const handleEdit = (id: number) => {
+    setEditItemId(id);
+    setIsModalOpen(true);
+  };
+
   const handleChangeStatus = async (id: number, status: "published" | "draft" | "archived") => {
     try {
       await contentApi.changeStatus(getContentType(activeTab), id, { status });
@@ -405,6 +419,7 @@ export default function ContentManagementPage() {
             onDelete={handleDelete}
             onDuplicate={handleDuplicate}
             onChangeStatus={handleChangeStatus}
+            onEdit={handleEdit}
           />
         )}
 
@@ -459,12 +474,14 @@ export default function ContentManagementPage() {
 
       <AddMusicModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => { setIsModalOpen(false); setEditItemId(null); }}
         isEnvironmentSound={activeTab === "Environment Sound"}
         isMindSession={activeTab === "Mind Sessions"}
         isEnvironmentVisual={activeTab === "Environment Visual"}
         categories={categories}
         onSuccess={fetchData}
+        editItemId={editItemId}
+        activeTab={activeTab}
       />
 
       <AddNewContentModal

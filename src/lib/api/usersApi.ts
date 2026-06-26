@@ -100,6 +100,12 @@ const usersApi = {
         await apiClient.patch(`admin/users/${id}/status/`, data);
     },
 
+    /** Partial update a user (e.g. toggle is_premium). */
+    updateUser: async (id: number, data: Partial<{ is_premium: boolean }>): Promise<ApiUser> => {
+        const response = await apiClient.patch<ApiUser>(`admin/users/${id}/`, data);
+        return response.data;
+    },
+
     /** Soft-delete a user. */
     deleteUser: async (id: number): Promise<void> => {
         await apiClient.delete(`admin/users/${id}/`);

@@ -327,6 +327,8 @@ export interface AdminMindSession {
     category_names: string;
     steps: SessionStep[];
     is_mind_player_original?: boolean;
+    state?: string;
+    effect?: string;
     created_by: number;
     created_at: string;
     updated_at: string;
@@ -359,6 +361,8 @@ export interface AdminEnvironmentSound {
     play_count: number;
     category_names: string;
     layers: SoundLayer[];
+    state?: string;
+    effect?: string;
     created_at: string;
     updated_at: string;
 }
@@ -387,6 +391,8 @@ export interface AdminEnvironmentVisual {
     loop_duration_ms?: number | null;
     like_count: number;
     category_names: string;
+    state?: string;
+    effect?: string;
     created_at: string;
     updated_at: string;
 }

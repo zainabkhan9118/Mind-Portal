@@ -9,6 +9,8 @@ export interface ContentItem {
     title: string;
     artist: string;
     url: string;
+    state: string;
+    effect: string;
     status: ContentStatus;
     accessType: AccessType;
     uploadStatus: UploadStatus;
@@ -24,6 +26,8 @@ export interface EnvironmentSoundItem {
     type: string;
     goal: string;
     details: string;
+    state: string;
+    effect: string;
     status: Exclude<ContentStatus, "Unknown">;
     accessType: AccessType;
     uploadStatus: UploadStatus;
@@ -38,6 +42,8 @@ export interface MindSessionItem {
     duration: string;
     goal: string;
     details: string;
+    state: string;
+    effect: string;
     status: Exclude<ContentStatus, "Unknown">;
     accessType: AccessType;
     uploadStatus: UploadStatus;
@@ -52,6 +58,8 @@ export interface EnvironmentVisualItem {
     author: string;
     goal: string;
     details: string;
+    state: string;
+    effect: string;
     status: Exclude<ContentStatus, "Unknown">;
     accessType: AccessType;
     uploadStatus: UploadStatus;
