@@ -58,7 +58,7 @@ const analyticsApi = {
 
     /** Play KPIs: total plays, unique listeners, avg per user, period comparison. */
     getPlaysKPI: async (params?: AnalyticsParams): Promise<PlaysKPI> => {
-        const response = await apiClient.get<PlaysKPI>("admin/analytics/plays/", {
+        const response = await apiClient.get<PlaysKPI>("admin/analytics/plays/kpi/", {
             params,
         });
         return response.data;

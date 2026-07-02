@@ -21,7 +21,7 @@ const ContentValidation: React.FC = () => {
 
     useEffect(() => {
         Promise.all([
-            contentApi.getAll({ status: 'review', type: 'guided_session', size: 20 }),
+            contentApi.getAll({ status: 'review', type: 'mind_session', size: 20 }),
             contentApi.getAll({ status: 'review', type: 'music', size: 20 }),
         ]).then(([mindsRes, playlistsRes]) => {
             const mindItems = (mindsRes.results as AdminMindSession[]).map((item): ValidationItemData => ({

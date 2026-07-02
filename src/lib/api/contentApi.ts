@@ -16,6 +16,8 @@ import type {
     ContentStatusChangeRequest,
     BulkActionRequest,
     AdminCategory,
+    SubCategory,
+    SubCategoryListParams,
     SoundLayer,
     SessionStep,
     ReorderStepsRequest,
@@ -58,7 +60,7 @@ const contentApi = {
         id: number,
         data: ContentStatusChangeRequest,
     ): Promise<void> => {
-        const typeSlug = type === "guided_session" ? "guided-sessions"
+        const typeSlug = type === "mind_session" ? "guided-sessions"
             : type === "env_sound" ? "env-sounds"
             : type === "env_visual" ? "env-visuals"
             : type;
@@ -70,7 +72,7 @@ const contentApi = {
         type: ContentType,
         id: number,
     ): Promise<AnyContentItem> => {
-        const typeSlug = type === "guided_session" ? "guided-sessions"
+        const typeSlug = type === "mind_session" ? "guided-sessions"
             : type === "env_sound" ? "env-sounds"
             : type === "env_visual" ? "env-visuals"
             : type;
@@ -336,6 +338,18 @@ const contentApi = {
 
         delete: async (id: number): Promise<void> => {
             await apiClient.delete(`admin/content/env-visuals/${id}/`);
+        },
+    },
+
+    // ── Sub-categories ──────────────────────────────────────────────────
+
+    subCategories: {
+        list: async (params: SubCategoryListParams): Promise<PaginatedResponse<SubCategory>> => {
+            const response = await apiClient.get<PaginatedResponse<SubCategory>>(
+                "admin/content/sub-categories/",
+                { params },
+            );
+            return response.data;
         },
     },
 

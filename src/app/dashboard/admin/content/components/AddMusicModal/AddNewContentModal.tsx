@@ -31,7 +31,7 @@ interface AddNewContentModalProps {
 const tabToType: Record<string, string> = {
     "Music": "music",
     "Environment Sound": "env_sound",
-    "Mind Sessions": "guided_session",
+    "Mind Sessions": "mind_session",
     "Environment Visual": "env_visual",
 };
 

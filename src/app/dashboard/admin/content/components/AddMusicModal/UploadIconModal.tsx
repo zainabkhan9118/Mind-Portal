@@ -8,9 +8,10 @@ import { Upload, X } from "lucide-react";
 interface UploadIconModalProps {
     isOpen: boolean;
     onClose: () => void;
+    onIconSelected: (file: File) => void;
 }
 
-const UploadIconModal: React.FC<UploadIconModalProps> = ({ isOpen, onClose }) => {
+const UploadIconModal: React.FC<UploadIconModalProps> = ({ isOpen, onClose, onIconSelected }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [iconFile, setIconFile] = useState<File | null>(null);
     const [preview, setPreview] = useState<string | null>(null);
@@ -30,6 +31,12 @@ const UploadIconModal: React.FC<UploadIconModalProps> = ({ isOpen, onClose }) =>
         onClose();
     };
 
+    const handleConfirm = () => {
+        if (!iconFile) return;
+        onIconSelected(iconFile);
+        handleClose();
+    };
+
     return (
         <Modal isOpen={isOpen} onClose={handleClose} className="max-w-[480px] z-[999999]">
             <div className="bg-white dark:bg-gray-900 rounded-3xl p-0 overflow-hidden">
@@ -41,13 +48,12 @@ const UploadIconModal: React.FC<UploadIconModalProps> = ({ isOpen, onClose }) =>
                 </div>
 
                 <div className="p-6 space-y-6">
-                    {/* Icon Preview / Upload */}
                     <div className="flex flex-col items-center justify-center gap-3">
                         <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Upload Icon</p>
                         <input
                             ref={fileInputRef}
                             type="file"
-                            accept="image/*"
+                            accept="image/*,.svg"
                             className="hidden"
                             onChange={(e) => {
                                 const file = e.target.files?.[0];
@@ -86,7 +92,7 @@ const UploadIconModal: React.FC<UploadIconModalProps> = ({ isOpen, onClose }) =>
                 <div className="flex justify-end gap-3 p-6 pt-0">
                     <Button variant="outline" onClick={handleClose} className="px-6">Cancel</Button>
                     <Button
-                        onClick={handleClose}
+                        onClick={handleConfirm}
                         className="bg-[#9810FA] hover:bg-[#8000E0] text-white border-none px-6"
                         disabled={!iconFile}
                     >

@@ -35,6 +35,7 @@ const HomeScreenEnvironments: React.FC = () => {
     const [envSounds, setEnvSounds] = useState<AdminEnvironmentSound[]>([]);
     const [loadingVisuals, setLoadingVisuals] = useState(true);
     const [loadingSounds, setLoadingSounds] = useState(true);
+    const [goalIds, setGoalIds] = useState<number[]>([]);
 
     // ── Composer state ──────────────────────────────────────────────────
     const [selectedVisual, setSelectedVisual] = useState<number | null>(null);
@@ -86,16 +87,43 @@ const HomeScreenEnvironments: React.FC = () => {
             .catch(() => {})
             .finally(() => setLoadingSounds(false));
 
+        // Fetch goals so uploads can include the required goals[] field
+        apiClient.get<{ results?: { id: number }[] } | { id: number }[]>("explore/goals/", { params: { size: 100 } })
+            .then((res) => {
+                const data = res.data;
+                const items = Array.isArray(data) ? data : (data.results ?? []);
+                setGoalIds(items.map((g) => g.id));
+            })
+            .catch(() => {});
+
         // Try to load previously saved environments
         apiClient.get("explore/home-screen-environments/")
             .then((res) => {
-                const data = res.data as { results?: SavedEnvironment[]; active_ids?: number[] } | SavedEnvironment[];
-                if (Array.isArray(data)) {
-                    setSavedEnvironments(data);
-                } else {
-                    setSavedEnvironments(data.results ?? []);
-                    if (data.active_ids) setActiveEnvIds(new Set(data.active_ids));
-                }
+                type ApiEnv = {
+                    id: number;
+                    env_visuals: { id: number; name: string; visual_file: string; image: string }[];
+                    env_sounds: { id: number; name: string; audio_clip: string; image: string }[];
+                    is_active: boolean;
+                    created_at: string;
+                };
+                const raw: ApiEnv[] = Array.isArray(res.data)
+                    ? res.data
+                    : (res.data as { results?: ApiEnv[] }).results ?? [];
+
+                const mapped: SavedEnvironment[] = raw
+                    .filter(e => e.env_visuals?.length > 0)
+                    .map(e => ({
+                        id: e.id,
+                        visual: e.env_visuals[0] as unknown as AdminEnvironmentVisual,
+                        sounds: (e.env_sounds ?? []).map(s => ({
+                            sound: s as unknown as AdminEnvironmentSound,
+                            volume: DEFAULT_VOLUME,
+                        })),
+                    }));
+
+                setSavedEnvironments(mapped);
+                const activeId = raw.find(e => e.is_active)?.id;
+                if (activeId) setActiveEnvIds(new Set([activeId]));
             })
             .catch(() => {}); // endpoint may not exist yet
     }, []);
@@ -157,8 +185,10 @@ const HomeScreenEnvironments: React.FC = () => {
         setIsUploading(true); setUploadError(null);
         const fd = new FormData();
         fd.append("name", file.name.replace(/\.[^/.]+$/, ""));
+        fd.append("visual_file", file);
         fd.append("image", file);
         fd.append("status", "published");
+        goalIds.forEach((id) => fd.append("goals", String(id)));
         try {
             const created = await contentApi.envVisuals.create(fd);
             setEnvVisuals((prev) => [created, ...prev]);
@@ -173,6 +203,7 @@ const HomeScreenEnvironments: React.FC = () => {
         fd.append("name", file.name.replace(/\.[^/.]+$/, ""));
         fd.append("audio_clip", file);
         fd.append("status", "published");
+        goalIds.forEach((id) => fd.append("goals", String(id)));
         try {
             const created = await contentApi.envSounds.create(fd);
             setEnvSounds((prev) => [created, ...prev]);
@@ -195,9 +226,8 @@ const HomeScreenEnvironments: React.FC = () => {
 
         try {
             const res = await apiClient.post<{ id: number }>("explore/home-screen-environments/", {
-                visual_id: selectedVisual,
-                sound_ids: selectedSounds,
-                sound_volumes: Object.fromEntries(selectedSounds.map((id) => [id, getVolume(id) / 100])),
+                env_visual_ids: [selectedVisual],
+                env_sound_ids: selectedSounds,
             });
             const newEnv: SavedEnvironment = { id: res.data?.id ?? nextLocalId, visual, sounds };
             setNextLocalId((n) => n - 1);
@@ -233,10 +263,12 @@ const HomeScreenEnvironments: React.FC = () => {
 
     // ── Save Home Screen (active selection) ─────────────────────────────
     const handleSaveHomeScreen = async () => {
+        const activeId = Array.from(activeEnvIds)[0];
+        if (!activeId) { setSaveActiveError("Please select an environment first."); return; }
         setIsSavingActive(true); setSaveActiveError(null); setSaveActiveSuccess(false);
         try {
             await apiClient.post("explore/home-screen-environments/active/", {
-                environment_ids: Array.from(activeEnvIds),
+                environment_id: activeId,
             });
             setSaveActiveSuccess(true);
             setTimeout(() => setSaveActiveSuccess(false), 3000);
@@ -256,9 +288,8 @@ const HomeScreenEnvironments: React.FC = () => {
 
     const toggleActiveEnv = (id: number) => {
         setActiveEnvIds((prev) => {
-            const next = new Set(prev);
-            next.has(id) ? next.delete(id) : next.add(id);
-            return next;
+            if (prev.has(id)) return new Set<number>();
+            return new Set([id]);
         });
     };
 

@@ -39,7 +39,7 @@ const tabs = [
 function getContentType(activeTab: string): ContentType {
   switch (activeTab) {
     case "Environment Sound": return "env_sound";
-    case "Mind Sessions": return "guided_session";
+    case "Mind Sessions": return "mind_session";
     case "Environment Visual": return "env_visual";
     default: return "music";
   }

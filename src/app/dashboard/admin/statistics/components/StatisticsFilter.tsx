@@ -1,39 +1,30 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ChevronLeft, X, SlidersHorizontal } from "lucide-react";
+import apiClient from "@/lib/api/axiosInstance";
+import type { ContentType } from "@/lib/api/types";
 
-// ── Static taxonomy (replace with API calls once backend is ready) ─────────
+// ── Content types ──────────────────────────────────────────────────────────
 
-const CONTENT_TYPES = ["Music", "Guided", "Sounds", "Visuals"];
-
-const CATEGORIES: Record<string, string[]> = {
-    Music: ["Piano", "Meditation/Spiritual", "Nature Melodies", "Classical", "EMDR", "Ambient", "Beats", "Café", "Electronic", "Lullabies"],
-    Guided: ["Coaching", "Hypnosis", "Meditation"],
-    Sounds: [],
-    Visuals: [],
-};
-
-const SUB_CATEGORIES: Record<string, string[]> = {
-    Ambient: ["Mixed with Binaural Beats", "Mixed with Solfeggio Frequencies"],
-    Coaching: ["Life", "Work"],
-};
-
-const GOALS = [
-    "Relax & Unwind",
-    "Focus",
-    "Motivation",
-    "Creativity & Inspiration",
-    "Productivity",
-    "Sleep & Dreams",
-    "Emotional Balance",
+const CONTENT_TYPE_OPTIONS: { label: string; value: ContentType }[] = [
+    { label: "Music",         value: "music" },
+    { label: "Mind Sessions", value: "mind_session" },
+    { label: "Env Sounds",    value: "env_sound" },
+    { label: "Env Visuals",   value: "env_visual" },
 ];
 
+// ── API response shapes ────────────────────────────────────────────────────
+
+interface ApiGoal { id: number; name: string }
+interface ApiCategory { id: number; name: string; item_count: number; contentType: ContentType }
+interface ApiSubCategory { id: number; name: string; category: number | null; category_name: string | null }
+
 const TIME_OPTIONS = [
-    { label: "Last 24h",      value: "last24h" },
-    { label: "Last Week",     value: "lastWeek" },
-    { label: "Last Month",    value: "lastMonth" },
-    { label: "Last Year",     value: "lastYear" },
-    { label: "All-time",      value: "allTime" },
+    { label: "Last 24h",      value: "last_24h" },
+    { label: "Last Week",     value: "last_week" },
+    { label: "Last Month",    value: "last_month" },
+    { label: "Last Year",     value: "last_year" },
+    { label: "All-time",      value: "all_time" },
     { label: "Custom Range",  value: "custom" },
 ];
 
@@ -82,7 +73,7 @@ export const DEFAULT_FILTER_STATE: StatisticsFilterState = {
     categories: [],
     subCategories: [],
     goals: [],
-    timeRange: "allTime",
+    timeRange: "all_time",
 };
 
 interface Props {
@@ -105,11 +96,76 @@ const StatisticsFilter: React.FC<Props> = ({ isOpen, onClose, onApply, showTimeS
     const [state, setState] = useState<StatisticsFilterState>(DEFAULT_FILTER_STATE);
     const [stepIndex, setStepIndex] = useState(0);
 
+    // ── Dynamic data ─────────────────────────────────────────────────────────
+    const [apiGoals, setApiGoals] = useState<ApiGoal[]>([]);
+    const [apiCategories, setApiCategories] = useState<ApiCategory[]>([]);
+    const [apiSubCategories, setApiSubCategories] = useState<ApiSubCategory[]>([]);
+    const [isLoadingGoals, setIsLoadingGoals] = useState(false);
+    const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+    const [isLoadingSubCategories, setIsLoadingSubCategories] = useState(false);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        setIsLoadingGoals(true);
+        apiClient.get<{ results: ApiGoal[] }>('explore/goals/', { params: { size: 100 } })
+            .then(r => setApiGoals(r.data.results ?? []))
+            .catch(() => {})
+            .finally(() => setIsLoadingGoals(false));
+    }, [isOpen]);
+
     const steps: StepKey[] = (state.analysisType
         ? (STEP_FLOWS[state.analysisType] ?? ["analysis"])
         : ["analysis"]
     ).filter((s): s is StepKey => showTimeStep || s !== "time");
     const currentStep = steps[stepIndex];
+
+    useEffect(() => {
+        if (currentStep !== 'category') return;
+        const types = (state.contentTypes.length > 0 ? state.contentTypes : CONTENT_TYPE_OPTIONS.map(o => o.value)) as ContentType[];
+        setIsLoadingCategories(true);
+        Promise.all(
+            types.map(type =>
+                apiClient.get<{ results: { id: number; name: string; item_count: number }[] }>(
+                    'admin/content/categories/',
+                    { params: { type, size: 100 } }
+                ).then(r => (r.data.results ?? []).map(c => ({ ...c, contentType: type })))
+            )
+        )
+            .then(results => setApiCategories(results.flat()))
+            .catch(() => {})
+            .finally(() => setIsLoadingCategories(false));
+    }, [currentStep, state.contentTypes]);
+
+    useEffect(() => {
+        if (currentStep !== 'subCategory') return;
+        const types = (state.contentTypes.length > 0 ? state.contentTypes : CONTENT_TYPE_OPTIONS.map(o => o.value)) as ContentType[];
+        const selectedCatIds = state.categories
+            .map(name => apiCategories.find(c => c.name === name)?.id)
+            .filter((id): id is number => id != null);
+        setIsLoadingSubCategories(true);
+        Promise.all(
+            types.map(type => {
+                const params: Record<string, unknown> = { type, size: 100 };
+                if (selectedCatIds.length === 1) params.category = selectedCatIds[0];
+                return apiClient.get<{ results: ApiSubCategory[] }>(
+                    'admin/content/sub-categories/',
+                    { params }
+                ).then(r => r.data.results ?? []);
+            })
+        )
+            .then(results => {
+                const seen = new Set<string>();
+                const unique = results.flat().filter(s => {
+                    if (seen.has(s.name)) return false;
+                    seen.add(s.name);
+                    return true;
+                });
+                setApiSubCategories(unique);
+            })
+            .catch(() => {})
+            .finally(() => setIsLoadingSubCategories(false));
+    }, [currentStep, state.contentTypes, state.categories, apiCategories]);
+
     const isLastStep = stepIndex === steps.length - 1;
 
     const goNext = () => { if (stepIndex < steps.length - 1) setStepIndex((i) => i + 1); };
@@ -248,16 +304,16 @@ const StatisticsFilter: React.FC<Props> = ({ isOpen, onClose, onApply, showTimeS
                     <>
                         <PanelHeader title="Content-type" />
                         <div className="flex-1 overflow-y-auto py-2">
-                            {CONTENT_TYPES.map((ct) => (
+                            {CONTENT_TYPE_OPTIONS.map((ct) => (
                                 <CheckRow
-                                    key={ct}
-                                    label={ct}
-                                    checked={state.contentTypes.includes(ct)}
-                                    onChange={() => setState((s) => ({ ...s, contentTypes: toggle(s.contentTypes, ct) }))}
+                                    key={ct.value}
+                                    label={ct.label}
+                                    checked={state.contentTypes.includes(ct.value)}
+                                    onChange={() => setState((s) => ({ ...s, contentTypes: toggle(s.contentTypes, ct.value), categories: [], subCategories: [] }))}
                                 />
                             ))}
                         </div>
-                        <PanelFooter onClear={() => setState((s) => ({ ...s, contentTypes: [] }))} />
+                        <PanelFooter onClear={() => setState((s) => ({ ...s, contentTypes: [], categories: [], subCategories: [] }))} />
                     </>
                 )}
 
@@ -266,25 +322,33 @@ const StatisticsFilter: React.FC<Props> = ({ isOpen, onClose, onApply, showTimeS
                     <>
                         <PanelHeader title="Category" />
                         <div className="flex-1 overflow-y-auto py-2">
-                            {(state.contentTypes.length > 0 ? state.contentTypes : CONTENT_TYPES).map((ct) => {
-                                const cats = CATEGORIES[ct] ?? [];
-                                if (cats.length === 0) return null;
-                                return (
-                                    <div key={ct}>
-                                        <GroupHeader label={ct} />
-                                        {cats.map((cat) => (
-                                            <CheckRow
-                                                key={cat}
-                                                label={cat}
-                                                checked={state.categories.includes(cat)}
-                                                onChange={() => setState((s) => ({ ...s, categories: toggle(s.categories, cat) }))}
-                                            />
-                                        ))}
-                                    </div>
-                                );
-                            })}
+                            {isLoadingCategories ? (
+                                <p className="px-5 py-6 text-sm text-gray-400 text-center">Loading…</p>
+                            ) : apiCategories.length === 0 ? (
+                                <p className="px-5 py-6 text-sm text-gray-400 text-center">No categories found.</p>
+                            ) : (
+                                CONTENT_TYPE_OPTIONS
+                                    .filter(opt => state.contentTypes.length === 0 || state.contentTypes.includes(opt.value))
+                                    .map(opt => {
+                                        const cats = apiCategories.filter(c => c.contentType === opt.value);
+                                        if (cats.length === 0) return null;
+                                        return (
+                                            <div key={opt.value}>
+                                                <GroupHeader label={opt.label} />
+                                                {cats.map(cat => (
+                                                    <CheckRow
+                                                        key={cat.id}
+                                                        label={cat.name}
+                                                        checked={state.categories.includes(cat.name)}
+                                                        onChange={() => setState(s => ({ ...s, categories: toggle(s.categories, cat.name), subCategories: [] }))}
+                                                    />
+                                                ))}
+                                            </div>
+                                        );
+                                    })
+                            )}
                         </div>
-                        <PanelFooter onClear={() => setState((s) => ({ ...s, categories: [] }))} />
+                        <PanelFooter onClear={() => setState((s) => ({ ...s, categories: [], subCategories: [] }))} />
                     </>
                 )}
 
@@ -293,29 +357,35 @@ const StatisticsFilter: React.FC<Props> = ({ isOpen, onClose, onApply, showTimeS
                     <>
                         <PanelHeader title="Sub Category" />
                         <div className="flex-1 overflow-y-auto py-2">
-                            {(() => {
-                                const parents = state.categories.length > 0 ? state.categories : Object.keys(SUB_CATEGORIES);
-                                const visible = parents.filter((c) => (SUB_CATEGORIES[c] ?? []).length > 0);
-                                if (visible.length === 0)
-                                    return (
-                                        <p className="px-5 py-6 text-sm text-gray-400 text-center">
-                                            No sub-categories for selected categories.
-                                        </p>
-                                    );
-                                return visible.map((cat) => (
-                                    <div key={cat}>
-                                        <GroupHeader label={cat} />
-                                        {(SUB_CATEGORIES[cat] ?? []).map((sub) => (
-                                            <CheckRow
-                                                key={sub}
-                                                label={sub}
-                                                checked={state.subCategories.includes(sub)}
-                                                onChange={() => setState((s) => ({ ...s, subCategories: toggle(s.subCategories, sub) }))}
-                                            />
-                                        ))}
-                                    </div>
-                                ));
-                            })()}
+                            {isLoadingSubCategories ? (
+                                <p className="px-5 py-6 text-sm text-gray-400 text-center">Loading…</p>
+                            ) : apiSubCategories.length === 0 ? (
+                                <p className="px-5 py-6 text-sm text-gray-400 text-center">
+                                    No sub-categories for selected categories.
+                                </p>
+                            ) : (
+                                (() => {
+                                    const grouped = apiSubCategories.reduce<Record<string, ApiSubCategory[]>>((acc, s) => {
+                                        const key = s.category_name ?? 'Other';
+                                        if (!acc[key]) acc[key] = [];
+                                        acc[key].push(s);
+                                        return acc;
+                                    }, {});
+                                    return Object.entries(grouped).map(([groupName, subs]) => (
+                                        <div key={groupName}>
+                                            <GroupHeader label={groupName} />
+                                            {subs.map(sub => (
+                                                <CheckRow
+                                                    key={sub.id}
+                                                    label={sub.name}
+                                                    checked={state.subCategories.includes(sub.name)}
+                                                    onChange={() => setState(s => ({ ...s, subCategories: toggle(s.subCategories, sub.name) }))}
+                                                />
+                                            ))}
+                                        </div>
+                                    ));
+                                })()
+                            )}
                         </div>
                         <PanelFooter onClear={() => setState((s) => ({ ...s, subCategories: [] }))} />
                     </>
@@ -326,14 +396,20 @@ const StatisticsFilter: React.FC<Props> = ({ isOpen, onClose, onApply, showTimeS
                     <>
                         <PanelHeader title="Goals" />
                         <div className="flex-1 overflow-y-auto py-2">
-                            {GOALS.map((goal) => (
-                                <CheckRow
-                                    key={goal}
-                                    label={goal}
-                                    checked={state.goals.includes(goal)}
-                                    onChange={() => setState((s) => ({ ...s, goals: toggle(s.goals, goal) }))}
-                                />
-                            ))}
+                            {isLoadingGoals ? (
+                                <p className="px-5 py-6 text-sm text-gray-400 text-center">Loading…</p>
+                            ) : apiGoals.length === 0 ? (
+                                <p className="px-5 py-6 text-sm text-gray-400 text-center">No goals found.</p>
+                            ) : (
+                                apiGoals.map(goal => (
+                                    <CheckRow
+                                        key={goal.id}
+                                        label={goal.name}
+                                        checked={state.goals.includes(goal.name)}
+                                        onChange={() => setState(s => ({ ...s, goals: toggle(s.goals, goal.name) }))}
+                                    />
+                                ))
+                            )}
                         </div>
                         <PanelFooter onClear={() => setState((s) => ({ ...s, goals: [] }))} />
                     </>

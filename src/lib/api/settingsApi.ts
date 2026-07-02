@@ -9,6 +9,7 @@ import type {
     CreateNotificationTemplateRequest,
     TestTemplateRequest,
     SendNotificationRequest,
+    SendNotificationResponse,
     AdminAccount,
     CreateAdminRequest,
     UpdateAdminRequest,
@@ -98,9 +99,10 @@ const settingsApi = {
         return response.data;
     },
 
-    /** Send or schedule a push notification to a user or group. */
-    sendNotification: async (data: SendNotificationRequest): Promise<void> => {
-        await apiClient.post("admin/settings/notifications/send/", data);
+    /** Send a push notification to a target group. */
+    sendNotification: async (data: SendNotificationRequest): Promise<SendNotificationResponse> => {
+        const response = await apiClient.post<SendNotificationResponse>("admin/settings/notifications/send/", data);
+        return response.data;
     },
 
     // ── Admin Account Management ────────────────────────────────────────

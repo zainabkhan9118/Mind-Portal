@@ -1,8 +1,8 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, X, Bell, Users, Clock, Send, Calendar, CheckCircle } from 'lucide-react';
+import { Search, X, Bell, Users, Send, CheckCircle } from 'lucide-react';
 import { usersApi, settingsApi } from '@/lib/api';
-import type { ApiUser, NotificationGroup, NotificationTimezoneMode } from '@/lib/api/types';
+import type { ApiUser, NotificationGroup } from '@/lib/api/types';
 
 type TargetType = 'user' | 'group';
 
@@ -135,42 +135,19 @@ function UserSearchInput({
 export default function PushNotifications() {
     const [targetType, setTargetType] = useState<TargetType>('group');
     const [selectedUser, setSelectedUser] = useState<ApiUser | null>(null);
-    const [selectedGroups, setSelectedGroups] = useState<Set<NotificationGroup>>(new Set(['all']));
+    const [selectedGroup, setSelectedGroup] = useState<NotificationGroup>('all');
 
     const [title, setTitle] = useState('');
     const [body, setBody] = useState('');
-
-    const [scheduleMode, setScheduleMode] = useState<'now' | 'later'>('now');
-    const [scheduleDate, setScheduleDate] = useState('');
-    const [scheduleTime, setScheduleTime] = useState('');
-    const [timezoneMode, setTimezoneMode] = useState<NotificationTimezoneMode>('user');
 
     const [isLoading, setIsLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const toggleGroup = (group: NotificationGroup) => {
-        const next = new Set(selectedGroups);
-        if (group === 'all') {
-            next.has('all') ? next.delete('all') : next.add('all');
-        } else {
-            if (next.has('all')) next.delete('all');
-            next.has(group) ? next.delete(group) : next.add(group);
-        }
-        setSelectedGroups(next);
-    };
-
     const canSend = () => {
         if (!title.trim() || !body.trim()) return false;
         if (targetType === 'user' && !selectedUser) return false;
-        if (targetType === 'group' && selectedGroups.size === 0) return false;
-        if (scheduleMode === 'later' && (!scheduleDate || !scheduleTime)) return false;
         return true;
-    };
-
-    const buildScheduledAt = (): string | undefined => {
-        if (scheduleMode !== 'later' || !scheduleDate || !scheduleTime) return undefined;
-        return `${scheduleDate}T${scheduleTime}:00`;
     };
 
     const handleSend = async () => {
@@ -180,35 +157,21 @@ export default function PushNotifications() {
         setSuccess(false);
         try {
             if (targetType === 'user' && selectedUser) {
-                // Individual user: use the per-user notify endpoint
-                const { usersApi: uApi } = await import('@/lib/api');
-                const payload: { title: string; body: string; scheduled_at?: string; timezone_mode?: string } = {
+                await usersApi.notifyUser(selectedUser.id, {
                     title: title.trim(),
-                    body: body.trim(),
-                };
-                if (scheduleMode === 'later') {
-                    payload.scheduled_at = buildScheduledAt();
-                    payload.timezone_mode = timezoneMode;
-                }
-                await uApi.notifyUser(selectedUser.id, payload as { title: string; body: string });
+                    message: body.trim(),
+                });
             } else {
                 await settingsApi.sendNotification({
                     title: title.trim(),
                     body: body.trim(),
-                    target_type: 'group',
-                    groups: Array.from(selectedGroups),
-                    send_now: scheduleMode === 'now',
-                    scheduled_at: buildScheduledAt(),
-                    timezone_mode: scheduleMode === 'later' ? timezoneMode : undefined,
+                    target_group: selectedGroup,
                 });
             }
             setSuccess(true);
             setTitle('');
             setBody('');
             setSelectedUser(null);
-            setScheduleDate('');
-            setScheduleTime('');
-            setScheduleMode('now');
         } catch (err: unknown) {
             const msg = (err as { response?: { data?: { error?: { message?: string } } } })
                 ?.response?.data?.error?.message;
@@ -217,9 +180,6 @@ export default function PushNotifications() {
             setIsLoading(false);
         }
     };
-
-    // Today in YYYY-MM-DD for min date
-    const today = new Date().toISOString().split('T')[0];
 
     return (
         <div className="max-w-2xl space-y-6">
@@ -234,7 +194,7 @@ export default function PushNotifications() {
                 <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 text-green-700 dark:text-green-400">
                     <CheckCircle className="w-5 h-5 shrink-0" />
                     <span className="text-sm font-medium">
-                        {scheduleMode === 'now' ? 'Notification sent successfully.' : 'Notification scheduled successfully.'}
+                        Notification sent successfully.
                     </span>
                 </div>
             )}
@@ -271,14 +231,14 @@ export default function PushNotifications() {
 
                 {targetType === 'group' && (
                     <div className="space-y-2">
-                        <p className="text-xs text-gray-500 dark:text-gray-400">Select one or more groups:</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Select target group:</p>
                         <div className="flex flex-wrap gap-2">
                             {GROUP_OPTIONS.map((g) => (
                                 <button
                                     key={g.id}
-                                    onClick={() => toggleGroup(g.id)}
+                                    onClick={() => setSelectedGroup(g.id)}
                                     className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-all ${
-                                        selectedGroups.has(g.id)
+                                        selectedGroup === g.id
                                             ? g.color + ' ring-2 ring-offset-1 ring-purple-400'
                                             : 'bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-gray-300'
                                     }`}
@@ -348,89 +308,6 @@ export default function PushNotifications() {
                 )}
             </div>
 
-            {/* ── Schedule ── */}
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-6 space-y-4">
-                <div className="flex items-center gap-2 mb-1">
-                    <Clock className="w-4 h-4 text-purple-600" />
-                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Delivery</h3>
-                </div>
-
-                <div className="flex gap-3">
-                    {([['now', 'Send Now', Send], ['later', 'Schedule', Calendar]] as const).map(([mode, label, Icon]) => (
-                        <button
-                            key={mode}
-                            onClick={() => setScheduleMode(mode)}
-                            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium border transition-colors ${
-                                scheduleMode === mode
-                                    ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
-                                    : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-purple-300'
-                            }`}
-                        >
-                            <Icon className="w-4 h-4" />
-                            {label}
-                        </button>
-                    ))}
-                </div>
-
-                {scheduleMode === 'later' && (
-                    <div className="space-y-4 pt-1">
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1">
-                                <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Date</label>
-                                <input
-                                    type="date"
-                                    min={today}
-                                    value={scheduleDate}
-                                    onChange={(e) => setScheduleDate(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-400 transition-colors"
-                                />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-xs font-medium text-gray-600 dark:text-gray-400">Time</label>
-                                <input
-                                    type="time"
-                                    value={scheduleTime}
-                                    onChange={(e) => setScheduleTime(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-400 transition-colors"
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Timezone</p>
-                            <div className="flex gap-3">
-                                <label className="flex items-center gap-2.5 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="timezone"
-                                        checked={timezoneMode === 'user'}
-                                        onChange={() => setTimezoneMode('user')}
-                                        className="accent-purple-600"
-                                    />
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900 dark:text-white">User&rsquo;s local time</p>
-                                        <p className="text-xs text-gray-500">e.g. 8:00 PM wherever the user is</p>
-                                    </div>
-                                </label>
-                                <label className="flex items-center gap-2.5 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="timezone"
-                                        checked={timezoneMode === 'utc'}
-                                        onChange={() => setTimezoneMode('utc')}
-                                        className="accent-purple-600"
-                                    />
-                                    <div>
-                                        <p className="text-sm font-medium text-gray-900 dark:text-white">UTC (my time)</p>
-                                        <p className="text-xs text-gray-500">e.g. 8:00 PM UTC for everyone</p>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                )}
-            </div>
-
             {/* ── Send button ── */}
             <button
                 onClick={handleSend}
@@ -439,16 +316,10 @@ export default function PushNotifications() {
             >
                 {isLoading ? (
                     <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : scheduleMode === 'now' ? (
-                    <Send className="w-4 h-4" />
                 ) : (
-                    <Calendar className="w-4 h-4" />
+                    <Send className="w-4 h-4" />
                 )}
-                {isLoading
-                    ? 'Sending…'
-                    : scheduleMode === 'now'
-                    ? 'Send Notification'
-                    : `Schedule for ${scheduleDate && scheduleTime ? `${scheduleDate} at ${scheduleTime}` : '...'}`}
+                {isLoading ? 'Sending…' : 'Send Notification'}
             </button>
         </div>
     );

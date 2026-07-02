@@ -29,8 +29,9 @@ function formatLabel(value: string): string {
 
 const selectClass =
     "h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs " +
-    "focus:outline-none focus:ring-2 focus:ring-purple-500/20 bg-transparent " +
-    "text-gray-800 dark:text-white border-gray-300 dark:border-gray-700 dark:bg-gray-900";
+    "focus:outline-none focus:ring-2 focus:ring-purple-500/20 " +
+    "bg-white dark:bg-gray-900 text-gray-800 dark:text-white border-gray-300 dark:border-gray-700 " +
+    "cursor-pointer";
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -62,11 +63,11 @@ const StateEffectSelector: React.FC<StateEffectSelectorProps> = ({
                     onChange={(e) => onStateChange(e.target.value)}
                     className={selectClass}
                 >
-                    <option value="">Select state...</option>
+                    <option value="" className="bg-white dark:bg-gray-900">Select state...</option>
                     {STATE_GROUPS.map((group) => (
-                        <optgroup key={group.label} label={group.label}>
+                        <optgroup key={group.label} label={group.label} className="bg-white dark:bg-gray-900 text-gray-500">
                             {group.options.map((opt) => (
-                                <option key={opt} value={opt}>
+                                <option key={opt} value={opt} className="bg-white dark:bg-gray-900 text-gray-800 dark:text-white">
                                     {formatLabel(opt)}
                                 </option>
                             ))}
@@ -84,11 +85,11 @@ const StateEffectSelector: React.FC<StateEffectSelectorProps> = ({
                     onChange={(e) => onEffectChange(e.target.value)}
                     className={selectClass}
                 >
-                    <option value="">Select effect...</option>
+                    <option value="" className="bg-white dark:bg-gray-900">Select effect...</option>
                     {EFFECT_GROUPS.map((group) => (
-                        <optgroup key={group.label} label={group.label}>
+                        <optgroup key={group.label} label={group.label} className="bg-white dark:bg-gray-900 text-gray-500">
                             {group.options.map((opt) => (
-                                <option key={opt} value={opt}>
+                                <option key={opt} value={opt} className="bg-white dark:bg-gray-900 text-gray-800 dark:text-white">
                                     {formatLabel(opt)}
                                 </option>
                             ))}

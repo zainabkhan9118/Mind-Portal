@@ -9,14 +9,14 @@ const PAGE_SIZE = 10;
 const TYPE_OPTIONS: { label: string; value: ContentType | '' }[] = [
     { label: 'All Types', value: '' },
     { label: 'Music', value: 'music' },
-    { label: 'Guided Session', value: 'guided_session' },
+    { label: 'Guided Session', value: 'mind_session' },
     { label: 'Env Sound', value: 'env_sound' },
     { label: 'Env Visual', value: 'env_visual' },
 ];
 
 const TYPE_LABELS: Record<string, string> = {
     music: 'Music',
-    guided_session: 'Guided',
+    mind_session: 'Guided',
     env_sound: 'Sound',
     env_visual: 'Visuals',
 };
@@ -26,7 +26,7 @@ const getBadgeStyle = (type: string) => {
         case 'music': return 'bg-purple-50 text-purple-500 dark:bg-purple-900/20 dark:text-purple-400';
         case 'env_visual': return 'bg-yellow-50 text-yellow-500 dark:bg-yellow-900/20 dark:text-yellow-400';
         case 'env_sound': return 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400';
-        case 'guided_session': return 'bg-orange-50 text-orange-400 dark:bg-orange-900/20 dark:text-orange-400';
+        case 'mind_session': return 'bg-orange-50 text-orange-400 dark:bg-orange-900/20 dark:text-orange-400';
         default: return 'bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400';
     }
 };
@@ -35,7 +35,7 @@ const getTypeIcon = (type: string) => {
     const cls = 'w-4 h-4 flex-shrink-0 text-gray-400 dark:text-gray-500';
     switch (type) {
         case 'music': return <Music className={cls} />;
-        case 'guided_session': return <Headphones className={cls} />;
+        case 'mind_session': return <Headphones className={cls} />;
         case 'env_sound': return <Wind className={cls} />;
         case 'env_visual': return <TreePine className={cls} />;
         default: return <Music className={cls} />;
@@ -211,7 +211,7 @@ const TopRankingsTable: React.FC = () => {
                                             </td>
                                             {/* Retention bar — only Music & Guided Session */}
                                             <td className="px-4 py-4">
-                                                {(item.content_type === 'music' || item.content_type === 'guided_session') ? (
+                                                {(item.content_type === 'music' || item.content_type === 'mind_session') ? (
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-28 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden flex-shrink-0">
                                                             <div

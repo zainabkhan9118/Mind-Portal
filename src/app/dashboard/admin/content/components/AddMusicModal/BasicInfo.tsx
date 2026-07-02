@@ -21,13 +21,16 @@ interface BasicInfoProps {
     audioFile: File | null;
     onAudioFileChange: (f: File | null) => void;
     onDurationExtracted?: (seconds: number) => void;
+    subCategory?: string;
+    onSubCategoryChange?: (v: string) => void;
+    existingAudioUrl?: string | null;
 }
 
 const BasicInfo: React.FC<BasicInfoProps> = ({
     isEnvironmentSound = false,
     isMindSession = false,
     isEnvironmentVisual = false,
-    // onCreateSubCategory,
+    onCreateSubCategory,
     title,
     onTitleChange,
     artist,
@@ -40,6 +43,9 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
     audioFile,
     onAudioFileChange,
     onDurationExtracted,
+    subCategory = "",
+    onSubCategoryChange,
+    existingAudioUrl,
 }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -133,6 +139,23 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
                             <X className="w-4 h-4" />
                         </button>
                     </div>
+                ) : existingAudioUrl ? (
+                    <div className="flex items-center justify-between w-full px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-2xl bg-gray-50 dark:bg-gray-800">
+                        <div className="flex items-center gap-3 min-w-0">
+                            <Upload className="w-5 h-5 text-[#9810FA] shrink-0" />
+                            <span className="text-sm text-gray-700 dark:text-gray-300 truncate">
+                                {existingAudioUrl.split("/").pop()?.split("?")[0] ?? "Current file"}
+                            </span>
+                            <span className="text-xs text-[#9810FA] shrink-0">Uploaded</span>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="ml-2 text-xs text-[#9810FA] hover:text-[#8000E0] shrink-0 font-medium"
+                        >
+                            Replace
+                        </button>
+                    </div>
                 ) : (
                     <div
                         onClick={() => fileInputRef.current?.click()}
@@ -180,7 +203,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
                         ))}
                     </select>
                 </div>
-                {/* <div>
+                <div>
                     <div className="flex items-center justify-between mb-0">
                         <Label htmlFor="subCategory" className="mb-0">Sub Category</Label>
                         {(isEnvironmentSound || isMindSession || isEnvironmentVisual) && onCreateSubCategory && (
@@ -193,8 +216,14 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
                             </button>
                         )}
                     </div>
-                    <Input type="text" id="subCategory" placeholder="Placeholder" />
-                </div> */}
+                    <Input
+                        type="text"
+                        id="subCategory"
+                        placeholder="Sub category name"
+                        value={subCategory}
+                        onChange={(e) => onSubCategoryChange?.(e.target.value)}
+                    />
+                </div>
             </div>
         </div>
     );

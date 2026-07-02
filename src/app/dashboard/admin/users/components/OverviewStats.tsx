@@ -14,18 +14,18 @@ const OverviewStats: React.FC<OverviewStatsProps> = ({ dashboard, engagement }) 
         n != null ? n.toLocaleString() : '–';
 
     const growthPct = (dashboard && dashboard.total_users > 0)
-        ? `+${((dashboard.new_this_month / dashboard.total_users) * 100).toFixed(1)}% this month`
+        ? `+${((dashboard.new_month / dashboard.total_users) * 100).toFixed(1)}% this month`
         : 'Loading...';
 
     const mauGrowthPct = (engagement && engagement.mau > 0 && engagement.dau > 0)
         ? `+${((engagement.dau / engagement.mau) * 100).toFixed(1)}% daily rate`
         : 'Loading...';
 
-    const conversionPct = (dashboard && dashboard.total_users > 0)
-        ? `${((dashboard.active_users / dashboard.total_users) * 100).toFixed(1)}% conversion`
+    const conversionPct = (dashboard && dashboard.total_users > 0 && dashboard.premium_users != null)
+        ? `${((dashboard.premium_users / dashboard.total_users) * 100).toFixed(1)}% of users`
         : 'Loading...';
 
-    const avgDaily = dashboard ? Math.round(dashboard.new_this_week / 7) : null;
+    const avgDaily = dashboard ? Math.round(dashboard.new_week / 7) : null;
     const newTodayChange = dashboard
         ? avgDaily != null && dashboard.new_today > avgDaily
             ? `Above avg. of ${fmt(avgDaily)}`
@@ -51,7 +51,7 @@ const OverviewStats: React.FC<OverviewStatsProps> = ({ dashboard, engagement }) 
         },
         {
             label: 'Premium Users',
-            value: fmt(dashboard?.active_users),
+            value: fmt(dashboard?.premium_users),
             change: conversionPct,
             changeType: 'neutral',
             icon: <Crown className="w-5 h-5 text-orange-600" />,

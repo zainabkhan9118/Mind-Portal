@@ -7,9 +7,20 @@ import { Clock } from "lucide-react";
 interface VisibilitySettingsProps {
     status: string;
     onStatusChange: (v: string) => void;
+    releaseDate?: string | null;
+    onReleaseDateChange?: (dateStr: string) => void;
+    releaseTime?: string;
+    onReleaseTimeChange?: (time: string) => void;
 }
 
-const VisibilitySettings: React.FC<VisibilitySettingsProps> = ({ status, onStatusChange }) => {
+const VisibilitySettings: React.FC<VisibilitySettingsProps> = ({
+    status,
+    onStatusChange,
+    releaseDate,
+    onReleaseDateChange,
+    releaseTime,
+    onReleaseTimeChange,
+}) => {
     return (
         <div className="space-y-4">
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -36,6 +47,8 @@ const VisibilitySettings: React.FC<VisibilitySettingsProps> = ({ status, onStatu
                     <DatePicker
                         id="releaseDate"
                         placeholder="Select one..."
+                        defaultDate={releaseDate ? new Date(releaseDate) : undefined}
+                        onChange={(dates, dateStr) => onReleaseDateChange?.(dateStr)}
                     />
                 </div>
                 <div>
@@ -44,7 +57,9 @@ const VisibilitySettings: React.FC<VisibilitySettingsProps> = ({ status, onStatu
                         <input
                             type="time"
                             id="releaseTime"
-                            className="h-11 w-full rounded-lg border px-4 py-2.5 pr-10 text-sm shadow-theme-xs focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:text-white/90 bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:focus:border-brand-800"
+                            value={releaseTime ?? ""}
+                            onChange={(e) => onReleaseTimeChange?.(e.target.value)}
+                            className="h-11 w-full rounded-lg border px-4 py-2.5 pr-10 text-sm shadow-theme-xs focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:text-white/90 bg-white text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:focus:border-brand-800"
                         />
                         <span className="absolute text-gray-400 -translate-y-1/2 pointer-events-none right-3 top-1/2">
                             <Clock className="w-5 h-5" />

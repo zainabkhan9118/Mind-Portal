@@ -10,14 +10,14 @@ const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false })
 
 const TYPE_LABELS: Record<string, string> = {
     music: 'Music',
-    guided_session: 'Guided',
+    mind_session: 'Guided',
     env_sound: 'Sound',
     env_visual: 'VR/360',
 };
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
     music: <Music className="w-5 h-5 text-purple-600" />,
-    guided_session: <Mic className="w-5 h-5 text-cyan-500" />,
+    mind_session: <Mic className="w-5 h-5 text-cyan-500" />,
     env_sound: <Waves className="w-5 h-5 text-blue-500" />,
     env_visual: <Eye className="w-5 h-5 text-indigo-500" />,
 };

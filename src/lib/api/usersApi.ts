@@ -149,7 +149,7 @@ const usersApi = {
 
     /** Promote a user to Mind Expert role. */
     switchToMindExpert: async (id: number): Promise<void> => {
-        await apiClient.post(`dashboard/users/${id}/switch-to-mind-expert/`);
+        await apiClient.patch(`admin/users/${id}/`, { is_mind_expert: true });
     },
 };
 

@@ -66,7 +66,7 @@ const STEP_LABELS: Record<StepKey, string> = {
 // ── Chart config ───────────────────────────────────────────────────────────
 
 const TYPE_CONFIG = [
-    { key: 'guided_session', label: 'Guided Sessions', emoji: '🧘', color: '#A855F7' },
+    { key: 'mind_session', label: 'Guided Sessions', emoji: '🧘', color: '#A855F7' },
     { key: 'music',          label: 'Music',           emoji: '🎵', color: '#3B82F6' },
     { key: 'env_sound',      label: 'Sounds',          emoji: '🎿', color: '#06B6D4' },
     { key: 'env_visual_vr',  label: 'VR',              emoji: '🌃', color: '#7C3AED' },

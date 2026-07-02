@@ -91,9 +91,10 @@ export interface HealthStatus {
 export interface UserDashboard {
     total_users: number;
     active_users: number;
+    premium_users: number;
     new_today: number;
-    new_this_week: number;
-    new_this_month: number;
+    new_week: number;
+    new_month: number;
     churn_rate: number;
 }
 
@@ -136,6 +137,7 @@ export interface ApiUser {
     avatar?: string;
     status: UserStatus;
     is_premium: boolean;
+    is_mind_expert?: boolean;
     subscription?: {
         plan: string;
         expires_at: string;
@@ -174,7 +176,7 @@ export interface UserStatusChangeRequest {
 
 export interface UserNotifyRequest {
     title: string;
-    body: string;
+    message: string;
 }
 
 export interface UserListParams extends PaginationParams, SearchParams, OrderingParams {
@@ -185,7 +187,7 @@ export interface UserListParams extends PaginationParams, SearchParams, Ordering
 // 4. CONTENT
 // ═══════════════════════════════════════════════════════════════════════════
 
-export type ContentType = "music" | "guided_session" | "env_sound" | "env_visual";
+export type ContentType = "music" | "mind_session" | "env_sound" | "env_visual";
 export type ContentTypeEndpoint = "music" | "guided-sessions" | "env-sounds" | "env-visuals";
 export type ContentStatus = "published" | "draft" | "archived" | "review";
 
@@ -237,6 +239,21 @@ export interface AdminCategory {
 
 // Keep ContentCategory as alias for backward compat
 export type ContentCategory = AdminCategory;
+
+// Sub-categories
+export interface SubCategory {
+    id: number;
+    name: string;
+    category: number | null;
+    category_name: string | null;
+    item_count: number;
+}
+
+export interface SubCategoryListParams {
+    type: ContentType;
+    category?: number;
+    size?: number;
+}
 
 // Sub-resources
 export interface SoundLayer {
@@ -292,6 +309,11 @@ export interface AdminMusic {
     play_count: number;
     music_category_names: string;
     is_mind_player_original?: boolean;
+    state?: string | null;
+    effect?: string | null;
+    icon?: number | null;
+    icon_name?: string | null;
+    icon_url?: string | null;
     created_by: number;
     created_at: string;
     updated_at: string;
@@ -327,8 +349,12 @@ export interface AdminMindSession {
     category_names: string;
     steps: SessionStep[];
     is_mind_player_original?: boolean;
-    state?: string;
-    effect?: string;
+    state?: string | null;
+    effect?: string | null;
+    sub_category?: string | null;
+    icon?: number | null;
+    icon_name?: string | null;
+    icon_url?: string | null;
     created_by: number;
     created_at: string;
     updated_at: string;
@@ -361,8 +387,12 @@ export interface AdminEnvironmentSound {
     play_count: number;
     category_names: string;
     layers: SoundLayer[];
-    state?: string;
-    effect?: string;
+    state?: string | null;
+    effect?: string | null;
+    sub_category?: string | null;
+    icon?: number | null;
+    icon_name?: string | null;
+    icon_url?: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -391,8 +421,12 @@ export interface AdminEnvironmentVisual {
     loop_duration_ms?: number | null;
     like_count: number;
     category_names: string;
-    state?: string;
-    effect?: string;
+    state?: string | null;
+    effect?: string | null;
+    sub_category?: string | null;
+    icon?: number | null;
+    icon_name?: string | null;
+    icon_url?: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -462,6 +496,7 @@ export interface PlaysByRegion {
     country: string;
     plays: number;
     listeners: number;
+    unique_listeners?: number;
 }
 
 export interface PlaysByContent {
@@ -801,12 +836,12 @@ export type NotificationTimezoneMode = 'user' | 'utc';
 export interface SendNotificationRequest {
     title: string;
     body: string;
-    target_type: 'user' | 'group';
-    user_id?: number;
-    groups?: NotificationGroup[];
-    send_now: boolean;
-    scheduled_at?: string;
-    timezone_mode?: NotificationTimezoneMode;
+    target_group: NotificationGroup;
+}
+
+export interface SendNotificationResponse {
+    created: number;
+    target_group: string;
 }
 
 export interface AdminAccount {

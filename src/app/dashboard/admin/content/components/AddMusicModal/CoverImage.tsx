@@ -1,26 +1,35 @@
-import React, { FC, useRef, useState } from "react";
+import React, { FC, useRef, useState, useEffect } from "react";
 import { Image, X } from "lucide-react";
 
 interface CoverImageProps {
     coverImageFile: File | null;
     onCoverImageFileChange: (f: File | null) => void;
+    existingImageUrl?: string | null;
 }
 
-const CoverImage: FC<CoverImageProps> = ({ coverImageFile, onCoverImageFileChange }) => {
+const CoverImage: FC<CoverImageProps> = ({ coverImageFile, onCoverImageFileChange, existingImageUrl }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isDragging, setIsDragging] = useState(false);
     const [preview, setPreview] = useState<string | null>(null);
+    const [showExisting, setShowExisting] = useState(!!existingImageUrl);
+
+    // Sync when existingImageUrl changes (e.g. modal re-opened for a different item)
+    useEffect(() => {
+        setShowExisting(!!existingImageUrl);
+    }, [existingImageUrl]);
 
     const handleFile = (file: File) => {
         onCoverImageFileChange(file);
-        const url = URL.createObjectURL(file);
-        setPreview(url);
+        if (preview) URL.revokeObjectURL(preview);
+        setPreview(URL.createObjectURL(file));
+        setShowExisting(false);
     };
 
     const handleClear = () => {
         onCoverImageFileChange(null);
         if (preview) URL.revokeObjectURL(preview);
         setPreview(null);
+        setShowExisting(false);
     };
 
     const handleDrop = (e: React.DragEvent) => {
@@ -29,6 +38,11 @@ const CoverImage: FC<CoverImageProps> = ({ coverImageFile, onCoverImageFileChang
         const file = e.dataTransfer.files[0];
         if (file) handleFile(file);
     };
+
+    const displayUrl = preview ?? (showExisting ? existingImageUrl : null);
+    const displayLabel = coverImageFile?.name ?? (showExisting && existingImageUrl
+        ? existingImageUrl.split("/").pop()?.split("?")[0] ?? "Current image"
+        : null);
 
     return (
         <div className="space-y-3">
@@ -46,10 +60,10 @@ const CoverImage: FC<CoverImageProps> = ({ coverImageFile, onCoverImageFileChang
                     e.target.value = "";
                 }}
             />
-            {coverImageFile && preview ? (
+            {displayUrl ? (
                 <div className="relative w-full rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={preview} alt="Cover preview" className="w-full h-48 object-cover" />
+                    <img src={displayUrl} alt="Cover preview" className="w-full h-48 object-cover" />
                     <button
                         type="button"
                         onClick={handleClear}
@@ -57,7 +71,13 @@ const CoverImage: FC<CoverImageProps> = ({ coverImageFile, onCoverImageFileChang
                     >
                         <X className="w-4 h-4 text-gray-500 hover:text-red-500" />
                     </button>
-                    <div className="px-3 py-2 bg-gray-50 dark:bg-gray-800 text-xs text-gray-500 truncate">{coverImageFile.name}</div>
+                    <div
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-3 py-2 bg-gray-50 dark:bg-gray-800 text-xs text-gray-500 truncate cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        title="Click to replace"
+                    >
+                        {displayLabel ?? "Current image"} · <span className="text-[#9810FA]">Click to replace</span>
+                    </div>
                 </div>
             ) : (
                 <div

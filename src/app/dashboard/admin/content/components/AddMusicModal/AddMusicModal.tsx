@@ -8,6 +8,7 @@ import AccessLevels from "./AccessLevels";
 import CoverImage from "./CoverImage";
 import AddTags from "./AddTags";
 import StateEffectSelector from "./StateEffectSelector";
+import IconSelection from "./IconSelection";
 import CreateSubCategoryModal from "./CreateSubCategoryModal";
 import { contentApi } from "@/lib/api";
 import apiClient from "@/lib/api/axiosInstance";
@@ -65,6 +66,14 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
     const [duration, setDuration] = useState<number>(0);
     const [state, setState] = useState("");
     const [effect, setEffect] = useState("");
+    const [subCategory, setSubCategory] = useState("");
+    const [iconId, setIconId] = useState<number | null>(null);
+    const [iconFile, setIconFile] = useState<File | null>(null);
+    const [iconUrl, setIconUrl] = useState<string | null>(null);
+    const [existingImageUrl, setExistingImageUrl] = useState<string | null>(null);
+    const [existingAudioUrl, setExistingAudioUrl] = useState<string | null>(null);
+    const [releaseDate, setReleaseDate] = useState<string>("");
+    const [releaseTime, setReleaseTime] = useState<string>("");
 
     // Fetch goals once
     useEffect(() => {
@@ -95,6 +104,20 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
                 setDuration(item.duration ?? 0);
                 setState(item.state ?? "");
                 setEffect(item.effect ?? "");
+                setSubCategory(item.sub_category ?? "");
+                setIconId(item.icon ?? null);
+                setIconUrl(item.icon_url ?? null);
+                setUseCustomIcon(!!item.icon);
+                setExistingImageUrl(item.image ?? null);
+                setExistingAudioUrl(item.audio_clip ?? item.visual_file ?? null);
+                if (item.published_at) {
+                    const d = new Date(item.published_at);
+                    setReleaseDate(item.published_at);
+                    setReleaseTime(`${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`);
+                } else {
+                    setReleaseDate("");
+                    setReleaseTime("");
+                }
 
                 if (isEnvironmentSound) {
                     setArtist(item.environment_sound_type ?? "");
@@ -136,6 +159,14 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
         setSelectedGoals([]);
         setState("");
         setEffect("");
+        setSubCategory("");
+        setIconId(null);
+        setIconFile(null);
+        setIconUrl(null);
+        setExistingImageUrl(null);
+        setExistingAudioUrl(null);
+        setReleaseDate("");
+        setReleaseTime("");
         setSubmitError(null);
     };
 
@@ -190,8 +221,12 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
             if (categoryId) fd.append("music_category", categoryId);
         }
 
-        if (state)  fd.append("state", state);
-        if (effect) fd.append("effect", effect);
+        if (state)       fd.append("state", state);
+        if (effect)      fd.append("effect", effect);
+        if (subCategory) fd.append("sub_category", subCategory);
+
+        if (iconFile)            fd.append("icon", iconFile);
+        else if (iconId !== null) fd.append("icon", String(iconId));
 
         return fd;
     };
@@ -316,6 +351,9 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
                             audioFile={audioFile}
                             onAudioFileChange={setAudioFile}
                             onDurationExtracted={setDuration}
+                            subCategory={subCategory}
+                            onSubCategoryChange={setSubCategory}
+                            existingAudioUrl={existingAudioUrl}
                         />
 
                         {/* Goals */}
@@ -352,10 +390,15 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
 
                         <AddTags tags={tags} onTagsChange={setTags} />
 
-                        {/* <IconSelection
+                        <IconSelection
                             useCustomIcon={useCustomIcon}
                             setUseCustomIcon={setUseCustomIcon}
-                        /> */}
+                            selectedIconId={iconId}
+                            onIconIdChange={setIconId}
+                            iconFile={iconFile}
+                            onIconFileChange={setIconFile}
+                            initialIconUrl={iconUrl}
+                        />
 
                         {(isEnvironmentSound || isMindSession || isEnvironmentVisual) && (
                             <ThemePlaylist
@@ -373,9 +416,17 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
                         <CoverImage
                             coverImageFile={coverImageFile}
                             onCoverImageFileChange={setCoverImageFile}
+                            existingImageUrl={existingImageUrl}
                         />
 
-                        <VisibilitySettings status={status} onStatusChange={setStatus} />
+                        <VisibilitySettings
+                            status={status}
+                            onStatusChange={setStatus}
+                            releaseDate={releaseDate}
+                            onReleaseDateChange={setReleaseDate}
+                            releaseTime={releaseTime}
+                            onReleaseTimeChange={setReleaseTime}
+                        />
                         <AccessLevels accessLevel={accessLevel} onAccessLevelChange={setAccessLevel} />
                     </div>
 
