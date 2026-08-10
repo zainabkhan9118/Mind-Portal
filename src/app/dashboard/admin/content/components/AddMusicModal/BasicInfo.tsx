@@ -8,6 +8,7 @@ interface BasicInfoProps {
     isEnvironmentSound?: boolean;
     isMindSession?: boolean;
     isEnvironmentVisual?: boolean;
+    isMind?: boolean;
     onCreateSubCategory?: () => void;
     title: string;
     onTitleChange: (v: string) => void;
@@ -30,6 +31,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
     isEnvironmentSound = false,
     isMindSession = false,
     isEnvironmentVisual = false,
+    isMind = false,
     onCreateSubCategory,
     title,
     onTitleChange,
@@ -98,7 +100,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
                     </div>
                     <div>
                         <Label htmlFor="artist">
-                            {isEnvironmentSound ? "Type" : (isMindSession ? "Voice (Name of Professional)" : (isEnvironmentVisual ? "Author" : "Artist"))}
+                            {isEnvironmentSound ? "Type" : isMindSession ? "Voice (Name of Professional)" : (isEnvironmentVisual || isMind) ? "Author" : "Artist"}
                         </Label>
                         <Input
                             type="text"
@@ -111,7 +113,8 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
                 </div>
             </div>
 
-            {/* Add Files Section */}
+            {/* Add Files Section — hidden for Minds (no audio/video field) */}
+            {!isMind && (
             <div>
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
                     {isEnvironmentVisual ? "Add Video File" : "Add Audio File"}
@@ -176,6 +179,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
                     </div>
                 )}
             </div>
+            )}
 
             <div>
                 <Label htmlFor="addDetail">Add Detail</Label>
@@ -188,6 +192,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
                 />
             </div>
 
+            {!isMind && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                     <Label htmlFor="category">Category</Label>
@@ -225,6 +230,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
                     />
                 </div>
             </div>
+            )}
         </div>
     );
 };

@@ -10,6 +10,7 @@ import type {
     AdminMindSession,
     AdminEnvironmentSound,
     AdminEnvironmentVisual,
+    AdminMind,
     AnyContentItem,
     ContentTypeEndpoint,
     ContentType,
@@ -338,6 +339,37 @@ const contentApi = {
 
         delete: async (id: number): Promise<void> => {
             await apiClient.delete(`admin/content/env-visuals/${id}/`);
+        },
+    },
+
+    // ── Minds ───────────────────────────────────────────────────────────
+
+    minds: {
+        list: async (params?: ContentListParams): Promise<PaginatedResponse<AdminMind>> => {
+            const response = await apiClient.get<PaginatedResponse<AdminMind>>(
+                "admin/content/minds/",
+                { params },
+            );
+            return response.data;
+        },
+
+        get: async (id: number): Promise<AdminMind> => {
+            const response = await apiClient.get<AdminMind>(`admin/content/minds/${id}/`);
+            return response.data;
+        },
+
+        create: async (data: FormData | Partial<AdminMind>): Promise<AdminMind> => {
+            const response = await apiClient.post<AdminMind>("admin/content/minds/", data);
+            return response.data;
+        },
+
+        update: async (id: number, data: FormData | Partial<AdminMind>): Promise<AdminMind> => {
+            const response = await apiClient.patch<AdminMind>(`admin/content/minds/${id}/`, data);
+            return response.data;
+        },
+
+        delete: async (id: number): Promise<void> => {
+            await apiClient.delete(`admin/content/minds/${id}/`);
         },
     },
 

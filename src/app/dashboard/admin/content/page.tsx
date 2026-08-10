@@ -11,6 +11,7 @@ import {
   Activity,
   Brain,
   Glasses,
+  Sparkles,
 } from "lucide-react";
 import ContentTable from "./components/ContentTable";
 import ContentFilter from "./components/ContentFilter";
@@ -21,17 +22,19 @@ import type {
   AdminMindSession,
   AdminEnvironmentSound,
   AdminEnvironmentVisual,
+  AdminMind,
   AdminCategory,
   ContentStatus,
   ContentType,
 } from "@/lib/api/types";
-import type { ContentItem, EnvironmentSoundItem, MindSessionItem, EnvironmentVisualItem } from "./types";
+import type { ContentItem, EnvironmentSoundItem, MindSessionItem, EnvironmentVisualItem, MindItem } from "./types";
 
 const tabs = [
   "Music",
   "Environment Sound",
   "Mind Sessions",
   "Environment Visual",
+  "Minds",
 ];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -145,9 +148,24 @@ function adaptEnvVisual(item: AdminEnvironmentVisual, goalsMap: Record<number, s
   };
 }
 
+function adaptMind(item: AdminMind, goalsMap: Record<number, string>): MindItem {
+  return {
+    id: item.id,
+    title: item.name,
+    description: item.description ?? "",
+    goals: mapGoalNames(item.goals ?? [], goalsMap),
+    author: item.author ?? "",
+    state: item.state ?? "",
+    effect: item.effect ?? "",
+    status: mapApiStatus(item.status),
+    accessType: item.is_premium ? "Premium" : "Free",
+    tags: item.tags ?? [],
+  };
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-type AnyRow = ContentItem | EnvironmentSoundItem | MindSessionItem | EnvironmentVisualItem;
+type AnyRow = ContentItem | EnvironmentSoundItem | MindSessionItem | EnvironmentVisualItem | MindItem;
 
 export default function ContentManagementPage() {
   const [activeTab, setActiveTab] = useState("Music");
@@ -267,6 +285,13 @@ export default function ContentManagementPage() {
           setTotalPages(res.pages_count ?? Math.ceil(res.count / PAGE_SIZE));
           break;
         }
+        case "Minds": {
+          const res = await contentApi.minds.list(params);
+          setData(res.results.map((item) => adaptMind(item, goalsMap)));
+          setTotalCount(res.count);
+          setTotalPages(res.pages_count ?? Math.ceil(res.count / PAGE_SIZE));
+          break;
+        }
       }
     } catch (err) {
       console.error("Failed to fetch content:", err);
@@ -294,6 +319,7 @@ export default function ContentManagementPage() {
         case "Environment Sound":   await contentApi.envSounds.delete(id); break;
         case "Mind Sessions":       await contentApi.guidedSessions.delete(id); break;
         case "Environment Visual":  await contentApi.envVisuals.delete(id); break;
+        case "Minds":               await contentApi.minds.delete(id); break;
       }
       fetchData();
     } catch (err) {
@@ -386,6 +412,7 @@ export default function ContentManagementPage() {
               {tab === "Environment Sound" && <Activity className="w-4 h-4" />}
               {tab === "Mind Sessions" && <Brain className="w-4 h-4" />}
               {tab === "Environment Visual" && <Glasses className="w-4 h-4" />}
+              {tab === "Minds" && <Sparkles className="w-4 h-4" />}
               {tab}
             </button>
           ))}
@@ -478,6 +505,7 @@ export default function ContentManagementPage() {
         isEnvironmentSound={activeTab === "Environment Sound"}
         isMindSession={activeTab === "Mind Sessions"}
         isEnvironmentVisual={activeTab === "Environment Visual"}
+        isMind={activeTab === "Minds"}
         categories={categories}
         onSuccess={fetchData}
         editItemId={editItemId}

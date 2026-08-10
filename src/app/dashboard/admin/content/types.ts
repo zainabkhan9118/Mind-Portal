@@ -50,6 +50,19 @@ export interface MindSessionItem {
     tags: string[];
 }
 
+export interface MindItem {
+    id: number;
+    title: string;
+    description: string;
+    goals: string;
+    author: string;
+    state?: string | null;
+    effect?: string | null;
+    status: Exclude<ContentStatus, "Unknown">;
+    accessType: AccessType;
+    tags: string[];
+}
+
 export interface EnvironmentVisualItem {
     id: number;
     title: string;

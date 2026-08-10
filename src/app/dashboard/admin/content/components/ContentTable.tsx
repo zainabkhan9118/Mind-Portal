@@ -10,14 +10,14 @@ import {
     Pencil,
 } from 'lucide-react';
 import { Table, TableHeader, TableBody, TableRow, TableCell } from '@/components/ui/table';
-import { ContentItem, EnvironmentSoundItem, MindSessionItem, EnvironmentVisualItem } from '../types';
+import { ContentItem, EnvironmentSoundItem, MindSessionItem, EnvironmentVisualItem, MindItem } from '../types';
 import StatusBadge from './StatusBadge';
 import TagPill from './TagPill';
 import FileUploadIcon from './FileUploadIcon';
 
 interface ContentTableProps {
     activeTab: string;
-    data: (ContentItem | EnvironmentSoundItem | MindSessionItem | EnvironmentVisualItem)[];
+    data: (ContentItem | EnvironmentSoundItem | MindSessionItem | EnvironmentVisualItem | MindItem)[];
     onDelete: (id: number) => void;
     onDuplicate: (id: number) => void;
     onChangeStatus: (id: number, status: 'published' | 'draft' | 'archived') => void;
@@ -128,10 +128,21 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Effect</TableCell>
                             </>
                         )}
+                        {activeTab === "Minds" && (
+                            <>
+                                <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Description</TableCell>
+                                <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Goals</TableCell>
+                                <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Author</TableCell>
+                                <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">State</TableCell>
+                                <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Effect</TableCell>
+                            </>
+                        )}
 
                         <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Status</TableCell>
                         <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Access Type</TableCell>
-                        <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">File Upload</TableCell>
+                        {activeTab !== "Minds" && (
+                            <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">File Upload</TableCell>
+                        )}
                         <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Tags</TableCell>
 
                         {(activeTab === "Environment Sound" || activeTab === "Mind Sessions" || activeTab === "Environment Visual") && (
@@ -210,6 +221,20 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                                 </>
                             )}
 
+                            {activeTab === "Minds" && (
+                                <>
+                                    <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 max-w-[200px]">
+                                        <span className="block truncate" title={(item as MindItem).description}>
+                                            {(item as MindItem).description}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as MindItem).goals}</TableCell>
+                                    <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as MindItem).author}</TableCell>
+                                    <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as MindItem).state}</TableCell>
+                                    <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as MindItem).effect}</TableCell>
+                                </>
+                            )}
+
                             <TableCell className="p-4">
                                 <StatusBadge status={item.status} />
                             </TableCell>
@@ -219,9 +244,11 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                                 </span>
                             </TableCell>
 
-                            <TableCell className="p-4">
-                                <FileUploadIcon status={item.uploadStatus} />
-                            </TableCell>
+                            {activeTab !== "Minds" && (
+                                <TableCell className="p-4">
+                                    <FileUploadIcon status={(item as ContentItem).uploadStatus} />
+                                </TableCell>
+                            )}
                             <TableCell className="p-4">
                                 <div className="flex flex-wrap gap-1.5 min-w-[120px]">
                                     {item.tags.map((tag, idx) => (

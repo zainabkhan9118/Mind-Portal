@@ -431,7 +431,22 @@ export interface AdminEnvironmentVisual {
     updated_at: string;
 }
 
-export type AnyContentItem = AdminMusic | AdminMindSession | AdminEnvironmentSound | AdminEnvironmentVisual;
+export interface AdminMind {
+    id: number;
+    name: string;
+    description?: string | null;
+    author?: string | null;
+    goals: number[];
+    state?: string | null;
+    effect?: string | null;
+    status?: ContentStatus;
+    tags?: string[];
+    is_premium?: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export type AnyContentItem = AdminMusic | AdminMindSession | AdminEnvironmentSound | AdminEnvironmentVisual | AdminMind;
 
 // Cross-type operations
 export interface ReorderStepsRequest {
