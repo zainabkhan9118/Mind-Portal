@@ -1,17 +1,15 @@
 "use client";
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
 import {
-  CalenderIcon,
   ChevronDownIcon,
   HorizontaLDots,
-  UserCircleIcon,
 } from "../icons/index";
 // Lucide React icons for subItems
-import {  BarChart2,  Users,  LayoutDashboard, FolderOpen, ShoppingBag, Heart, Settings, LogOut, ChevronRight, Search, ChevronLeft } from "lucide-react";
+import {  BarChart2,  Users,  LayoutDashboard, FolderOpen, ShoppingBag, Heart, Settings, LogOut, ChevronRight, Search, ChevronLeft, X } from "lucide-react";
 
 
 // Define the type for navigation items
@@ -21,24 +19,6 @@ type NavItem = {
   path?: string;
   subItems?: { name: string; path: string; pro?: boolean; new?: boolean; icon?: React.ReactNode }[];
 };
-
-// Common navigation items for all roles
-const commonNavItems: NavItem[] = [
-  {
-    icon: <CalenderIcon />,
-    name: "Calendar",
-    path: "/calendar",
-  },
-  {
-    icon: <UserCircleIcon />,
-    name: "User Profile",
-    path: "/profile",
-  },
-];
-
-// Add a default icon for subItems (you can customize per subItem if desired)
-// Add a default icon for subItems (for fallback, not used below)
-const DefaultSubIcon = React.createElement(ChevronDownIcon, { className: "w-4 h-4 text-gray-400 mr-2" });
 
 const adminNavItems: NavItem[] = [
   {
@@ -81,9 +61,28 @@ const adminNavItems: NavItem[] = [
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered, toggleSidebar } = useSidebar();
-  const { user } = useAuth();
+  useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const [navItems, setNavItems] = useState<NavItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredNavItems = searchQuery.trim()
+    ? navItems.filter((nav) =>
+        nav.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : navItems;
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && filteredNavItems.length > 0) {
+      const first = filteredNavItems[0];
+      if (first.path) {
+        router.push(first.path);
+        setSearchQuery("");
+      }
+    }
+    if (e.key === "Escape") setSearchQuery("");
+  };
 
   // Determine which navigation items to show based on user role
   useEffect(() => {
@@ -342,9 +341,21 @@ const AppSidebar: React.FC = () => {
               <input
                 type="text"
                 placeholder="Search here"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
                 className="w-full pl-4 pr-10 py-2.5 rounded-3xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-600 focus:outline-none focus:border-purple-500 transition-all font-light"
               />
-              <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+              {searchQuery ? (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              ) : (
+                <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+              )}
             </div>
           </div>
         )}
@@ -365,7 +376,7 @@ const AppSidebar: React.FC = () => {
                   <HorizontaLDots />
                 )}
               </h2>
-              {renderMenuItems(navItems, "main")}
+              {renderMenuItems(filteredNavItems, "main")}
             </div>
 
             {/* Commented out Others section
