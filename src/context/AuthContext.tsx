@@ -20,6 +20,7 @@ interface AuthContextType {
   signin: (email: string, password: string) => Promise<void>;
   signup: (userData: SignupData) => Promise<void>;
   signout: () => Promise<void>;
+  updateProfile: (data: { first_name?: string; last_name?: string }) => Promise<void>;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
@@ -164,6 +165,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // ── Update Profile ─────────────────────────────────────────────────
+  const updateProfile = async (data: { first_name?: string; last_name?: string }) => {
+    const { globalApi } = await import("@/lib/api");
+    const profile = await globalApi.updateMe(data);
+    const updated = profileToUser(profile);
+    setUser(updated);
+    localStorage.setItem("user", JSON.stringify(updated));
+  };
+
   // ── Sign Out ───────────────────────────────────────────────────────
   const signout = async () => {
     try {
@@ -185,6 +195,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         signin,
         signup,
         signout,
+        updateProfile,
         isAuthenticated,
         isLoading,
         error,

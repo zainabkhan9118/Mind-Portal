@@ -22,6 +22,12 @@ const globalApi = {
         return response.data;
     },
 
+    /** Partially update the logged-in admin's profile. */
+    updateMe: async (data: { first_name?: string; last_name?: string }): Promise<AdminProfile> => {
+        const response = await apiClient.patch<AdminProfile>("admin/me/", data);
+        return response.data;
+    },
+
     /** Returns system health: database, redis, celery status. */
     getHealth: async (): Promise<HealthStatus> => {
         const response = await apiClient.get<HealthStatus>("admin/health/");
