@@ -3,15 +3,27 @@ import { ThemeToggleButton } from "@/components/common/ThemeToggleButton";
 import NotificationDropdown from "@/components/header/NotificationDropdown";
 import UserDropdown from "@/components/header/UserDropdown";
 import { useSidebar } from "@/context/SidebarContext";
+import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
 import Link from "next/link";
-import { Globe, SlidersHorizontal } from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
 
   const { isMobileOpen, toggleSidebar, toggleMobileSidebar } = useSidebar();
+  const { user } = useAuth();
+
+  const adminName = user?.first_name
+    ? `${user.first_name}${user.last_name ? " " + user.last_name : ""}`
+    : user?.name ?? "Admin";
+
+  const todayLabel = new Date().toLocaleDateString("en-US", {
+    weekday: "short",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
 
   const handleToggle = () => {
     if (window.innerWidth >= 1024) {
@@ -124,10 +136,10 @@ const AppHeader: React.FC = () => {
           <div className="hidden lg:block">
             <div>
               <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-                Welcome, Admin Name
+                Welcome, {adminName}
               </h1>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Tue, 07 June 2022
+                {todayLabel}
               </p>
             </div>
           </div>
@@ -139,18 +151,6 @@ const AppHeader: React.FC = () => {
           <div className=" flex items-center gap-2 2xsm:gap-3">
             {/* <!-- Dark Mode Toggler --> */}
             <ThemeToggleButton />
-            {/* <!-- Dark Mode Toggler --> */}
-
-            <button className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400">
-              <Globe className="w-5 h-5" />
-            </button>
-
-            <NotificationDropdown />
-
-            <button className="flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400">
-              <SlidersHorizontal className="w-5 h-5" />
-            </button>
-            {/* <!-- Notification Menu Area --> */}
           </div>
           {/* <!-- User Area --> */}
           <UserDropdown />

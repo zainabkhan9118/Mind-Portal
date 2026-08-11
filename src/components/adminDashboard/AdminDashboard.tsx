@@ -8,11 +8,7 @@ import TopRankingsTable from '@/app/dashboard/admin/statistics/components/TopRan
 export default function AdminDashboard() {
   return (
     <div className="p-2 space-y-8 animate-in fade-in duration-700">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Welcome, Admin Name</h1>
-        <p className="text-gray-600 dark:text-gray-400">Here is what's happening with your content today.</p>
-      </div>
-
+      
       {/* Main Analytics Overview */}
       <OverviewTab />
 
