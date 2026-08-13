@@ -37,7 +37,7 @@ const VisibilitySettings: React.FC<VisibilitySettingsProps> = ({
                     ]}
                     placeholder="Select status"
                     onChange={onStatusChange}
-                    defaultValue={status}
+                    value={status}
                 />
             </div>
 

@@ -187,7 +187,7 @@ export interface UserListParams extends PaginationParams, SearchParams, Ordering
 // 4. CONTENT
 // ═══════════════════════════════════════════════════════════════════════════
 
-export type ContentType = "music" | "mind_session" | "env_sound" | "env_visual";
+export type ContentType = "music" | "mind_session" | "env_sound" | "env_visual" | "minds";
 export type ContentTypeEndpoint = "music" | "guided-sessions" | "env-sounds" | "env-visuals";
 export type ContentStatus = "published" | "draft" | "archived" | "review";
 
@@ -442,6 +442,10 @@ export interface AdminMind {
     status?: ContentStatus;
     tags?: string[];
     is_premium?: boolean;
+    icon?: number | null;
+    icon_url?: string | null;
+    icon_name?: string | null;
+    published_at?: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -811,7 +815,18 @@ export interface ReportListParams extends PaginationParams {
 // 8. SETTINGS
 // ═══════════════════════════════════════════════════════════════════════════
 
-export type SettingsCategory = "general" | "appearance" | "media" | "notifications";
+export type SettingsCategory = "general" | "appearance" | "media" | "notifications" | "app-versions";
+
+export interface AppVersions {
+    mobile_app: string;
+    vr_app: string;
+    api: string;
+}
+
+export interface CacheClearResponse {
+    cleared: boolean;
+    message: string;
+}
 
 export type SettingsKeyValue = Record<string, unknown>;
 

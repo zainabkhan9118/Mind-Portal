@@ -44,6 +44,7 @@ function getContentType(activeTab: string): ContentType {
     case "Environment Sound": return "env_sound";
     case "Mind Sessions": return "mind_session";
     case "Environment Visual": return "env_visual";
+    case "Minds": return "minds";
     default: return "music";
   }
 }
@@ -80,8 +81,8 @@ function adaptMusic(item: AdminMusic): ContentItem {
     title: item.name,
     artist: item.artist,
     url: item.audio_clip,
-    state: item.status ?? "",
-    effect: item.genre ?? "",
+    state: item.state ?? "",
+    effect: item.effect ?? "",
     status: mapApiStatus(item.status),
     accessType: item.is_premium ? "Premium" : "Free",
     uploadStatus: "Uploaded",

@@ -48,6 +48,7 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
     const [isCreateSubCategoryOpen, setIsCreateSubCategoryOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
+    const [loadError, setLoadError] = useState<string | null>(null);
 
     // Goals
     const [goalsList, setGoalsList] = useState<Goal[]>([]);
@@ -88,6 +89,7 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
     // Pre-fill form when editing
     useEffect(() => {
         if (!isOpen || !editItemId) return;
+        setLoadError(null);
         const load = async () => {
             try {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -141,7 +143,7 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
                     setCategoryId(String(item.music_category?.[0] ?? ""));
                 }
             } catch {
-                // silently fail — form stays empty
+                setLoadError("Could not load item details. It may have been deleted.");
             }
         };
         load();
@@ -173,6 +175,7 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
         setReleaseDate("");
         setReleaseTime("");
         setSubmitError(null);
+        setLoadError(null);
     };
 
     const handleClose = () => {
@@ -235,7 +238,9 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
         if (iconFile)            fd.append("icon", iconFile);
         else if (iconId !== null) fd.append("icon", String(iconId));
 
-        if (releaseDate) {
+        if (apiStatus === "draft") {
+            fd.append("published_at", "");
+        } else if (releaseDate) {
             // releaseDate may be a full ISO string (from edit pre-fill) or "YYYY-MM-DD" (from picker)
             const datePart = releaseDate.includes("T") ? releaseDate.split("T")[0] : releaseDate;
             const timePart = releaseTime || "00:00";
@@ -351,6 +356,12 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
                             </p>
                         </div>
                     </div>
+
+                    {loadError && (
+                        <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-600 dark:text-red-400">
+                            {loadError}
+                        </div>
+                    )}
 
                     {/* content scrollable area */}
                     <div className="flex-1 space-y-10 overflow-y-auto max-h-[70vh] pr-2 custom-scrollbar pb-6">

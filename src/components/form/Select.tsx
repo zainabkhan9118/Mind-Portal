@@ -12,6 +12,7 @@ interface SelectProps {
   onChange: (value: string) => void;
   className?: string;
   defaultValue?: string;
+  value?: string;
 }
 
 const Select: React.FC<SelectProps> = ({
@@ -20,10 +21,16 @@ const Select: React.FC<SelectProps> = ({
   onChange,
   className = "",
   defaultValue = "",
+  value,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedValue, setSelectedValue] = useState<string>(defaultValue);
+  const [selectedValue, setSelectedValue] = useState<string>(value ?? defaultValue);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Sync when controlled value changes from outside
+  useEffect(() => {
+    if (value !== undefined) setSelectedValue(value);
+  }, [value]);
 
   // Handle outside click to close dropdown
   useEffect(() => {

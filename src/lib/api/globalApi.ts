@@ -4,6 +4,7 @@ import type {
     HealthStatus,
     TaskResult,
     ExportTaskResponse,
+    CacheClearResponse,
 } from "./types";
 
 /**
@@ -28,6 +29,18 @@ const globalApi = {
         return response.data;
     },
 
+    /** Trigger async platform report generation. Returns { task_id }. */
+    generateReport: async (): Promise<ExportTaskResponse> => {
+        const response = await apiClient.post<ExportTaskResponse>("admin/reports/generate/", {});
+        return response.data;
+    },
+
+    /** Clear the application cache (Redis). Returns confirmation. */
+    clearCache: async (): Promise<CacheClearResponse> => {
+        const response = await apiClient.post<CacheClearResponse>("admin/cache/clear/", {});
+        return response.data;
+    },
+
     /** Returns system health: database, redis, celery status. */
     getHealth: async (): Promise<HealthStatus> => {
         const response = await apiClient.get<HealthStatus>("admin/health/");
@@ -43,7 +56,7 @@ const globalApi = {
 
     /** Get download URL for a completed export. */
     getTaskDownloadUrl: (taskId: string): string =>
-        `${apiClient.defaults.baseURL}/admin/tasks/${taskId}/download/`,
+        `${apiClient.defaults.baseURL}admin/tasks/${taskId}/download/`,
 
     /**
      * Poll an async export task until it completes or fails.
@@ -94,10 +107,18 @@ const globalApi = {
             throw new Error("Export failed. Please try again.");
         }
 
-        // Initiate browser download
+        // Download endpoint returns a pre-signed S3 URL — open it directly
         if (typeof window !== "undefined") {
-            const downloadUrl = globalApi.getTaskDownloadUrl(task_id);
-            window.open(downloadUrl, "_blank");
+            const response = await apiClient.get<{ download_url: string }>(
+                `admin/tasks/${task_id}/download/`,
+            );
+            const s3Url = response.data.download_url;
+            const a = document.createElement("a");
+            a.href = s3Url;
+            a.download = "";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
         }
     },
 };

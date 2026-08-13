@@ -17,6 +17,7 @@ import type {
     CreateRoleRequest,
     AuditLogEntry,
     AuditLogParams,
+    AppVersions,
 } from "./types";
 
 /**
@@ -45,6 +46,12 @@ const settingsApi = {
             `admin/settings/${category}/`,
             data,
         );
+        return response.data;
+    },
+
+    /** Get current app version strings (mobile, VR, API). */
+    getAppVersions: async (): Promise<AppVersions> => {
+        const response = await apiClient.get<AppVersions>("admin/settings/app-versions/");
         return response.data;
     },
 

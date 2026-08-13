@@ -64,6 +64,7 @@ const contentApi = {
         const typeSlug = type === "mind_session" ? "guided-sessions"
             : type === "env_sound" ? "env-sounds"
             : type === "env_visual" ? "env-visuals"
+            : type === "minds" ? "minds"
             : type;
         await apiClient.patch(`admin/content/${typeSlug}/${id}/status/`, data);
     },
@@ -76,6 +77,7 @@ const contentApi = {
         const typeSlug = type === "mind_session" ? "guided-sessions"
             : type === "env_sound" ? "env-sounds"
             : type === "env_visual" ? "env-visuals"
+            : type === "minds" ? "minds"
             : type;
         const response = await apiClient.post<AnyContentItem>(
             `admin/content/${typeSlug}/${id}/duplicate/`,

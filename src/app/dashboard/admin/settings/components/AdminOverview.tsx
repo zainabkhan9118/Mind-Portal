@@ -22,7 +22,8 @@ import Label from "@/components/form/Label";
 import Switch from "@/components/form/switch/Switch";
 import settingsApi from "@/lib/api/settingsApi";
 import globalApi from "@/lib/api/globalApi";
-import type { AdminAccount, AuditLogEntry, HealthStatus, Role } from "@/lib/api/types";
+import usersApi from "@/lib/api/usersApi";
+import type { AdminAccount, AuditLogEntry, AppVersions, HealthStatus, Role } from "@/lib/api/types";
 import PushNotifications from "./PushNotifications";
 
 const FEATURE_FLAG_KEYS: Record<string, string> = {
@@ -50,8 +51,13 @@ const AdminOverview: React.FC = () => {
     const [admins, setAdmins] = useState<AdminAccount[]>([]);
     const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
     const [health, setHealth] = useState<HealthStatus | null>(null);
+    const [appVersions, setAppVersions] = useState<AppVersions | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [roles, setRoles] = useState<Role[]>([]);
+
+    // Quick action states
+    const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
+    const [actionDone, setActionDone] = useState<Record<string, string>>({});
 
     // Add admin modal
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -119,10 +125,12 @@ const AdminOverview: React.FC = () => {
             settingsApi.getAuditLog({ size: 5 }),
             globalApi.getHealth(),
             settingsApi.getSettings('general'),
-        ]).then(([adminsRes, logsRes, healthRes, generalSettings]) => {
+            settingsApi.getAppVersions(),
+        ]).then(([adminsRes, logsRes, healthRes, generalSettings, versionsRes]) => {
             setAdmins(adminsRes.results);
             setAuditLogs(logsRes.results);
             setHealth(healthRes);
+            setAppVersions(versionsRes);
             setFeatureFlags({
                 vrMode: generalSettings.vr_mode !== undefined ? Boolean(generalSettings.vr_mode) : DEFAULT_FLAGS.vrMode,
                 groupSessions: generalSettings.group_sessions !== undefined ? Boolean(generalSettings.group_sessions) : DEFAULT_FLAGS.groupSessions,
@@ -217,6 +225,30 @@ const AdminOverview: React.FC = () => {
             setIsSavingFlags(false);
         }
     };
+
+    const runAction = async (key: string, fn: () => Promise<void>) => {
+        setActionLoading((prev) => ({ ...prev, [key]: true }));
+        setActionDone((prev) => ({ ...prev, [key]: '' }));
+        try {
+            await fn();
+            setActionDone((prev) => ({ ...prev, [key]: 'Done!' }));
+            setTimeout(() => setActionDone((prev) => ({ ...prev, [key]: '' })), 3000);
+        } catch {
+            setActionDone((prev) => ({ ...prev, [key]: 'Failed' }));
+            setTimeout(() => setActionDone((prev) => ({ ...prev, [key]: '' })), 3000);
+        } finally {
+            setActionLoading((prev) => ({ ...prev, [key]: false }));
+        }
+    };
+
+    const handleExportUsers = () =>
+        runAction('export', () => globalApi.exportAndDownload(() => usersApi.exportUsers()));
+
+    const handleGenerateReport = () =>
+        runAction('report', () => globalApi.exportAndDownload(() => globalApi.generateReport()));
+
+    const handleClearCache = () =>
+        runAction('cache', async () => { await globalApi.clearCache(); });
 
     const getHealthColor = (status: string) => {
         const isGood = ['healthy', 'ok', 'connected', 'operational', 'active', 'up', 'running'].some(
@@ -431,18 +463,25 @@ const AdminOverview: React.FC = () => {
                 <div className="bg-white dark:bg-gray-800 p-8 rounded-[32px] border border-gray-100 dark:border-gray-700 shadow-sm">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-8">App Version</h3>
                     <div className="space-y-6">
-                        <div className="flex justify-between items-center text-sm">
-                            <span className="text-gray-500 dark:text-gray-400 font-medium">Mobile App</span>
-                            <span className="text-gray-900 dark:text-white font-bold">v2.4.1</span>
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                            <span className="text-gray-500 dark:text-gray-400 font-medium">VR App</span>
-                            <span className="text-gray-900 dark:text-white font-bold">v1.8.5</span>
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                            <span className="text-gray-500 dark:text-gray-400 font-medium">API</span>
-                            <span className="text-gray-900 dark:text-white font-bold">v3.2.0</span>
-                        </div>
+                        {isLoading ? (
+                            [...Array(3)].map((_, i) => (
+                                <div key={i} className="flex justify-between items-center animate-pulse">
+                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-20" />
+                                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16" />
+                                </div>
+                            ))
+                        ) : (
+                            [
+                                { label: 'Mobile App', value: appVersions?.mobile_app ?? '—' },
+                                { label: 'VR App', value: appVersions?.vr_app ?? '—' },
+                                { label: 'API', value: appVersions?.api ?? '—' },
+                            ].map(({ label, value }) => (
+                                <div key={label} className="flex justify-between items-center text-sm">
+                                    <span className="text-gray-500 dark:text-gray-400 font-medium">{label}</span>
+                                    <span className="text-gray-900 dark:text-white font-bold">{value}</span>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
 
@@ -450,18 +489,26 @@ const AdminOverview: React.FC = () => {
                 <div className="bg-white dark:bg-gray-800 p-8 rounded-[32px] border border-gray-100 dark:border-gray-700 shadow-sm">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-8">Quick Actions</h3>
                     <div className="space-y-3">
-                        <button className="w-full text-left p-4 rounded-2xl bg-gray-50/50 dark:bg-gray-900/50 text-sm font-bold text-gray-700 dark:text-gray-200 hover:text-[#9810FA] hover:bg-white dark:hover:bg-gray-800 transition-all flex items-center justify-between group border border-transparent hover:border-purple-100 dark:hover:border-purple-900/40">
-                            <span>Export User Data</span>
-                            <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-[#9810FA] group-hover:translate-x-1 transition-all" />
-                        </button>
-                        <button className="w-full text-left p-4 rounded-2xl bg-gray-50/50 dark:bg-gray-900/50 text-sm font-bold text-gray-700 dark:text-gray-200 hover:text-[#9810FA] hover:bg-white dark:hover:bg-gray-800 transition-all flex items-center justify-between group border border-transparent hover:border-purple-100 dark:hover:border-purple-900/40">
-                            <span>Generate Report</span>
-                            <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-[#9810FA] group-hover:translate-x-1 transition-all" />
-                        </button>
-                        <button className="w-full text-left p-4 rounded-2xl bg-gray-50/50 dark:bg-gray-900/50 text-sm font-bold text-gray-700 dark:text-gray-200 hover:text-[#9810FA] hover:bg-white dark:hover:bg-gray-800 transition-all flex items-center justify-between group border border-transparent hover:border-purple-100 dark:hover:border-purple-900/40">
-                            <span>Clear Cache</span>
-                            <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-[#9810FA] group-hover:translate-x-1 transition-all" />
-                        </button>
+                        {[
+                            { key: 'export', label: 'Export User Data', handler: handleExportUsers },
+                            { key: 'report', label: 'Generate Report', handler: handleGenerateReport },
+                            { key: 'cache', label: 'Clear Cache', handler: handleClearCache },
+                        ].map(({ key, label, handler }) => (
+                            <button
+                                key={key}
+                                onClick={handler}
+                                disabled={actionLoading[key]}
+                                className="w-full text-left p-4 rounded-2xl bg-gray-50/50 dark:bg-gray-900/50 text-sm font-bold text-gray-700 dark:text-gray-200 hover:text-[#9810FA] hover:bg-white dark:hover:bg-gray-800 transition-all flex items-center justify-between group border border-transparent hover:border-purple-100 dark:hover:border-purple-900/40 disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                <span className={actionDone[key] === 'Failed' ? 'text-red-500' : actionDone[key] ? 'text-green-600 dark:text-green-400' : ''}>
+                                    {actionDone[key] ? `${label} — ${actionDone[key]}` : label}
+                                </span>
+                                {actionLoading[key]
+                                    ? <Loader2 className="w-4 h-4 animate-spin text-[#9810FA]" />
+                                    : <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-[#9810FA] group-hover:translate-x-1 transition-all" />
+                                }
+                            </button>
+                        ))}
                     </div>
                 </div>
             </div>
