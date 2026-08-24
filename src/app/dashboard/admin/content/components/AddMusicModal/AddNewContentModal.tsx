@@ -31,9 +31,9 @@ interface AddNewContentModalProps {
 
 const TAB_TO_TYPE: Record<string, string> = {
     "Music": "music",
-    "Environment Sound": "env_sound",
-    "Mind Sessions": "mind_session",
-    "Environment Visual": "env_visual",
+    "Sounds": "env_sound",
+    "Guided": "mind_session",
+    "Visuals": "env_visual",
     "Minds": "mind",
 };
 
@@ -187,9 +187,9 @@ const AddNewContentModal: React.FC<AddNewContentModalProps> = ({
     };
 
     const tabLabel =
-        activeTab === "Mind Sessions" ? "Mind Session" :
-        activeTab === "Environment Sound" ? "Environment Sound" :
-        activeTab === "Environment Visual" ? "Environment Visual" :
+        activeTab === "Guided" ? "Guided" :
+        activeTab === "Sounds" ? "Sounds" :
+        activeTab === "Visuals" ? "Visuals" :
         activeTab === "Minds" ? "Mind" :
         "Music";
 

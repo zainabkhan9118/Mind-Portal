@@ -96,7 +96,7 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Effect</TableCell>
                             </>
                         )}
-                        {activeTab === "Environment Sound" && (
+                        {activeTab === "Sounds" && (
                             <>
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Category</TableCell>
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Frequency</TableCell>
@@ -107,7 +107,7 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Effect</TableCell>
                             </>
                         )}
-                        {activeTab === "Mind Sessions" && (
+                        {activeTab === "Guided" && (
                             <>
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Category</TableCell>
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Voice</TableCell>
@@ -118,7 +118,7 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Effect</TableCell>
                             </>
                         )}
-                        {activeTab === "Environment Visual" && (
+                        {activeTab === "Visuals" && (
                             <>
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Category</TableCell>
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Author</TableCell>
@@ -145,7 +145,7 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                         )}
                         <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Tags</TableCell>
 
-                        {(activeTab === "Environment Sound" || activeTab === "Mind Sessions" || activeTab === "Environment Visual") && (
+                        {(activeTab === "Sounds" || activeTab === "Guided" || activeTab === "Visuals") && (
                             <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">URL</TableCell>
                         )}
                         <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider text-right">Actions</TableCell>
@@ -188,7 +188,7 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as ContentItem).effect}</TableCell>
                                 </>
                             )}
-                            {activeTab === "Environment Sound" && (
+                            {activeTab === "Sounds" && (
                                 <>
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentSoundItem).category}</TableCell>
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentSoundItem).frequency}</TableCell>
@@ -199,7 +199,7 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentSoundItem).effect}</TableCell>
                                 </>
                             )}
-                            {activeTab === "Mind Sessions" && (
+                            {activeTab === "Guided" && (
                                 <>
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as MindSessionItem).category}</TableCell>
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as MindSessionItem).voice}</TableCell>
@@ -210,7 +210,7 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as MindSessionItem).effect}</TableCell>
                                 </>
                             )}
-                            {activeTab === "Environment Visual" && (
+                            {activeTab === "Visuals" && (
                                 <>
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentVisualItem).category}</TableCell>
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentVisualItem).author}</TableCell>
@@ -257,7 +257,7 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                                 </div>
                             </TableCell>
 
-                            {(activeTab === "Environment Sound" || activeTab === "Mind Sessions" || activeTab === "Environment Visual") && (
+                            {(activeTab === "Sounds" || activeTab === "Guided" || activeTab === "Visuals") && (
                                 <TableCell className="p-4 text-sm text-[#9810FA] whitespace-nowrap">Link</TableCell>
                             )}
 

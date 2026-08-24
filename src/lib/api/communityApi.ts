@@ -10,6 +10,7 @@ import type {
     CommunityPost,
     CommunityReport,
     CommunityGroup,
+    CommunityGroupSession,
     MemberActionRequest,
     PostActionRequest,
     ResolveReportRequest,
@@ -228,6 +229,19 @@ const communityApi = {
     /** Archive a group (sets is_hidden=true, no hard delete). */
     archiveGroup: async (id: number): Promise<void> => {
         await apiClient.delete(`admin/community/groups/${id}/`);
+    },
+
+    // ── Group Sessions ──────────────────────────────────────────────────
+
+    /** Paginated group sessions, sortable by participants. */
+    getSessions: async (
+        params?: PaginationParams & { ordering?: string },
+    ): Promise<PaginatedResponse<CommunityGroupSession>> => {
+        const response = await apiClient.get<PaginatedResponse<CommunityGroupSession>>(
+            "admin/community/sessions/",
+            { params },
+        );
+        return response.data;
     },
 };
 

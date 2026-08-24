@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useMemo, useState } from 'react';
-import { Search, ChevronDown, ArrowUpDown, TrendingUp, TrendingDown, Music, Wind, TreePine, Headphones } from 'lucide-react';
+import { ArrowUpDown, TrendingUp, TrendingDown, Music, Wind, TreePine, Headphones } from 'lucide-react';
 import analyticsApi from '@/lib/api/analyticsApi';
-import type { PlaysByContent, ContentType } from '@/lib/api/types';
+import type { PlaysByContent, ContentType, AnalyticsParams } from '@/lib/api/types';
 
 const PAGE_SIZE = 10;
 
@@ -59,20 +59,25 @@ function formatPlays(n: number): string {
     return n.toString();
 }
 
-const TopRankingsTable: React.FC = () => {
+interface TopRankingsTableProps {
+    dateParams?: AnalyticsParams;
+    searchTerm?: string;
+    typeFilter?: ContentType | '';
+}
+
+const TopRankingsTable: React.FC<TopRankingsTableProps> = ({ dateParams, searchTerm = '', typeFilter = '' }) => {
     const [allData, setAllData] = useState<PlaysByContent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [typeFilter, setTypeFilter] = useState<ContentType | ''>('');
     const [page, setPage] = useState(1);
     const [selected, setSelected] = useState<Set<number>>(new Set());
 
     useEffect(() => {
-        analyticsApi.getPlaysByContent({ size: 500 })
+        setIsLoading(true);
+        analyticsApi.getPlaysByContent({ size: 500, ...dateParams })
             .then((res) => setAllData(res.results ?? []))
             .catch(console.error)
             .finally(() => setIsLoading(false));
-    }, []);
+    }, [dateParams?.start_date, dateParams?.end_date, dateParams?.content_type]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const filteredData = useMemo(() => {
         let result = allData;
@@ -90,8 +95,8 @@ const TopRankingsTable: React.FC = () => {
     const end = Math.min(page * PAGE_SIZE, filteredData.length);
     const pageData = filteredData.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-    const handleSearch = (value: string) => { setSearchTerm(value); setPage(1); };
-    const handleTypeFilter = (value: ContentType | '') => { setTypeFilter(value); setPage(1); };
+    // Reset to page 1 when external filters change
+    useEffect(() => { setPage(1); }, [searchTerm, typeFilter]);
 
     const allPageSelected = pageData.length > 0 && pageData.every((r) => selected.has(r.content_id));
     const toggleAll = () => {
@@ -108,32 +113,6 @@ const TopRankingsTable: React.FC = () => {
 
     return (
         <div className="space-y-4">
-            {/* Filter Bar */}
-            <div className="flex flex-col md:flex-row justify-end items-center gap-4">
-                <div className="relative w-full md:w-80">
-                    <input
-                        type="text"
-                        placeholder="Search content..."
-                        value={searchTerm}
-                        onChange={(e) => handleSearch(e.target.value)}
-                        className="w-full pl-6 pr-10 py-3 rounded-full border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 placeholder:text-gray-400"
-                    />
-                    <Search className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                </div>
-                <div className="relative">
-                    <select
-                        value={typeFilter}
-                        onChange={(e) => handleTypeFilter(e.target.value as ContentType | '')}
-                        className="appearance-none pl-4 pr-10 py-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 transition-all cursor-pointer focus:outline-none"
-                    >
-                        {TYPE_OPTIONS.map((o) => (
-                            <option key={o.value} value={o.value}>{o.label}</option>
-                        ))}
-                    </select>
-                    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                </div>
-            </div>
-
             {/* Table */}
             <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">

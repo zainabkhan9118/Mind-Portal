@@ -151,6 +151,25 @@ const usersApi = {
     switchToMindExpert: async (id: number): Promise<void> => {
         await apiClient.patch(`admin/users/${id}/`, { is_mind_expert: true });
     },
+
+    /** List users who have submitted a Mind Expert application (pending_mind_expert=true). */
+    getMindExpertApplications: async (): Promise<{ count: number; results: ApiUser[] }> => {
+        const response = await apiClient.get<{ count: number; results: ApiUser[] }>(
+            "admin/users/",
+            { params: { mind_expert_pending: true, size: 50 } },
+        );
+        return response.data;
+    },
+
+    /** Approve a Mind Expert application. */
+    approveMindExpert: async (id: number): Promise<void> => {
+        await apiClient.patch(`admin/users/${id}/`, { is_mind_expert: true, mind_expert_pending: false });
+    },
+
+    /** Reject a Mind Expert application. */
+    rejectMindExpert: async (id: number): Promise<void> => {
+        await apiClient.patch(`admin/users/${id}/`, { mind_expert_pending: false });
+    },
 };
 
 export default usersApi;

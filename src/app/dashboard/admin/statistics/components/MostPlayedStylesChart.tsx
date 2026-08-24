@@ -4,7 +4,8 @@ import dynamic from 'next/dynamic';
 import { ApexOptions } from 'apexcharts';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import analyticsApi from '@/lib/api/analyticsApi';
-import type { PlaysByType, AnalyticsParams } from '@/lib/api/types';
+import { contentApi } from '@/lib/api';
+import type { PlaysByType, AnalyticsParams, ContentType } from '@/lib/api/types';
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
@@ -23,17 +24,15 @@ const ANALYSIS_OPTIONS = [
 
 const CONTENT_TYPES = ['Music', 'Guided', 'Sounds', 'Visuals'];
 
-const CATEGORIES: Record<string, string[]> = {
-    Music:   ['Piano', 'Meditation/Spiritual', 'Nature Melodies', 'Classical', 'EMDR', 'Ambient', 'Beats', 'Café', 'Electronic', 'Lullabies'],
-    Guided:  ['Coaching', 'Hypnosis', 'Meditation'],
-    Sounds:  [],
-    Visuals: [],
+const CONTENT_TYPE_API: Record<string, ContentType> = {
+    Music:   'music',
+    Guided:  'mind_session',
+    Sounds:  'env_sound',
+    Visuals: 'env_visual',
 };
 
-const SUB_CATEGORIES: Record<string, string[]> = {
-    Ambient:  ['Mixed with Binaural Beats', 'Mixed with Solfeggio Frequencies'],
-    Coaching: ['Life', 'Work'],
-};
+interface CatEntry    { id: number; name: string; group: string; }
+interface SubCatEntry { id: number; name: string; parentName: string; }
 
 const GOALS = [
     'Relax & Unwind', 'Focus', 'Motivation', 'Creativity & Inspiration',
@@ -111,6 +110,37 @@ const MostPlayedStylesChart: React.FC = () => {
 
     // Refs for click-outside
     const containerRef = useRef<HTMLDivElement>(null);
+    const [allCategories, setAllCategories] = useState<CatEntry[]>([]);
+    const [subCatPool, setSubCatPool]       = useState<SubCatEntry[]>([]);
+
+    // Fetch all categories on mount
+    useEffect(() => {
+        Promise.all(
+            CONTENT_TYPES.map((ct) =>
+                contentApi.categories
+                    .list({ type: CONTENT_TYPE_API[ct] as never, size: 200 })
+                    .then((res) => res.results.map((c): CatEntry => ({ id: c.id, name: c.name, group: ct })))
+            )
+        )
+            .then((results) => setAllCategories(results.flat()))
+            .catch(console.error);
+    }, []); // eslint-disable-line
+
+    // Fetch sub-categories when selected categories change
+    useEffect(() => {
+        if (categories.length === 0) { setSubCatPool([]); return; }
+        const selectedCatObjs = allCategories.filter((c) => categories.includes(c.name));
+        if (selectedCatObjs.length === 0) { setSubCatPool([]); return; }
+        Promise.all(
+            selectedCatObjs.map((cat) =>
+                contentApi.subCategories
+                    .list({ type: CONTENT_TYPE_API[cat.group] as ContentType, category: cat.id, size: 200 })
+                    .then((res) => res.results.map((s): SubCatEntry => ({ id: s.id, name: s.name, parentName: cat.name })))
+            )
+        )
+            .then((results) => setSubCatPool(results.flat()))
+            .catch(console.error);
+    }, [categories, allCategories]); // eslint-disable-line
 
     useEffect(() => {
         const handler = (e: MouseEvent) => {
@@ -142,13 +172,9 @@ const MostPlayedStylesChart: React.FC = () => {
         setOpenKey(null);
     };
 
-    // Categories visible based on selected content types
-    const visibleCategories = (contentTypes.length > 0 ? contentTypes : CONTENT_TYPES)
-        .flatMap((ct) => (CATEGORIES[ct] ?? []).map((c) => ({ cat: c, group: ct })));
-
-    // Sub-categories visible based on selected categories
-    const visibleSubCats = (categories.length > 0 ? categories : Object.keys(SUB_CATEGORIES))
-        .filter((c) => (SUB_CATEGORIES[c] ?? []).length > 0);
+    const visibleCategories = allCategories.filter(
+        (c) => contentTypes.length === 0 || contentTypes.includes(c.group)
+    );
 
     const steps: StepKey[] = analysis ? (ANALYSIS_STEPS[analysis] ?? []) : [];
 
@@ -280,21 +306,23 @@ const MostPlayedStylesChart: React.FC = () => {
                                         <div className="absolute left-0 top-full mt-1 z-30 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-lg py-1 min-w-[200px] max-h-60 overflow-y-auto">
                                             {(() => {
                                                 const grouped: Record<string, string[]> = {};
-                                                visibleCategories.forEach(({ cat, group }) => {
+                                                visibleCategories.forEach(({ name, group }) => {
                                                     if (!grouped[group]) grouped[group] = [];
-                                                    grouped[group].push(cat);
+                                                    grouped[group].push(name);
                                                 });
-                                                return Object.entries(grouped).map(([group, cats]) => (
-                                                    <div key={group}>
-                                                        <p className="px-4 pt-2 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{group}</p>
-                                                        {cats.map((cat) => (
-                                                            <label key={cat} className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
-                                                                <span className={`text-sm ${categories.includes(cat) ? 'text-[#9810FA] font-medium' : 'text-gray-700 dark:text-gray-200'}`}>{cat}</span>
-                                                                <input type="checkbox" checked={categories.includes(cat)} onChange={() => { setCategories(toggle(categories, cat)); setSubCategories([]); }} className="w-4 h-4 accent-[#9810FA] cursor-pointer" />
-                                                            </label>
-                                                        ))}
-                                                    </div>
-                                                ));
+                                                return Object.keys(grouped).length === 0
+                                                    ? <p className="px-4 py-3 text-sm text-gray-400">No categories yet.</p>
+                                                    : Object.entries(grouped).map(([group, cats]) => (
+                                                        <div key={group}>
+                                                            <p className="px-4 pt-2 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{group}</p>
+                                                            {cats.map((cat) => (
+                                                                <label key={cat} className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                                                    <span className={`text-sm ${categories.includes(cat) ? 'text-[#9810FA] font-medium' : 'text-gray-700 dark:text-gray-200'}`}>{cat}</span>
+                                                                    <input type="checkbox" checked={categories.includes(cat)} onChange={() => { setCategories(toggle(categories, cat)); setSubCategories([]); }} className="w-4 h-4 accent-[#9810FA] cursor-pointer" />
+                                                                </label>
+                                                            ))}
+                                                        </div>
+                                                    ));
                                             })()}
                                         </div>
                                     )}
@@ -317,20 +345,26 @@ const MostPlayedStylesChart: React.FC = () => {
                                     </button>
                                     {isOpen && (
                                         <div className="absolute left-0 top-full mt-1 z-30 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-lg py-1 min-w-[220px] max-h-60 overflow-y-auto">
-                                            {visibleSubCats.length === 0
-                                                ? <p className="px-4 py-3 text-sm text-gray-400">No sub-categories available.</p>
-                                                : visibleSubCats.map((parent) => (
-                                                    <div key={parent}>
-                                                        <p className="px-4 pt-2 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{parent}</p>
-                                                        {(SUB_CATEGORIES[parent] ?? []).map((sub) => (
-                                                            <label key={sub} className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
-                                                                <span className={`text-sm ${subCategories.includes(sub) ? 'text-[#9810FA] font-medium' : 'text-gray-700 dark:text-gray-200'}`}>{sub}</span>
-                                                                <input type="checkbox" checked={subCategories.includes(sub)} onChange={() => setSubCategories(toggle(subCategories, sub))} className="w-4 h-4 accent-[#9810FA] cursor-pointer" />
-                                                            </label>
-                                                        ))}
-                                                    </div>
-                                                ))
-                                            }
+                                            {(() => {
+                                                const subGrouped: Record<string, string[]> = {};
+                                                subCatPool.forEach(({ name, parentName }) => {
+                                                    if (!subGrouped[parentName]) subGrouped[parentName] = [];
+                                                    subGrouped[parentName].push(name);
+                                                });
+                                                return Object.keys(subGrouped).length === 0
+                                                    ? <p className="px-4 py-3 text-sm text-gray-400">No sub-categories available.</p>
+                                                    : Object.entries(subGrouped).map(([parent, subs]) => (
+                                                        <div key={parent}>
+                                                            <p className="px-4 pt-2 pb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{parent}</p>
+                                                            {subs.map((sub) => (
+                                                                <label key={sub} className="flex items-center justify-between px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                                                    <span className={`text-sm ${subCategories.includes(sub) ? 'text-[#9810FA] font-medium' : 'text-gray-700 dark:text-gray-200'}`}>{sub}</span>
+                                                                    <input type="checkbox" checked={subCategories.includes(sub)} onChange={() => setSubCategories(toggle(subCategories, sub))} className="w-4 h-4 accent-[#9810FA] cursor-pointer" />
+                                                                </label>
+                                                            ))}
+                                                        </div>
+                                                    ));
+                                            })()}
                                         </div>
                                     )}
                                 </div>

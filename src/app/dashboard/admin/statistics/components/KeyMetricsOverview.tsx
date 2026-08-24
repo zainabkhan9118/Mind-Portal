@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import analyticsApi from '@/lib/api/analyticsApi';
-import type { AnalyticsOverview, PlaysKPI } from '@/lib/api/types';
+import type { AnalyticsOverview, PlaysKPI, AnalyticsParams } from '@/lib/api/types';
 
 const Skeleton = () => (
     <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm animate-pulse">
@@ -38,17 +38,18 @@ interface Metric {
     changeLabel: string;
 }
 
-const KeyMetricsOverview: React.FC = () => {
+const KeyMetricsOverview: React.FC<{ dateParams?: AnalyticsParams }> = ({ dateParams }) => {
     const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
     const [kpi, setKpi] = useState<PlaysKPI | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        Promise.all([analyticsApi.getOverview(), analyticsApi.getPlaysKPI()])
+        setIsLoading(true);
+        Promise.all([analyticsApi.getOverview(dateParams), analyticsApi.getPlaysKPI(dateParams)])
             .then(([ov, k]) => { setOverview(ov); setKpi(k); })
             .catch(console.error)
             .finally(() => setIsLoading(false));
-    }, []);
+    }, [dateParams?.start_date, dateParams?.end_date]); // eslint-disable-line react-hooks/exhaustive-deps
 
     if (isLoading) {
         return (

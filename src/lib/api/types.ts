@@ -811,6 +811,21 @@ export interface ReportListParams extends PaginationParams {
     status?: ReportStatus;
 }
 
+export interface CommunityGroupSession {
+    id: number;
+    title: string;
+    host_name?: string;
+    group_name?: string;
+    participants_count: number;
+    max_participants?: number;
+    status?: 'scheduled' | 'live' | 'completed' | 'cancelled' | string;
+    scheduled_at?: string;
+    started_at?: string;
+    ended_at?: string;
+    duration?: number;
+    created_at: string;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // 8. SETTINGS
 // ═══════════════════════════════════════════════════════════════════════════

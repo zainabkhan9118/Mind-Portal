@@ -49,7 +49,8 @@ const UsersPage: React.FC = () => {
 
             {/* Content */}
             <div className="min-h-[500px]">
-                {activeTab === 'overview' ? <UsersOverview /> : <RecentUsers />}
+                {activeTab === 'overview' && <UsersOverview />}
+                {activeTab === 'recent' && <RecentUsers />}
             </div>
         </div>
     );

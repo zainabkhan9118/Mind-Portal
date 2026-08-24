@@ -8,7 +8,7 @@ import type { ContentType } from "@/lib/api/types";
 
 const CONTENT_TYPE_OPTIONS: { label: string; value: ContentType }[] = [
     { label: "Music",         value: "music" },
-    { label: "Mind Sessions", value: "mind_session" },
+    { label: "Guided", value: "mind_session" },
     { label: "Env Sounds",    value: "env_sound" },
     { label: "Env Visuals",   value: "env_visual" },
 ];

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import AddMusicModal from "./components/AddMusicModal";
 import AddNewContentModal from "./components/AddMusicModal/AddNewContentModal";
+import ManageCategoriesModal from "./components/ManageCategoriesModal";
 import {
   Search,
   Plus,
@@ -31,9 +32,9 @@ import type { ContentItem, EnvironmentSoundItem, MindSessionItem, EnvironmentVis
 
 const tabs = [
   "Music",
-  "Environment Sound",
-  "Mind Sessions",
-  "Environment Visual",
+  "Sounds",
+  "Guided",
+  "Visuals",
   "Minds",
 ];
 
@@ -41,9 +42,9 @@ const tabs = [
 
 function getContentType(activeTab: string): ContentType {
   switch (activeTab) {
-    case "Environment Sound": return "env_sound";
-    case "Mind Sessions": return "mind_session";
-    case "Environment Visual": return "env_visual";
+    case "Sounds": return "env_sound";
+    case "Guided": return "mind_session";
+    case "Visuals": return "env_visual";
     case "Minds": return "minds";
     default: return "music";
   }
@@ -176,6 +177,7 @@ export default function ContentManagementPage() {
   const [categoryFilter, setCategoryFilter] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isNewContentModalOpen, setIsNewContentModalOpen] = useState(false);
+  const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
   const [editItemId, setEditItemId] = useState<number | null>(null);
 
   const [data, setData] = useState<AnyRow[]>([]);
@@ -201,13 +203,13 @@ export default function ContentManagementPage() {
       // so extract unique {id, name} pairs directly from the content list.
       let items: Array<{ category?: number[]; mind_session_category?: number[]; category_names: string }> = [];
 
-      if (activeTab === "Mind Sessions") {
+      if (activeTab === "Guided") {
         const res = await contentApi.guidedSessions.list({ size: 100 });
         items = res.results;
-      } else if (activeTab === "Environment Sound") {
+      } else if (activeTab === "Sounds") {
         const res = await contentApi.envSounds.list({ size: 100 });
         items = res.results;
-      } else if (activeTab === "Environment Visual") {
+      } else if (activeTab === "Visuals") {
         const res = await contentApi.envVisuals.list({ size: 100 });
         items = res.results;
       }
@@ -265,21 +267,21 @@ export default function ContentManagementPage() {
           setTotalPages(res.pages_count ?? Math.ceil(res.count / PAGE_SIZE));
           break;
         }
-        case "Environment Sound": {
+        case "Sounds": {
           const res = await contentApi.envSounds.list(params);
           setData(res.results.map((item) => adaptEnvSound(item, goalsMap)));
           setTotalCount(res.count);
           setTotalPages(res.pages_count ?? Math.ceil(res.count / PAGE_SIZE));
           break;
         }
-        case "Mind Sessions": {
+        case "Guided": {
           const res = await contentApi.guidedSessions.list(params);
           setData(res.results.map((item) => adaptMindSession(item, goalsMap)));
           setTotalCount(res.count);
           setTotalPages(res.pages_count ?? Math.ceil(res.count / PAGE_SIZE));
           break;
         }
-        case "Environment Visual": {
+        case "Visuals": {
           const res = await contentApi.envVisuals.list(params);
           setData(res.results.map((item) => adaptEnvVisual(item, goalsMap)));
           setTotalCount(res.count);
@@ -317,9 +319,9 @@ export default function ContentManagementPage() {
     try {
       switch (activeTab) {
         case "Music":               await contentApi.music.delete(id); break;
-        case "Environment Sound":   await contentApi.envSounds.delete(id); break;
-        case "Mind Sessions":       await contentApi.guidedSessions.delete(id); break;
-        case "Environment Visual":  await contentApi.envVisuals.delete(id); break;
+        case "Sounds":   await contentApi.envSounds.delete(id); break;
+        case "Guided":       await contentApi.guidedSessions.delete(id); break;
+        case "Visuals":  await contentApi.envVisuals.delete(id); break;
         case "Minds":               await contentApi.minds.delete(id); break;
       }
       fetchData();
@@ -383,17 +385,19 @@ export default function ContentManagementPage() {
               placeholder="Search content"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-4 pr-10 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
+              className="w-full pl-4 pr-10 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all"
             />
             <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
           </div>
+          {activeTab !== "Minds" && (
           <button
-            onClick={() => setIsNewContentModalOpen(true)}
+            onClick={() => setIsManageCategoriesOpen(true)}
             className="flex items-center gap-2 px-4 py-2.5 bg-[#9810FA] hover:bg-[#8000E0] text-white rounded-xl text-sm font-medium transition-colors whitespace-nowrap"
           >
             <Plus className="w-4 h-4" />
-            Add Content
+            Add Category
           </button>
+          )}
         </div>
       </div>
 
@@ -410,9 +414,9 @@ export default function ContentManagementPage() {
                 }`}
             >
               {tab === "Music" && <Music className="w-4 h-4" />}
-              {tab === "Environment Sound" && <Activity className="w-4 h-4" />}
-              {tab === "Mind Sessions" && <Brain className="w-4 h-4" />}
-              {tab === "Environment Visual" && <Glasses className="w-4 h-4" />}
+              {tab === "Sounds" && <Activity className="w-4 h-4" />}
+              {tab === "Guided" && <Brain className="w-4 h-4" />}
+              {tab === "Visuals" && <Glasses className="w-4 h-4" />}
               {tab === "Minds" && <Sparkles className="w-4 h-4" />}
               {tab}
             </button>
@@ -434,6 +438,7 @@ export default function ContentManagementPage() {
           onStatusChange={setStatusFilter}
           onCategoryChange={setCategoryFilter}
           onAddClick={() => setIsModalOpen(true)}
+          onManageCategoriesClick={() => setIsManageCategoriesOpen(true)}
         />
 
         {isLoading ? (
@@ -503,9 +508,9 @@ export default function ContentManagementPage() {
       <AddMusicModal
         isOpen={isModalOpen}
         onClose={() => { setIsModalOpen(false); setEditItemId(null); }}
-        isEnvironmentSound={activeTab === "Environment Sound"}
-        isMindSession={activeTab === "Mind Sessions"}
-        isEnvironmentVisual={activeTab === "Environment Visual"}
+        isEnvironmentSound={activeTab === "Sounds"}
+        isMindSession={activeTab === "Guided"}
+        isEnvironmentVisual={activeTab === "Visuals"}
         isMind={activeTab === "Minds"}
         categories={categories}
         onSuccess={fetchData}
@@ -518,6 +523,13 @@ export default function ContentManagementPage() {
         onClose={() => setIsNewContentModalOpen(false)}
         onSuccess={fetchCategories}
         activeTab={activeTab}
+      />
+
+      <ManageCategoriesModal
+        isOpen={isManageCategoriesOpen}
+        onClose={() => setIsManageCategoriesOpen(false)}
+        activeTab={activeTab}
+        onCategoriesChanged={fetchCategories}
       />
     </div>
   );

@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import { ApexOptions } from 'apexcharts';
 import { Music, Waves, Mic, Eye } from 'lucide-react';
 import analyticsApi from '@/lib/api/analyticsApi';
-import type { PlaysByType } from '@/lib/api/types';
+import type { PlaysByType, AnalyticsParams } from '@/lib/api/types';
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
@@ -24,16 +24,17 @@ const TYPE_ICONS: Record<string, React.ReactNode> = {
 
 const COLORS = ['#A855F7', '#3B82F6', '#06B6D4', '#8B5CF6'];
 
-const ComponentPlaysChart: React.FC = () => {
+const ComponentPlaysChart: React.FC<{ dateParams?: AnalyticsParams }> = ({ dateParams }) => {
     const [byType, setByType] = useState<PlaysByType[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        analyticsApi.getPlaysByType()
+        setIsLoading(true);
+        analyticsApi.getPlaysByType(dateParams)
             .then(setByType)
             .catch(console.error)
             .finally(() => setIsLoading(false));
-    }, []);
+    }, [dateParams?.start_date, dateParams?.end_date]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Embed fillColor per data point to avoid distributed:true (which crashes under React 18 StrictMode)
     const seriesData = byType.map((t, i) => ({
