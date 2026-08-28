@@ -14,8 +14,8 @@ export default function AdminDashboard() {
 
       {/* Additional Deep Dive Sections */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-        <GlobalMindPlays />
-        <TopRankingsTable />
+        {/* <GlobalMindPlays /> */}
+        {/* <TopRankingsTable /> */}
       </div>
     </div>
   );

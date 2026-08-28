@@ -76,6 +76,7 @@ export interface AdminProfile {
     last_name: string;
     role: string;
     permissions: string[];
+    avatar?: string;
 }
 
 export interface HealthStatus {
@@ -138,6 +139,8 @@ export interface ApiUser {
     status: UserStatus;
     is_premium: boolean;
     is_mind_expert?: boolean;
+    mind_expert_pending?: boolean;
+    credential_files?: string[];
     subscription?: {
         plan: string;
         expires_at: string;
@@ -145,6 +148,12 @@ export interface ApiUser {
     date_joined?: string;
     created_at?: string;
     updated_at?: string;
+}
+
+export interface UserSearchResult {
+    id: number;
+    display_name: string;
+    email: string;
 }
 
 export interface UserDetail extends ApiUser {
@@ -311,6 +320,9 @@ export interface AdminMusic {
     is_mind_player_original?: boolean;
     state?: string | null;
     effect?: string | null;
+    visibility?: ContentVisibility;
+    allowed_users?: AllowedUser[];
+    allowed_user_ids?: number[];
     icon?: number | null;
     icon_name?: string | null;
     icon_url?: string | null;
@@ -352,6 +364,9 @@ export interface AdminMindSession {
     state?: string | null;
     effect?: string | null;
     sub_category?: string | null;
+    visibility?: ContentVisibility;
+    allowed_users?: AllowedUser[];
+    allowed_user_ids?: number[];
     icon?: number | null;
     icon_name?: string | null;
     icon_url?: string | null;
@@ -390,6 +405,9 @@ export interface AdminEnvironmentSound {
     state?: string | null;
     effect?: string | null;
     sub_category?: string | null;
+    visibility?: ContentVisibility;
+    allowed_users?: AllowedUser[];
+    allowed_user_ids?: number[];
     icon?: number | null;
     icon_name?: string | null;
     icon_url?: string | null;
@@ -424,6 +442,9 @@ export interface AdminEnvironmentVisual {
     state?: string | null;
     effect?: string | null;
     sub_category?: string | null;
+    visibility?: ContentVisibility;
+    allowed_users?: AllowedUser[];
+    allowed_user_ids?: number[];
     icon?: number | null;
     icon_name?: string | null;
     icon_url?: string | null;
@@ -442,12 +463,31 @@ export interface AdminMind {
     status?: ContentStatus;
     tags?: string[];
     is_premium?: boolean;
+    visibility?: ContentVisibility;
+    allowed_users?: AllowedUser[];
+    allowed_user_ids?: number[];
     icon?: number | null;
     icon_url?: string | null;
     icon_name?: string | null;
     published_at?: string | null;
     created_at: string;
     updated_at: string;
+}
+
+export type ContentVisibility = "all" | "free" | "premium" | "mind_expert" | "b2b" | "restricted";
+
+export interface AllowedUser {
+    id: number;
+    display_name: string;
+    email: string;
+}
+
+export interface ContentApprovalRequest {
+    status: ContentStatus;
+    visibility?: ContentVisibility;
+    is_premium?: boolean;
+    allowed_user_ids?: number[];
+    published_at?: string | null;
 }
 
 export type AnyContentItem = AdminMusic | AdminMindSession | AdminEnvironmentSound | AdminEnvironmentVisual | AdminMind;

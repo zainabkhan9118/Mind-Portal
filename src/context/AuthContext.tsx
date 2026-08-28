@@ -12,6 +12,7 @@ interface User {
   role: string;
   first_name?: string;
   last_name?: string;
+  avatar?: string;
   permissions?: string[];
 }
 
@@ -20,7 +21,7 @@ interface AuthContextType {
   signin: (email: string, password: string) => Promise<void>;
   signup: (userData: SignupData) => Promise<void>;
   signout: () => Promise<void>;
-  updateProfile: (data: { first_name?: string; last_name?: string }) => Promise<void>;
+  updateProfile: (data: FormData | Partial<{ first_name: string; last_name: string; email: string; phone: string }>) => Promise<void>;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
@@ -52,6 +53,7 @@ function profileToUser(profile: AdminProfile): User {
     role: profile.role?.toLowerCase() ?? "admin",
     first_name: profile.first_name,
     last_name: profile.last_name,
+    avatar: profile.avatar,
     permissions: profile.permissions,
   };
 }
@@ -166,12 +168,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // ── Update Profile ─────────────────────────────────────────────────
-  const updateProfile = async (data: { first_name?: string; last_name?: string }) => {
-    const { globalApi } = await import("@/lib/api");
-    const profile = await globalApi.updateMe(data);
-    const updated = profileToUser(profile);
-    setUser(updated);
-    localStorage.setItem("user", JSON.stringify(updated));
+  const updateProfile = async (data: FormData | Partial<{ first_name: string; last_name: string; email: string; phone: string }>) => {
+    const usersApi = (await import("@/lib/api/usersApi")).default;
+    if (!user?.id) throw new Error("Not authenticated");
+    const updated = await usersApi.updateUser(user.id, data);
+    // Merge the fresh fields (including avatar URL) onto the existing user so role/permissions are kept
+    setUser(prev => {
+      if (!prev) return prev;
+      const merged: User = {
+        ...prev,
+        first_name: updated.first_name,
+        last_name: updated.last_name,
+        email: updated.email,
+        avatar: updated.avatar,
+        name: `${updated.first_name} ${updated.last_name}`.trim() || updated.email,
+      };
+      localStorage.setItem("user", JSON.stringify(merged));
+      return merged;
+    });
   };
 
   // ── Sign Out ───────────────────────────────────────────────────────

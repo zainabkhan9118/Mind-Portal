@@ -65,6 +65,22 @@ const ContentValidation: React.FC = () => {
         }
     };
 
+    const handleApproved = (id: string) => {
+        const inMinds = minds.some(i => i.id === id);
+        setMinds(prev => prev.filter(i => i.id !== id));
+        setPlaylists(prev => prev.filter(i => i.id !== id));
+        if (inMinds) setMindsTotal(prev => Math.max(0, prev - 1));
+        else setPlaylistsTotal(prev => Math.max(0, prev - 1));
+    };
+
+    const handleRejected = (id: string) => {
+        const inMinds = minds.some(i => i.id === id);
+        setMinds(prev => prev.filter(i => i.id !== id));
+        setPlaylists(prev => prev.filter(i => i.id !== id));
+        if (inMinds) setMindsTotal(prev => Math.max(0, prev - 1));
+        else setPlaylistsTotal(prev => Math.max(0, prev - 1));
+    };
+
     const currentItems = subTab === "minds" ? minds : playlists;
 
     return (
@@ -154,12 +170,16 @@ const ContentValidation: React.FC = () => {
                 isOpen={isMindModalOpen}
                 onClose={() => setIsMindModalOpen(false)}
                 item={selectedItem}
+                onApproved={handleApproved}
+                onRejected={handleRejected}
             />
 
             <PlaylistReviewModal
                 isOpen={isPlaylistModalOpen}
                 onClose={() => setIsPlaylistModalOpen(false)}
                 item={selectedItem}
+                onApproved={handleApproved}
+                onRejected={handleRejected}
             />
         </div>
     );

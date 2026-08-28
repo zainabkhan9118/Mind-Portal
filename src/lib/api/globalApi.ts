@@ -23,10 +23,15 @@ const globalApi = {
         return response.data;
     },
 
-    /** Partially update the logged-in admin's profile. */
-    updateMe: async (data: { first_name?: string; last_name?: string }): Promise<AdminProfile> => {
-        const response = await apiClient.patch<AdminProfile>("admin/me/", data);
+    /** Returns the logged-in admin's profile (read-only refresh — updates go through admin/users/{id}/). */
+    refreshMe: async (): Promise<AdminProfile> => {
+        const response = await apiClient.get<AdminProfile>("admin/me/");
         return response.data;
+    },
+
+    /** Set a new password for the logged-in admin. */
+    setPassword: async (userId: number, password: string): Promise<void> => {
+        await apiClient.post(`admin/users/${userId}/set-password/`, { password });
     },
 
     /** Trigger async platform report generation. Returns { task_id }. */

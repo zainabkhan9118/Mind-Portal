@@ -15,6 +15,7 @@ import type {
     ContentTypeEndpoint,
     ContentType,
     ContentStatusChangeRequest,
+    ContentApprovalRequest,
     BulkActionRequest,
     AdminCategory,
     SubCategory,
@@ -81,6 +82,19 @@ const contentApi = {
             : type;
         const response = await apiClient.post<AnyContentItem>(
             `admin/content/${typeSlug}/${id}/duplicate/`,
+        );
+        return response.data;
+    },
+
+    /** Approve or reject a content item from the validation queue. */
+    approveContent: async (
+        typeSlug: "minds" | "music" | "guided-sessions" | "env-sounds" | "env-visuals",
+        id: number,
+        data: ContentApprovalRequest,
+    ): Promise<AnyContentItem> => {
+        const response = await apiClient.patch<AnyContentItem>(
+            `admin/content/${typeSlug}/${id}/`,
+            data,
         );
         return response.data;
     },

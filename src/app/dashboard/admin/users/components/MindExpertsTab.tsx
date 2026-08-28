@@ -175,11 +175,6 @@ const MindExpertsTab: React.FC = () => {
                     </table>
                 </div>
             )}
-
-            <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/40 rounded-xl px-4 py-3 text-xs text-amber-700 dark:text-amber-400">
-                <strong>Backend note:</strong> This tab queries <code>admin/users/?mind_expert_pending=true</code>.
-                The backend must expose this filter and return a <code>credential_files</code> array on each user record for the file links to appear.
-            </div>
         </div>
     );
 };

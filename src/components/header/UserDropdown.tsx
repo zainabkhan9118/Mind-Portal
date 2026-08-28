@@ -1,5 +1,4 @@
 "use client";
-import Image from "next/image";
 import React, { useState } from "react";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
@@ -33,23 +32,10 @@ export default function UserDropdown() {
     (user.name ? user.name : user.email.split('@')[0])
     : 'Guest User';
 
-  // Get user avatar based on role - using existing images from the project
-  const getUserAvatar = () => {
-    if (!user) return '/images/user/user-01.jpg';
-
-    // Map roles to specific existing user images
-    switch (user.role) {
-      case 'admin':
-        return '/images/user/owner.jpg';
-      case 'teacher':
-        return '/images/user/user-02.jpg';
-      case 'student':
-      default:
-        return '/images/user/user-01.jpg';
-    }
-  };
-
-  const userAvatar = getUserAvatar();
+  const userAvatar = user?.avatar ?? null;
+  const initials = user
+    ? ((user.first_name?.[0] ?? '') + (user.last_name?.[0] ?? '')).toUpperCase() || displayName[0].toUpperCase()
+    : 'A';
 
   return (
     <div className="relative">
@@ -57,13 +43,19 @@ export default function UserDropdown() {
         onClick={toggleDropdown}
         className="flex items-center text-gray-700 dark:text-gray-400 dropdown-toggle"
       >
-        <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
-          <Image
-            width={44}
-            height={44}
-            src={userAvatar}
-            alt={displayName}
-          />
+        <span className="mr-3 overflow-hidden rounded-full h-11 w-11 shrink-0">
+          {userAvatar ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={userAvatar}
+              alt={displayName}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <span className="w-full h-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-700 dark:text-purple-300 text-sm font-bold">
+              {initials}
+            </span>
+          )}
         </span>
 
         <span className="block mr-1 font-medium text-theme-sm">{displayName}</span>

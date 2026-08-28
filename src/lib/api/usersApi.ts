@@ -15,6 +15,7 @@ import type {
     UserStatusChangeRequest,
     UserNotifyRequest,
     UserListParams,
+    UserSearchResult,
     ExportTaskResponse,
 } from "./types";
 
@@ -100,9 +101,34 @@ const usersApi = {
         await apiClient.patch(`admin/users/${id}/status/`, data);
     },
 
-    /** Partial update a user (e.g. toggle is_premium). */
-    updateUser: async (id: number, data: Partial<{ is_premium: boolean }>): Promise<ApiUser> => {
+    /** Partial update a user — profile fields, role flags, or avatar (pass FormData for file upload). */
+    updateUser: async (
+        id: number,
+        data: FormData | Partial<{
+            first_name: string;
+            last_name: string;
+            email: string;
+            phone: string;
+            is_premium: boolean;
+            is_mind_expert: boolean;
+            mind_expert_pending: boolean;
+        }>,
+    ): Promise<ApiUser> => {
         const response = await apiClient.patch<ApiUser>(`admin/users/${id}/`, data);
+        return response.data;
+    },
+
+    /** Set a new password for any user (admin override — no old password required). */
+    setPassword: async (id: number, password: string): Promise<void> => {
+        await apiClient.post(`admin/users/${id}/set-password/`, { password });
+    },
+
+    /** Lightweight user search for the Restricted access picker. */
+    searchUsers: async (q: string, size = 20): Promise<{ count: number; results: UserSearchResult[] }> => {
+        const response = await apiClient.get<{ count: number; results: UserSearchResult[] }>(
+            "admin/users/search/",
+            { params: { q, size } },
+        );
         return response.data;
     },
 
