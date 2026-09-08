@@ -2,21 +2,23 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowUpDown, TrendingUp, TrendingDown, Music, Wind, TreePine, Headphones } from 'lucide-react';
 import analyticsApi from '@/lib/api/analyticsApi';
-import type { PlaysByContent, ContentType, AnalyticsParams } from '@/lib/api/types';
+import type { PlaysByContent, AnalyticsContentType, AnalyticsParams } from '@/lib/api/types';
 
 const PAGE_SIZE = 10;
 
-const TYPE_OPTIONS: { label: string; value: ContentType | '' }[] = [
+// Note: the analytics API returns "guided_session" for this content type — NOT "mind_session"
+// (the slug used by Content Management). Don't "fix" this back to mind_session.
+const TYPE_OPTIONS: { label: string; value: AnalyticsContentType | '' }[] = [
     { label: 'All Types', value: '' },
     { label: 'Music', value: 'music' },
-    { label: 'Guided Session', value: 'mind_session' },
+    { label: 'Guided Session', value: 'guided_session' },
     { label: 'Env Sound', value: 'env_sound' },
     { label: 'Env Visual', value: 'env_visual' },
 ];
 
 const TYPE_LABELS: Record<string, string> = {
     music: 'Music',
-    mind_session: 'Guided',
+    guided_session: 'Guided',
     env_sound: 'Sound',
     env_visual: 'Visuals',
 };
@@ -26,7 +28,7 @@ const getBadgeStyle = (type: string) => {
         case 'music': return 'bg-purple-50 text-purple-500 dark:bg-purple-900/20 dark:text-purple-400';
         case 'env_visual': return 'bg-yellow-50 text-yellow-500 dark:bg-yellow-900/20 dark:text-yellow-400';
         case 'env_sound': return 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400';
-        case 'mind_session': return 'bg-orange-50 text-orange-400 dark:bg-orange-900/20 dark:text-orange-400';
+        case 'guided_session': return 'bg-orange-50 text-orange-400 dark:bg-orange-900/20 dark:text-orange-400';
         default: return 'bg-gray-50 text-gray-500 dark:bg-gray-800 dark:text-gray-400';
     }
 };
@@ -35,7 +37,7 @@ const getTypeIcon = (type: string) => {
     const cls = 'w-4 h-4 flex-shrink-0 text-gray-400 dark:text-gray-500';
     switch (type) {
         case 'music': return <Music className={cls} />;
-        case 'mind_session': return <Headphones className={cls} />;
+        case 'guided_session': return <Headphones className={cls} />;
         case 'env_sound': return <Wind className={cls} />;
         case 'env_visual': return <TreePine className={cls} />;
         default: return <Music className={cls} />;
@@ -59,10 +61,18 @@ function formatPlays(n: number): string {
     return n.toString();
 }
 
+function formatCount(n: number | undefined): string {
+    return n != null ? formatPlays(n) : '—';
+}
+
+function formatPercent(n: number | undefined): string {
+    return n != null ? `${Math.round(n)}%` : '—';
+}
+
 interface TopRankingsTableProps {
     dateParams?: AnalyticsParams;
     searchTerm?: string;
-    typeFilter?: ContentType | '';
+    typeFilter?: AnalyticsContentType | '';
 }
 
 const TopRankingsTable: React.FC<TopRankingsTableProps> = ({ dateParams, searchTerm = '', typeFilter = '' }) => {
@@ -127,7 +137,6 @@ const TopRankingsTable: React.FC<TopRankingsTableProps> = ({ dateParams, searchT
                                         className="w-4 h-4 rounded border-gray-300 text-purple-600 cursor-pointer accent-purple-600"
                                     />
                                 </th>
-                                <th className="px-4 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider w-14">Rank</th>
                                 <th className="px-4 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                     <div className="flex items-center gap-1">Title <ArrowUpDown className="w-3 h-3" /></div>
                                 </th>
@@ -135,6 +144,10 @@ const TopRankingsTable: React.FC<TopRankingsTableProps> = ({ dateParams, searchT
                                 <th className="px-4 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Avg Time per User</th>
                                 <th className="px-4 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Avg Duration per Play</th>
                                 <th className="px-4 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Plays</th>
+                                <th className="px-4 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Unique Users</th>
+                                <th className="px-4 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Repeat Rate</th>
+                                <th className="px-4 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Saved</th>
+                                <th className="px-4 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">Timer Used</th>
                                 <th className="px-4 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Growth</th>
                                 <th className="px-4 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Type</th>
                             </tr>
@@ -142,7 +155,7 @@ const TopRankingsTable: React.FC<TopRankingsTableProps> = ({ dateParams, searchT
                         <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan={9} className="py-16 text-center">
+                                    <td colSpan={12} className="py-16 text-center">
                                         <div className="flex justify-center">
                                             <div className="w-7 h-7 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
                                         </div>
@@ -150,13 +163,12 @@ const TopRankingsTable: React.FC<TopRankingsTableProps> = ({ dateParams, searchT
                                 </tr>
                             ) : pageData.length === 0 ? (
                                 <tr>
-                                    <td colSpan={9} className="py-16 text-center text-sm text-gray-400">
+                                    <td colSpan={12} className="py-16 text-center text-sm text-gray-400">
                                         No content found
                                     </td>
                                 </tr>
                             ) : (
                                 pageData.map((item, index) => {
-                                    const rowNum = (page - 1) * PAGE_SIZE + index + 1;
                                     const retention = item.retention;
                                     const growthRate = item.growth_rate;
                                     const isSelected = selected.has(item.content_id);
@@ -175,10 +187,6 @@ const TopRankingsTable: React.FC<TopRankingsTableProps> = ({ dateParams, searchT
                                                     className="w-4 h-4 rounded border-gray-300 text-purple-600 cursor-pointer accent-purple-600"
                                                 />
                                             </td>
-                                            {/* Rank */}
-                                            <td className="px-4 py-4 text-sm font-bold text-gray-900 dark:text-white">
-                                                {String(rowNum).padStart(2, '0')}
-                                            </td>
                                             {/* Title + icon */}
                                             <td className="px-4 py-4">
                                                 <div className="flex items-center gap-2">
@@ -190,7 +198,7 @@ const TopRankingsTable: React.FC<TopRankingsTableProps> = ({ dateParams, searchT
                                             </td>
                                             {/* Retention bar — only Music & Guided Session */}
                                             <td className="px-4 py-4">
-                                                {(item.content_type === 'music' || item.content_type === 'mind_session') ? (
+                                                {(item.content_type === 'music' || item.content_type === 'guided_session') ? (
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-28 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden flex-shrink-0">
                                                             <div
@@ -217,6 +225,22 @@ const TopRankingsTable: React.FC<TopRankingsTableProps> = ({ dateParams, searchT
                                             {/* Plays */}
                                             <td className="px-4 py-4 text-sm font-medium text-gray-600 dark:text-gray-400">
                                                 {formatPlays(item.plays ?? 0)}
+                                            </td>
+                                            {/* Unique Users */}
+                                            <td className="px-4 py-4 text-sm text-gray-600 dark:text-gray-400">
+                                                {formatCount(item.unique_listeners)}
+                                            </td>
+                                            {/* Repeat Rate */}
+                                            <td className="px-4 py-4 text-sm text-gray-600 dark:text-gray-400">
+                                                {formatPercent(item.repeat_rate)}
+                                            </td>
+                                            {/* Saved */}
+                                            <td className="px-4 py-4 text-sm text-gray-600 dark:text-gray-400">
+                                                {formatCount(item.saved_count)}
+                                            </td>
+                                            {/* Timer Used */}
+                                            <td className="px-4 py-4 text-sm text-gray-600 dark:text-gray-400">
+                                                {formatCount(item.timer_used_count)}
                                             </td>
                                             {/* Growth */}
                                             <td className="px-4 py-4">

@@ -8,21 +8,26 @@ import type { PlaysByType, AnalyticsParams } from '@/lib/api/types';
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
+// Note: the analytics API returns "guided_session" for this content type — NOT "mind_session"
+// (the slug used by Content Management). Don't "fix" this back to mind_session.
 const TYPE_LABELS: Record<string, string> = {
     music: 'Music',
-    mind_session: 'Guided',
+    guided_session: 'Guided',
     env_sound: 'Sound',
-    env_visual: 'VR/360',
+    env_visual: 'Visuals',
 };
 
 const TYPE_ICONS: Record<string, React.ReactNode> = {
     music: <Music className="w-5 h-5 text-purple-600" />,
-    mind_session: <Mic className="w-5 h-5 text-cyan-500" />,
+    guided_session: <Mic className="w-5 h-5 text-cyan-500" />,
     env_sound: <Waves className="w-5 h-5 text-blue-500" />,
     env_visual: <Eye className="w-5 h-5 text-indigo-500" />,
 };
 
 const COLORS = ['#A855F7', '#3B82F6', '#06B6D4', '#8B5CF6'];
+
+// Always shown, in this order, regardless of which types the API response includes
+const KNOWN_TYPES = ['music', 'guided_session', 'env_sound', 'env_visual'];
 
 const ComponentPlaysChart: React.FC<{ dateParams?: AnalyticsParams }> = ({ dateParams }) => {
     const [byType, setByType] = useState<PlaysByType[]>([]);
@@ -36,10 +41,16 @@ const ComponentPlaysChart: React.FC<{ dateParams?: AnalyticsParams }> = ({ dateP
             .finally(() => setIsLoading(false));
     }, [dateParams?.start_date, dateParams?.end_date]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // Always show every known content type, defaulting to 0 plays when the API omits one
+    const allTypesData = KNOWN_TYPES.map((contentType) => ({
+        content_type: contentType,
+        plays: byType.find((t) => t.content_type === contentType)?.plays ?? 0,
+    }));
+
     // Embed fillColor per data point to avoid distributed:true (which crashes under React 18 StrictMode)
-    const seriesData = byType.map((t, i) => ({
-        x: TYPE_LABELS[t.content_type] ?? t.content_type ?? `Type ${i}`,
-        y: t.plays ?? 0,
+    const seriesData = allTypesData.map((t, i) => ({
+        x: TYPE_LABELS[t.content_type] ?? t.content_type,
+        y: t.plays,
         fillColor: COLORS[i % COLORS.length],
     }));
 
@@ -79,10 +90,6 @@ const ComponentPlaysChart: React.FC<{ dateParams?: AnalyticsParams }> = ({ dateP
                     <div className="h-full flex items-center justify-center">
                         <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
                     </div>
-                ) : byType.length === 0 ? (
-                    <div className="h-full flex items-center justify-center">
-                        <p className="text-sm text-gray-400">No data available</p>
-                    </div>
                 ) : (
                     <ReactApexChart key={seriesData.map(d => d.y).join(',')} options={options} series={series} type="bar" height="100%" />
                 )}
@@ -96,8 +103,8 @@ const ComponentPlaysChart: React.FC<{ dateParams?: AnalyticsParams }> = ({ dateP
                             <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-12" />
                         </div>
                     ))
-                    : byType.map((t, i) => (
-                        <div key={t.content_type || String(i)} className="p-4 rounded-xl bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700">
+                    : allTypesData.map((t) => (
+                        <div key={t.content_type} className="p-4 rounded-xl bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700">
                             <div className="flex items-center gap-2 mb-2">
                                 {TYPE_ICONS[t.content_type] ?? <Eye className="w-5 h-5 text-gray-400" />}
                                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -105,7 +112,7 @@ const ComponentPlaysChart: React.FC<{ dateParams?: AnalyticsParams }> = ({ dateP
                                 </span>
                             </div>
                             <p className="text-xl font-bold text-gray-900 dark:text-white">
-                                {(t.plays ?? 0).toLocaleString()}
+                                {t.plays.toLocaleString()}
                             </p>
                         </div>
                     ))}

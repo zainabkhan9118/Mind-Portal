@@ -18,6 +18,8 @@ import type {
     ContentApprovalRequest,
     BulkActionRequest,
     AdminCategory,
+    AdminState,
+    AdminEffect,
     SubCategory,
     SubCategoryListParams,
     SoundLayer,
@@ -444,6 +446,70 @@ const contentApi = {
 
         delete: async (id: number): Promise<void> => {
             await apiClient.delete(`admin/content/categories/${id}/`);
+        },
+    },
+
+    // ── States (shared, admin-manageable taxonomy) ───────────────────────
+
+    states: {
+        list: async (params?: { size?: number; page?: number }): Promise<PaginatedResponse<AdminState>> => {
+            const response = await apiClient.get<PaginatedResponse<AdminState>>(
+                "admin/content/states/",
+                { params },
+            );
+            return response.data;
+        },
+
+        create: async (data: { name: string }): Promise<AdminState> => {
+            const response = await apiClient.post<AdminState>(
+                "admin/content/states/",
+                data,
+            );
+            return response.data;
+        },
+
+        update: async (id: number, data: { name: string }): Promise<AdminState> => {
+            const response = await apiClient.put<AdminState>(
+                `admin/content/states/${id}/`,
+                data,
+            );
+            return response.data;
+        },
+
+        delete: async (id: number): Promise<void> => {
+            await apiClient.delete(`admin/content/states/${id}/`);
+        },
+    },
+
+    // ── Effects (shared, admin-manageable taxonomy) ──────────────────────
+
+    effects: {
+        list: async (params?: { size?: number; page?: number }): Promise<PaginatedResponse<AdminEffect>> => {
+            const response = await apiClient.get<PaginatedResponse<AdminEffect>>(
+                "admin/content/effects/",
+                { params },
+            );
+            return response.data;
+        },
+
+        create: async (data: { name: string }): Promise<AdminEffect> => {
+            const response = await apiClient.post<AdminEffect>(
+                "admin/content/effects/",
+                data,
+            );
+            return response.data;
+        },
+
+        update: async (id: number, data: { name: string }): Promise<AdminEffect> => {
+            const response = await apiClient.put<AdminEffect>(
+                `admin/content/effects/${id}/`,
+                data,
+            );
+            return response.data;
+        },
+
+        delete: async (id: number): Promise<void> => {
+            await apiClient.delete(`admin/content/effects/${id}/`);
         },
     },
 };

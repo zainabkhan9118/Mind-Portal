@@ -246,6 +246,19 @@ export interface AdminCategory {
     item_count: number;
 }
 
+// States & Effects — shared, admin-manageable taxonomies used across all content types
+export interface AdminState {
+    id: number;
+    name: string;
+    item_count?: number;
+}
+
+export interface AdminEffect {
+    id: number;
+    name: string;
+    item_count?: number;
+}
+
 // Keep ContentCategory as alias for backward compat
 export type ContentCategory = AdminCategory;
 
@@ -320,6 +333,12 @@ export interface AdminMusic {
     is_mind_player_original?: boolean;
     state?: string | null;
     effect?: string | null;
+    primary_goal?: number | null;
+    secondary_goals?: number[];
+    primary_state?: number | null;
+    secondary_states?: number[];
+    primary_effect?: number | null;
+    secondary_effects?: number[];
     visibility?: ContentVisibility;
     allowed_users?: AllowedUser[];
     allowed_user_ids?: number[];
@@ -363,6 +382,12 @@ export interface AdminMindSession {
     is_mind_player_original?: boolean;
     state?: string | null;
     effect?: string | null;
+    primary_goal?: number | null;
+    secondary_goals?: number[];
+    primary_state?: number | null;
+    secondary_states?: number[];
+    primary_effect?: number | null;
+    secondary_effects?: number[];
     sub_category?: string | null;
     visibility?: ContentVisibility;
     allowed_users?: AllowedUser[];
@@ -404,6 +429,12 @@ export interface AdminEnvironmentSound {
     layers: SoundLayer[];
     state?: string | null;
     effect?: string | null;
+    primary_goal?: number | null;
+    secondary_goals?: number[];
+    primary_state?: number | null;
+    secondary_states?: number[];
+    primary_effect?: number | null;
+    secondary_effects?: number[];
     sub_category?: string | null;
     visibility?: ContentVisibility;
     allowed_users?: AllowedUser[];
@@ -441,6 +472,12 @@ export interface AdminEnvironmentVisual {
     category_names: string;
     state?: string | null;
     effect?: string | null;
+    primary_goal?: number | null;
+    secondary_goals?: number[];
+    primary_state?: number | null;
+    secondary_states?: number[];
+    primary_effect?: number | null;
+    secondary_effects?: number[];
     sub_category?: string | null;
     visibility?: ContentVisibility;
     allowed_users?: AllowedUser[];
@@ -460,6 +497,12 @@ export interface AdminMind {
     goals: number[];
     state?: string | null;
     effect?: string | null;
+    primary_goal?: number | null;
+    secondary_goals?: number[];
+    primary_state?: number | null;
+    secondary_states?: number[];
+    primary_effect?: number | null;
+    secondary_effects?: number[];
     status?: ContentStatus;
     tags?: string[];
     is_premium?: boolean;
@@ -533,6 +576,8 @@ export interface PlaysKPI {
     total_plays_change?: number;         // % vs previous period
     total_minds_created?: number;        // total content items created
     total_minds_created_change?: number; // % vs previous period
+    total_minds_played?: number;         // total plays of Minds content
+    total_minds_played_change?: number;  // % vs previous period
     avg_time_per_user?: number;          // seconds
     avg_time_per_user_change?: number;   // % vs previous period
     avg_duration_per_play?: number;      // seconds
@@ -568,6 +613,9 @@ export interface PlaysByContent {
     avg_time_per_user?: number;      // seconds — total time consumed ÷ unique users
     avg_duration_per_play?: number;  // seconds — total play time ÷ total plays
     growth_rate?: number;            // % change vs previous period (positive or negative)
+    repeat_rate?: number;            // % (0–100) of unique listeners who played this more than once — not yet provided by the backend, see API_SPEC.md
+    saved_count?: number;            // number of users who saved this content — not yet provided by the backend, see API_SPEC.md
+    timer_used_count?: number;       // number of users who used the sleep/session timer while playing this — not yet provided by the backend, see API_SPEC.md
 }
 
 export interface RankedContent {
@@ -600,8 +648,18 @@ export interface TrendingContent {
     velocity: number;
 }
 
+/**
+ * The Analytics endpoints (admin/analytics/plays/*) use a different content-type
+ * vocabulary than Content Management's `ContentType` — notably "guided_session"
+ * instead of "mind_session". Confirmed from a live `plays/by-type/` response:
+ * `{ content_type: "guided_session", plays, unique_listeners }`. Don't merge this
+ * with `ContentType` — that would incorrectly offer "guided_session" to
+ * content-management call sites (categories, content items) that need "mind_session".
+ */
+export type AnalyticsContentType = "music" | "guided_session" | "env_sound" | "env_visual";
+
 export interface AnalyticsParams extends DateRangeParams {
-    content_type?: ContentType;
+    content_type?: AnalyticsContentType;
     granularity?: GrowthGranularity;
     search?: string;
 }

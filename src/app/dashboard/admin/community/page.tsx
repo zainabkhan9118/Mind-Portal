@@ -1,8 +1,6 @@
 "use client";
 import React from "react";
-import dynamic from "next/dynamic";
-import { Users, MessageSquare, ArrowUpRight, Search, ThumbsUp, CalendarDays, UserCheck, Radio } from "lucide-react";
-import { ApexOptions } from "apexcharts";
+import { Users, MessageSquare, CalendarDays, UserCheck, Radio } from "lucide-react";
 import communityApi from "@/lib/api/communityApi";
 import type {
     CommunityDashboard,
@@ -12,55 +10,18 @@ import type {
     CommunityGroupSession,
     CommunityPost,
 } from "@/lib/api/types";
+import MemberGrowthChart from "./components/MemberGrowthChart";
+import EngagementChart from "./components/EngagementChart";
+import GroupsTable from "./components/GroupsTable";
+import SessionsTable from "./components/SessionsTable";
+import GroupsModal from "./components/GroupsModal";
+import SessionsModal from "./components/SessionsModal";
+import RecentPosts from "./components/RecentPosts";
+import StatsCard from "./components/StatsCard";
+import MetricCard from "./components/MetricCard";
+import SearchInput from "./components/SearchInput";
 
-const ReactApexChart = dynamic(() => import("react-apexcharts"), { ssr: false });
-
-const LOADING_PLACEHOLDER = (
-    <div className="flex items-center justify-center h-[300px] text-gray-400 text-sm">Loading...</div>
-);
-
-function MemberGrowthChart({ data }: { data: CommunityGrowthPoint[] }) {
-    if (data.length === 0) return LOADING_PLACEHOLDER;
-    const series = [{ name: "Members", data: data.map((p) => p.count ?? 0) }];
-    const options: ApexOptions = {
-        chart: { type: "line", toolbar: { show: false }, zoom: { enabled: false }, fontFamily: "inherit" },
-        colors: ["#9810FA"],
-        stroke: { curve: "smooth", width: 2 },
-        xaxis: {
-            categories: data.map((p) => p.period),
-            axisBorder: { show: false },
-            axisTicks: { show: false },
-            labels: { style: { colors: "#9CA3AF", fontSize: "12px" } },
-        },
-        yaxis: { show: true, labels: { style: { colors: "#9CA3AF", fontSize: "12px" } } },
-        grid: { strokeDashArray: 5, borderColor: "#E2E8F0" },
-        legend: { position: "bottom", horizontalAlign: "center" },
-    };
-    return <ReactApexChart options={options} series={series} type="line" height={300} />;
-}
-
-function EngagementChart({ data }: { data: CommunityEngagementPoint[] }) {
-    if (data.length === 0) return LOADING_PLACEHOLDER;
-    const series = [
-        { name: "Posts", data: data.map((p) => p.posts ?? 0) },
-        { name: "Comments", data: data.map((p) => p.comments ?? 0) },
-    ];
-    const options: ApexOptions = {
-        chart: { type: "bar", toolbar: { show: false }, fontFamily: "inherit" },
-        colors: ["#9810FA", "#3C50E0"],
-        plotOptions: { bar: { borderRadius: 4, columnWidth: "60%" } },
-        xaxis: {
-            categories: data.map((p) => p.period),
-            axisBorder: { show: false },
-            axisTicks: { show: false },
-            labels: { style: { colors: "#9CA3AF", fontSize: "12px" } },
-        },
-        yaxis: { labels: { style: { colors: "#9CA3AF", fontSize: "12px" } } },
-        grid: { strokeDashArray: 5, borderColor: "#E2E8F0" },
-        legend: { position: "bottom", horizontalAlign: "center" },
-    };
-    return <ReactApexChart options={options} series={series} type="bar" height={300} />;
-}
+const TOP_N = 10;
 
 export default function CommunityPage() {
     const [searchTerm, setSearchTerm] = React.useState("");
@@ -71,15 +32,17 @@ export default function CommunityPage() {
     const [groups, setGroups] = React.useState<CommunityGroup[]>([]);
     const [sessions, setSessions] = React.useState<CommunityGroupSession[]>([]);
     const [recentPosts, setRecentPosts] = React.useState<CommunityPost[]>([]);
+    const [isGroupsModalOpen, setIsGroupsModalOpen] = React.useState(false);
+    const [isSessionsModalOpen, setIsSessionsModalOpen] = React.useState(false);
 
     React.useEffect(() => {
         Promise.all([
             communityApi.getDashboard(),
             communityApi.getGrowth("weekly"),
             communityApi.getEngagement("weekly"),
-            communityApi.getGroups({ size: 20 }),
+            communityApi.getGroups({ size: 100 }),
             communityApi.getPosts({ size: 5 }),
-            communityApi.getSessions({ size: 20, ordering: "-participants_count" }),
+            communityApi.getSessions({ size: 100, ordering: "-participants_count" }),
         ])
             .then(([dash, grow, eng, grps, posts, sess]) => {
                 setDashboard(dash);
@@ -108,6 +71,9 @@ export default function CommunityPage() {
         [sessionSearch, sessions],
     );
 
+    const topGroups = React.useMemo(() => filteredGroups.slice(0, TOP_N), [filteredGroups]);
+    const topSessions = React.useMemo(() => filteredSessions.slice(0, TOP_N), [filteredSessions]);
+
     return (
         <div className="p-6 space-y-6">
             {/* Header */}
@@ -120,88 +86,46 @@ export default function CommunityPage() {
 
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {/* Active Group */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col justify-between h-full min-h-[160px]">
-                    <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-[#F4ECFF] dark:bg-purple-900/20 flex items-center justify-center text-[#9810FA] shrink-0">
-                            <Users className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Active Group</p>
-                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                                {fmt(dashboard?.active_groups ?? dashboard?.total_groups)}
-                            </h3>
-                        </div>
-                    </div>
-                    {dashboard?.active_groups_change != null ? (
-                        <div className="flex items-center gap-1 text-sm font-medium text-[#22AD5C]">
-                            <ArrowUpRight className="w-4 h-4" />
-                            <span>+{dashboard.active_groups_change.toFixed(1)}% this month</span>
-                        </div>
-                    ) : (
-                        <div className="text-sm font-medium text-gray-500 dark:text-gray-400">This month</div>
-                    )}
-                </div>
-
-                {/* Group Sessions */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col justify-between h-full min-h-[160px]">
-                    <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-[#EAF2FF] dark:bg-blue-900/20 flex items-center justify-center text-[#2F80ED] shrink-0">
-                            <CalendarDays className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Group Sessions</p>
-                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                                {fmt(dashboard?.group_sessions)}
-                            </h3>
-                        </div>
-                    </div>
-                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400">This month</div>
-                </div>
-
-                {/* Average Participants */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col justify-between h-full min-h-[160px]">
-                    <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-[#E6F9F0] dark:bg-green-900/20 flex items-center justify-center text-[#027A48] shrink-0">
-                            <UserCheck className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Average Participants</p>
-                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                                {fmt(dashboard?.avg_participants)}
-                            </h3>
-                        </div>
-                    </div>
-                    <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Per session</div>
-                </div>
-
-                {/* Chat Messages */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col justify-between h-full min-h-[160px]">
-                    <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-[#FFF0EC] dark:bg-orange-900/20 flex items-center justify-center text-[#E0580C] shrink-0">
-                            <MessageSquare className="w-6 h-6" />
-                        </div>
-                        <div>
-                            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Chat Messages</p>
-                            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-                                {fmt(dashboard?.chat_messages)}
-                            </h3>
-                        </div>
-                    </div>
-                    {dashboard?.chat_messages_change != null ? (
-                        <div className="flex items-center gap-1 text-sm font-medium text-[#22AD5C]">
-                            <ArrowUpRight className="w-4 h-4" />
-                            <span>+{dashboard.chat_messages_change.toFixed(1)}% this month</span>
-                        </div>
-                    ) : (
-                        <div className="text-sm font-medium text-gray-500 dark:text-gray-400">This month</div>
-                    )}
-                </div>
+                <StatsCard
+                    icon={<Users className="w-6 h-6" />}
+                    iconBgClass="bg-[#F4ECFF] dark:bg-purple-900/20"
+                    iconColorClass="text-[#9810FA]"
+                    title="Active Group"
+                    value={fmt(dashboard?.active_groups ?? dashboard?.total_groups)}
+                    change={dashboard?.active_groups_change}
+                    changeSuffix="this month"
+                    subtitle="This month"
+                />
+                <StatsCard
+                    icon={<CalendarDays className="w-6 h-6" />}
+                    iconBgClass="bg-[#EAF2FF] dark:bg-blue-900/20"
+                    iconColorClass="text-[#2F80ED]"
+                    title="Group Sessions"
+                    value={fmt(dashboard?.group_sessions)}
+                    subtitle="This month"
+                />
+                <StatsCard
+                    icon={<UserCheck className="w-6 h-6" />}
+                    iconBgClass="bg-[#E6F9F0] dark:bg-green-900/20"
+                    iconColorClass="text-[#027A48]"
+                    title="Average Participants"
+                    value={fmt(dashboard?.avg_participants)}
+                    subtitle="Per session"
+                />
+                <StatsCard
+                    icon={<MessageSquare className="w-6 h-6" />}
+                    iconBgClass="bg-[#FFF0EC] dark:bg-orange-900/20"
+                    iconColorClass="text-[#E0580C]"
+                    title="Chat Messages"
+                    value={fmt(dashboard?.chat_messages)}
+                    change={dashboard?.chat_messages_change}
+                    changeSuffix="this month"
+                    subtitle="This month"
+                />
             </div>
 
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Member Growth Chart */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">
                         Member Growth (Weekly)
@@ -209,7 +133,6 @@ export default function CommunityPage() {
                     <MemberGrowthChart data={growth} />
                 </div>
 
-                {/* Posts & Comments Chart */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">
                         Posts &amp; Comments Activity
@@ -224,76 +147,22 @@ export default function CommunityPage() {
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white whitespace-nowrap">
                         Community Groups
                     </h3>
-                    <div className="relative">
-                        <input
-                            type="text"
-                            placeholder="Search groups..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10 pr-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 w-full md:w-64"
-                        />
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <div className="flex items-center gap-3">
+                        <SearchInput value={searchTerm} onChange={setSearchTerm} placeholder="Search groups..." />
+                        <button
+                            onClick={() => setIsGroupsModalOpen(true)}
+                            className="whitespace-nowrap px-4 py-2 rounded-xl text-sm font-semibold text-[#9810FA] border border-[#9810FA]/30 hover:bg-[#9810FA]/5 transition-colors"
+                        >
+                            See All
+                        </button>
                     </div>
                 </div>
 
                 <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="border-b border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                                <th className="p-4 pl-6">Rank</th>
-                                <th className="p-4">Group Name</th>
-                                <th className="p-4 text-center">Members</th>
-                                <th className="p-4 text-center">Created</th>
-                                <th className="p-4 pr-6 text-center">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
-                            {filteredGroups.length === 0 ? (
-                                <tr>
-                                    <td colSpan={5} className="p-8 text-center text-gray-400 text-sm">
-                                        {groups.length === 0 ? "Loading..." : "No groups found"}
-                                    </td>
-                                </tr>
-                            ) : (
-                                filteredGroups.map((group, index) => (
-                                    <tr
-                                        key={group.id}
-                                        className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                                    >
-                                        <td className="p-4 pl-6">
-                                            <span className="w-8 h-8 rounded-full bg-[#9810FA]/10 text-[#9810FA] flex items-center justify-center text-xs font-bold">
-                                                {String(index + 1).padStart(2, "0")}
-                                            </span>
-                                        </td>
-                                        <td className="p-4 text-sm font-semibold text-gray-900 dark:text-white">
-                                            {group.name}
-                                        </td>
-                                        <td className="p-4 text-center text-sm text-gray-600 dark:text-gray-400">
-                                            {group.members_count.toLocaleString()}
-                                        </td>
-                                        <td className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                                            {new Date(group.created_at).toLocaleDateString("en-US", {
-                                                month: "short",
-                                                day: "numeric",
-                                                year: "numeric",
-                                            })}
-                                        </td>
-                                        <td className="p-4 pr-6 text-center">
-                                            {group.is_hidden ? (
-                                                <span className="inline-flex px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-[#F2F4F7] text-[#344054] dark:bg-gray-700 dark:text-gray-400">
-                                                    Hidden
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-[#ECFDF3] text-[#027A48] dark:bg-green-900/20 dark:text-green-400">
-                                                    Active
-                                                </span>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                    <GroupsTable
+                        groups={topGroups}
+                        emptyMessage={groups.length === 0 ? "Loading..." : "No groups found"}
+                    />
                 </div>
             </div>
 
@@ -307,213 +176,68 @@ export default function CommunityPage() {
                         </h3>
                         <span className="text-xs text-gray-400 font-normal ml-1">ranked by participants</span>
                     </div>
-                    <div className="relative">
-                        <input
-                            type="text"
-                            placeholder="Search sessions..."
-                            value={sessionSearch}
-                            onChange={(e) => setSessionSearch(e.target.value)}
-                            className="pl-10 pr-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/20 w-full md:w-64"
-                        />
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <div className="flex items-center gap-3">
+                        <SearchInput value={sessionSearch} onChange={setSessionSearch} placeholder="Search sessions..." />
+                        <button
+                            onClick={() => setIsSessionsModalOpen(true)}
+                            className="whitespace-nowrap px-4 py-2 rounded-xl text-sm font-semibold text-blue-600 border border-blue-600/30 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                        >
+                            See All
+                        </button>
                     </div>
                 </div>
 
                 <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="border-b border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                                <th className="p-4 pl-6">Rank</th>
-                                <th className="p-4">Session</th>
-                                <th className="p-4">Group</th>
-                                <th className="p-4">Host</th>
-                                <th className="p-4 text-center min-w-[160px]">Participants</th>
-                                <th className="p-4 text-center">Status</th>
-                                <th className="p-4 pr-6 text-center">Date</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
-                            {filteredSessions.length === 0 ? (
-                                <tr>
-                                    <td colSpan={7} className="p-8 text-center text-gray-400 text-sm">
-                                        {sessions.length === 0 ? "Loading..." : "No sessions found"}
-                                    </td>
-                                </tr>
-                            ) : (
-                                filteredSessions.map((session, index) => {
-                                    const fill = session.max_participants
-                                        ? Math.min((session.participants_count / session.max_participants) * 100, 100)
-                                        : null;
-                                    const statusStyles: Record<string, string> = {
-                                        live:      "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400",
-                                        scheduled: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400",
-                                        completed: "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400",
-                                        cancelled: "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400",
-                                    };
-                                    const statusLabel = session.status ?? "—";
-                                    const statusClass = statusStyles[session.status ?? ""] ?? "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400";
-                                    const dateStr = session.scheduled_at ?? session.started_at ?? session.created_at;
-                                    return (
-                                        <tr key={session.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                            <td className="p-4 pl-6">
-                                                <span className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center text-xs font-bold">
-                                                    {String(index + 1).padStart(2, "0")}
-                                                </span>
-                                            </td>
-                                            <td className="p-4 text-sm font-semibold text-gray-900 dark:text-white max-w-[200px] truncate">
-                                                {session.title}
-                                            </td>
-                                            <td className="p-4 text-sm text-gray-500 dark:text-gray-400">
-                                                {session.group_name ?? "—"}
-                                            </td>
-                                            <td className="p-4 text-sm text-gray-500 dark:text-gray-400">
-                                                {session.host_name ?? "—"}
-                                            </td>
-                                            <td className="p-4">
-                                                <div className="flex items-center gap-2 justify-center">
-                                                    {fill !== null && (
-                                                        <div className="w-20 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden flex-shrink-0">
-                                                            <div
-                                                                className="h-full bg-blue-500 rounded-full"
-                                                                style={{ width: `${fill}%` }}
-                                                            />
-                                                        </div>
-                                                    )}
-                                                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 tabular-nums whitespace-nowrap">
-                                                        {session.participants_count.toLocaleString()}
-                                                        {session.max_participants ? `/${session.max_participants}` : ""}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="p-4 text-center">
-                                                <span className={`inline-flex px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${statusClass}`}>
-                                                    {statusLabel}
-                                                </span>
-                                            </td>
-                                            <td className="p-4 pr-6 text-center text-sm text-gray-500 dark:text-gray-400">
-                                                {new Date(dateStr).toLocaleDateString("en-US", {
-                                                    month: "short",
-                                                    day: "numeric",
-                                                    year: "numeric",
-                                                })}
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
+                    <SessionsTable
+                        sessions={topSessions}
+                        emptyMessage={sessions.length === 0 ? "Loading..." : "No sessions found"}
+                    />
                 </div>
             </div>
 
             {/* Recent Posts */}
             <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Recent Posts</h3>
-                {recentPosts.length === 0 ? (
-                    <div className="flex items-center justify-center h-24 text-gray-400 text-sm">
-                        Loading...
-                    </div>
-                ) : (
-                    <div className="space-y-4">
-                        {recentPosts.map((post) => (
-                            <div
-                                key={post.id}
-                                className="flex flex-col p-4 rounded-xl border border-gray-100 dark:border-gray-700 hover:border-[#9810FA]/30 hover:shadow-sm transition-all bg-gray-50/50 dark:bg-gray-900/50 gap-3"
-                            >
-                                <div className="flex items-center justify-between w-full">
-                                    <div className="flex items-center gap-3">
-                                        <h4 className="font-semibold text-gray-900 dark:text-white">
-                                            {post.content || post.title || "—"}
-                                        </h4>
-                                        <span
-                                            className={`px-2.5 py-1 rounded text-[10px] uppercase font-bold tracking-wide ${
-                                                post.status === "approved"
-                                                    ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400"
-                                                    : post.status === "hidden" || post.status === "rejected"
-                                                      ? "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
-                                                      : "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400"
-                                            }`}
-                                        >
-                                            {post.status}
-                                        </span>
-                                        {post.group_name && (
-                                            <span className="px-2.5 py-1 rounded text-[10px] font-medium bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400">
-                                                {post.group_name}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                                        {new Date(post.created_at).toLocaleDateString("en-US", {
-                                            month: "short",
-                                            day: "numeric",
-                                            year: "numeric",
-                                        })}
-                                    </span>
-                                </div>
-                                <div className="flex flex-wrap items-center gap-6 text-xs text-gray-500 dark:text-gray-400">
-                                    <div className="flex items-center gap-2">
-                                        <Users className="w-4 h-4 text-gray-400" />
-                                        <span>{post.user_name ?? "Unknown"}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <ThumbsUp className="w-4 h-4 text-gray-400" />
-                                        <span>{(post.like_count ?? 0).toLocaleString()} likes</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <MessageSquare className="w-4 h-4 text-gray-400" />
-                                        <span>{(post.comment_count ?? 0).toLocaleString()} comments</span>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
+                <RecentPosts posts={recentPosts} />
             </div>
 
             {/* Bottom Metrics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col h-[180px] relative">
-                    <h4 className="text-sm font-medium text-gray-900 dark:text-white absolute top-6 left-6">
-                        Engagement Rate
-                    </h4>
-                    <div className="flex-1 flex items-center justify-center">
-                        <span className="text-5xl font-bold text-[#9810FA]">
-                            {dashboard?.engagement_rate != null
-                                ? `${dashboard.engagement_rate.toFixed(1)}%`
-                                : "–"}
-                        </span>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center pb-2">
-                        of members actively participate
-                    </p>
-                </div>
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col h-[180px] relative">
-                    <h4 className="text-sm font-medium text-gray-900 dark:text-white absolute top-6 left-6">
-                        Total Groups
-                    </h4>
-                    <div className="flex-1 flex items-center justify-center">
-                        <span className="text-5xl font-bold text-blue-500">
-                            {fmt(dashboard?.total_groups)}
-                        </span>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center pb-2">
-                        Active community groups
-                    </p>
-                </div>
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex flex-col h-[180px] relative">
-                    <h4 className="text-sm font-medium text-gray-900 dark:text-white absolute top-6 left-6">
-                        Open Reports
-                    </h4>
-                    <div className="flex-1 flex items-center justify-center">
-                        <span className="text-5xl font-bold text-orange-500">
-                            {fmt(dashboard?.open_reports)}
-                        </span>
-                    </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 text-center pb-2">
-                        Awaiting moderation review
-                    </p>
-                </div>
+                <MetricCard
+                    title="Engagement Rate"
+                    value={dashboard?.engagement_rate != null ? `${dashboard.engagement_rate.toFixed(1)}%` : "–"}
+                    valueColorClass="text-[#9810FA]"
+                    subtitle="of members actively participate"
+                />
+                <MetricCard
+                    title="Total Groups"
+                    value={fmt(dashboard?.total_groups)}
+                    valueColorClass="text-blue-500"
+                    subtitle="Active community groups"
+                />
+                <MetricCard
+                    title="Open Reports"
+                    value={fmt(dashboard?.open_reports)}
+                    valueColorClass="text-orange-500"
+                    subtitle="Awaiting moderation review"
+                />
             </div>
+
+            <GroupsModal
+                isOpen={isGroupsModalOpen}
+                onClose={() => setIsGroupsModalOpen(false)}
+                groups={filteredGroups}
+                searchTerm={searchTerm}
+                onSearchChange={setSearchTerm}
+            />
+
+            <SessionsModal
+                isOpen={isSessionsModalOpen}
+                onClose={() => setIsSessionsModalOpen(false)}
+                sessions={filteredSessions}
+                searchTerm={sessionSearch}
+                onSearchChange={setSessionSearch}
+            />
         </div>
     );
 }

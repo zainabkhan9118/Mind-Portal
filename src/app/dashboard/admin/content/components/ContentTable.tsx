@@ -92,8 +92,6 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                             <>
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Artist</TableCell>
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">URL</TableCell>
-                                <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">State</TableCell>
-                                <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Effect</TableCell>
                             </>
                         )}
                         {activeTab === "Sounds" && (
@@ -103,8 +101,6 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Type</TableCell>
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Goal</TableCell>
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Details</TableCell>
-                                <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">State</TableCell>
-                                <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Effect</TableCell>
                             </>
                         )}
                         {activeTab === "Guided" && (
@@ -114,8 +110,6 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Duration</TableCell>
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Goal</TableCell>
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Details</TableCell>
-                                <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">State</TableCell>
-                                <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Effect</TableCell>
                             </>
                         )}
                         {activeTab === "Visuals" && (
@@ -124,8 +118,6 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Author</TableCell>
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Goal</TableCell>
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Details</TableCell>
-                                <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">State</TableCell>
-                                <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Effect</TableCell>
                             </>
                         )}
                         {activeTab === "Minds" && (
@@ -133,8 +125,6 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Description</TableCell>
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Goals</TableCell>
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Author</TableCell>
-                                <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">State</TableCell>
-                                <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Effect</TableCell>
                             </>
                         )}
 
@@ -184,8 +174,6 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                                             {(item as ContentItem).url}
                                         </span>
                                     </TableCell>
-                                    <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as ContentItem).state}</TableCell>
-                                    <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as ContentItem).effect}</TableCell>
                                 </>
                             )}
                             {activeTab === "Sounds" && (
@@ -195,8 +183,6 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentSoundItem).type}</TableCell>
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentSoundItem).goal}</TableCell>
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentSoundItem).details}</TableCell>
-                                    <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentSoundItem).state}</TableCell>
-                                    <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentSoundItem).effect}</TableCell>
                                 </>
                             )}
                             {activeTab === "Guided" && (
@@ -206,8 +192,6 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as MindSessionItem).duration}</TableCell>
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as MindSessionItem).goal}</TableCell>
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as MindSessionItem).details}</TableCell>
-                                    <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as MindSessionItem).state}</TableCell>
-                                    <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as MindSessionItem).effect}</TableCell>
                                 </>
                             )}
                             {activeTab === "Visuals" && (
@@ -216,8 +200,6 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentVisualItem).author}</TableCell>
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentVisualItem).goal}</TableCell>
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentVisualItem).details}</TableCell>
-                                    <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentVisualItem).state}</TableCell>
-                                    <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentVisualItem).effect}</TableCell>
                                 </>
                             )}
 
@@ -230,8 +212,6 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                                     </TableCell>
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as MindItem).goals}</TableCell>
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as MindItem).author}</TableCell>
-                                    <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as MindItem).state}</TableCell>
-                                    <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as MindItem).effect}</TableCell>
                                 </>
                             )}
 

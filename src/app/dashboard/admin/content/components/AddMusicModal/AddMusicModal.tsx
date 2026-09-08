@@ -8,11 +8,12 @@ import AccessLevels from "./AccessLevels";
 import CoverImage from "./CoverImage";
 import AddTags from "./AddTags";
 import StateEffectSelector from "./StateEffectSelector";
+import GoalSelector from "./GoalSelector";
 import IconSelection from "./IconSelection";
 import CreateSubCategoryModal from "./CreateSubCategoryModal";
 import { contentApi } from "@/lib/api";
 import apiClient from "@/lib/api/axiosInstance";
-import type { AdminCategory } from "@/lib/api/types";
+import type { AdminCategory, AdminState, AdminEffect } from "@/lib/api/types";
 
 interface Goal {
     id: number;
@@ -52,7 +53,16 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
 
     // Goals
     const [goalsList, setGoalsList] = useState<Goal[]>([]);
-    const [selectedGoals, setSelectedGoals] = useState<number[]>([]);
+    const [primaryGoal, setPrimaryGoal] = useState<number | null>(null);
+    const [secondaryGoals, setSecondaryGoals] = useState<number[]>([]);
+
+    // States & Effects
+    const [statesList, setStatesList] = useState<AdminState[]>([]);
+    const [effectsList, setEffectsList] = useState<AdminEffect[]>([]);
+    const [primaryState, setPrimaryState] = useState<number | null>(null);
+    const [secondaryStates, setSecondaryStates] = useState<number[]>([]);
+    const [primaryEffect, setPrimaryEffect] = useState<number | null>(null);
+    const [secondaryEffects, setSecondaryEffects] = useState<number[]>([]);
 
     // Form state
     const [title, setTitle] = useState("");
@@ -67,8 +77,6 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
     const [frequency, setFrequency] = useState("");
     const [contentType, setContentType] = useState("");
     const [duration, setDuration] = useState<number>(0);
-    const [state, setState] = useState("");
-    const [effect, setEffect] = useState("");
     const [subCategory, setSubCategory] = useState("");
     const [iconId, setIconId] = useState<number | null>(null);
     const [iconFile, setIconFile] = useState<File | null>(null);
@@ -78,11 +86,19 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
     const [releaseDate, setReleaseDate] = useState<string>("");
     const [releaseTime, setReleaseTime] = useState<string>("");
 
-    // Fetch goals once
+    // Fetch goals, states, and effects once
     useEffect(() => {
         apiClient
             .get<{ results: Goal[] }>("explore/goals/", { params: { size: 100 } })
             .then((res) => setGoalsList(res.data.results ?? []))
+            .catch(() => {});
+        contentApi.states
+            .list({ size: 100 })
+            .then((res) => setStatesList(res.results ?? []))
+            .catch(() => {});
+        contentApi.effects
+            .list({ size: 100 })
+            .then((res) => setEffectsList(res.results ?? []))
             .catch(() => {});
     }, []);
 
@@ -105,10 +121,13 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
                 setStatus(item.status ?? "draft");
                 setAccessLevel(item.is_premium ? "premium" : "free");
                 setTags(item.tags ?? []);
-                setSelectedGoals(item.goals ?? []);
+                setPrimaryGoal(item.primary_goal ?? null);
+                setSecondaryGoals(item.secondary_goals ?? item.goals ?? []);
                 setDuration(item.duration ?? 0);
-                setState(item.state ?? "");
-                setEffect(item.effect ?? "");
+                setPrimaryState(item.primary_state ?? null);
+                setSecondaryStates(item.secondary_states ?? []);
+                setPrimaryEffect(item.primary_effect ?? null);
+                setSecondaryEffects(item.secondary_effects ?? []);
                 setSubCategory(item.sub_category ?? "");
                 setIconId(item.icon ?? null);
                 setIconUrl(item.icon_url ?? null);
@@ -163,9 +182,12 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
         setFrequency("");
         setContentType("");
         setDuration(0);
-        setSelectedGoals([]);
-        setState("");
-        setEffect("");
+        setPrimaryGoal(null);
+        setSecondaryGoals([]);
+        setPrimaryState(null);
+        setSecondaryStates([]);
+        setPrimaryEffect(null);
+        setSecondaryEffects([]);
         setSubCategory("");
         setIconId(null);
         setIconFile(null);
@@ -183,10 +205,36 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
         onClose();
     };
 
-    const toggleGoal = (id: number) => {
-        setSelectedGoals((prev) =>
-            prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]
-        );
+    const handlePrimaryGoalChange = (id: number | null) => {
+        setPrimaryGoal(id);
+        if (id != null) setSecondaryGoals((prev) => prev.filter((g) => g !== id));
+    };
+    const toggleSecondaryGoal = (id: number) => {
+        setSecondaryGoals((prev) => (prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]));
+    };
+
+    const handlePrimaryStateChange = (id: number | null) => {
+        setPrimaryState(id);
+        if (id != null) setSecondaryStates((prev) => prev.filter((s) => s !== id));
+    };
+    const toggleSecondaryState = (id: number) => {
+        setSecondaryStates((prev) => (prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]));
+    };
+    const handleCreateState = async (name: string) => {
+        const created = await contentApi.states.create({ name });
+        setStatesList((prev) => [...prev, created]);
+    };
+
+    const handlePrimaryEffectChange = (id: number | null) => {
+        setPrimaryEffect(id);
+        if (id != null) setSecondaryEffects((prev) => prev.filter((e) => e !== id));
+    };
+    const toggleSecondaryEffect = (id: number) => {
+        setSecondaryEffects((prev) => (prev.includes(id) ? prev.filter((e) => e !== id) : [...prev, id]));
+    };
+    const handleCreateEffect = async (name: string) => {
+        const created = await contentApi.effects.create({ name });
+        setEffectsList((prev) => [...prev, created]);
     };
 
     const buildFormData = (publish: boolean): FormData => {
@@ -200,7 +248,8 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
         fd.append("is_premium", String(isPremium));
 
         tags.forEach((tag) => fd.append("tags", tag));
-        selectedGoals.forEach((id) => fd.append("goals", String(id)));
+        if (primaryGoal != null) fd.append("primary_goal", String(primaryGoal));
+        secondaryGoals.forEach((id) => fd.append("secondary_goals", String(id)));
 
         fd.append("duration", String(duration));
 
@@ -231,8 +280,10 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
             if (categoryId) fd.append("music_category", categoryId);
         }
 
-        if (state)       fd.append("state", state);
-        if (effect)      fd.append("effect", effect);
+        if (primaryState != null) fd.append("primary_state", String(primaryState));
+        secondaryStates.forEach((id) => fd.append("secondary_states", String(id)));
+        if (primaryEffect != null) fd.append("primary_effect", String(primaryEffect));
+        secondaryEffects.forEach((id) => fd.append("secondary_effects", String(id)));
         if (subCategory) fd.append("sub_category", subCategory);
 
         if (iconFile)            fd.append("icon", iconFile);
@@ -276,8 +327,8 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
             setSubmitError("Audio duration could not be read yet. Please wait a moment or re-upload the file.");
             return;
         }
-        if (selectedGoals.length === 0) {
-            setSubmitError("Please select at least one goal.");
+        if (primaryGoal == null) {
+            setSubmitError("Please select a primary goal.");
             return;
         }
         setSubmitError(null);
@@ -388,36 +439,27 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
                             existingAudioUrl={existingAudioUrl}
                         />
 
-                        {/* Goals */}
-                        {goalsList.length > 0 && (
-                            <div className="space-y-3">
-                                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-                                    Goals <span className="text-red-500">*</span>
-                                </h3>
-                                <div className="flex flex-wrap gap-2">
-                                    {goalsList.map((g) => (
-                                        <button
-                                            key={g.id}
-                                            type="button"
-                                            onClick={() => toggleGoal(g.id)}
-                                            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
-                                                selectedGoals.includes(g.id)
-                                                    ? "bg-[#9810FA] text-white border-[#9810FA]"
-                                                    : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-[#9810FA] hover:text-[#9810FA]"
-                                            }`}
-                                        >
-                                            {g.name}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                        <GoalSelector
+                            goalsList={goalsList}
+                            primaryGoal={primaryGoal}
+                            onPrimaryGoalChange={handlePrimaryGoalChange}
+                            secondaryGoals={secondaryGoals}
+                            onToggleSecondaryGoal={toggleSecondaryGoal}
+                        />
 
                         <StateEffectSelector
-                            state={state}
-                            onStateChange={setState}
-                            effect={effect}
-                            onEffectChange={setEffect}
+                            statesList={statesList}
+                            primaryState={primaryState}
+                            onPrimaryStateChange={handlePrimaryStateChange}
+                            secondaryStates={secondaryStates}
+                            onToggleSecondaryState={toggleSecondaryState}
+                            onCreateState={handleCreateState}
+                            effectsList={effectsList}
+                            primaryEffect={primaryEffect}
+                            onPrimaryEffectChange={handlePrimaryEffectChange}
+                            secondaryEffects={secondaryEffects}
+                            onToggleSecondaryEffect={toggleSecondaryEffect}
+                            onCreateEffect={handleCreateEffect}
                         />
 
                         <AddTags tags={tags} onTagsChange={setTags} />

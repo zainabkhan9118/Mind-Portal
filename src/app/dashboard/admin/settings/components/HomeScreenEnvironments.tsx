@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { contentApi, apiClient } from "@/lib/api";
 import type { AdminEnvironmentVisual, AdminEnvironmentSound } from "@/lib/api/types";
+import ConfirmDeleteModal from "@/components/ui/modal/ConfirmDeleteModal";
 
 const DEFAULT_VOLUME = 80;
 
@@ -65,6 +66,10 @@ const HomeScreenEnvironments: React.FC = () => {
     const [isUploadingSound, setIsUploadingSound] = useState(false);
     const [soundUploadError, setSoundUploadError] = useState<string | null>(null);
     const soundUploadInputRef = useRef<HTMLInputElement>(null);
+
+    // ── Delete confirmation ──────────────────────────────────────────────
+    const [pendingDelete, setPendingDelete] = useState<{ type: "visual" | "sound"; id: number } | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // ── Cleanup audio on unmount ────────────────────────────────────────
     useEffect(() => {
@@ -122,8 +127,8 @@ const HomeScreenEnvironments: React.FC = () => {
                     }));
 
                 setSavedEnvironments(mapped);
-                const activeId = raw.find(e => e.is_active)?.id;
-                if (activeId) setActiveEnvIds(new Set([activeId]));
+                const activeIds = raw.filter(e => e.is_active).map(e => e.id);
+                if (activeIds.length > 0) setActiveEnvIds(new Set(activeIds));
             })
             .catch(() => {}); // endpoint may not exist yet
     }, []);
@@ -262,25 +267,22 @@ const HomeScreenEnvironments: React.FC = () => {
     };
 
     // ── Save Home Screen (active selection) ─────────────────────────────
+    // The backend endpoint only accepts one `environment_id` at a time, so to
+    // activate multiple environments we fire one request per selected id.
     const handleSaveHomeScreen = async () => {
-        const activeId = Array.from(activeEnvIds)[0];
-        if (!activeId) { setSaveActiveError("Please select an environment first."); return; }
+        const activeIds = Array.from(activeEnvIds);
+        if (activeIds.length === 0) { setSaveActiveError("Please select at least one environment first."); return; }
         setIsSavingActive(true); setSaveActiveError(null); setSaveActiveSuccess(false);
         try {
-            await apiClient.post("explore/home-screen-environments/active/", {
-                environment_id: activeId,
-            });
+            await Promise.all(
+                activeIds.map((id) =>
+                    apiClient.post("explore/home-screen-environments/active/", { environment_id: id })
+                )
+            );
             setSaveActiveSuccess(true);
             setTimeout(() => setSaveActiveSuccess(false), 3000);
-        } catch (err: unknown) {
-            const status = (err as { response?: { status?: number } })?.response?.status;
-            if (status === 404) {
-                // endpoint not yet available, mark success locally
-                setSaveActiveSuccess(true);
-                setTimeout(() => setSaveActiveSuccess(false), 3000);
-            } else {
-                setSaveActiveError("Failed to update. Please try again.");
-            }
+        } catch {
+            setSaveActiveError("Failed to update. Please try again.");
         } finally {
             setIsSavingActive(false);
         }
@@ -288,8 +290,10 @@ const HomeScreenEnvironments: React.FC = () => {
 
     const toggleActiveEnv = (id: number) => {
         setActiveEnvIds((prev) => {
-            if (prev.has(id)) return new Set<number>();
-            return new Set([id]);
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
         });
     };
 
@@ -297,6 +301,31 @@ const HomeScreenEnvironments: React.FC = () => {
         setSavedEnvironments((prev) => prev.filter((e) => e.id !== id));
         setActiveEnvIds((prev) => { const s = new Set(prev); s.delete(id); return s; });
         apiClient.delete(`explore/home-screen-environments/${id}/`).catch(() => {});
+    };
+
+    const confirmDelete = async () => {
+        if (!pendingDelete) return;
+        const { type, id } = pendingDelete;
+        setIsDeleting(true);
+        try {
+            if (type === "visual") {
+                await contentApi.envVisuals.delete(id);
+                setEnvVisuals((prev) => prev.filter((v) => v.id !== id));
+                if (selectedVisual === id) setSelectedVisual(null);
+            } else {
+                await contentApi.envSounds.delete(id);
+                stopAndRemoveAudio(id);
+                setEnvSounds((prev) => prev.filter((s) => s.id !== id));
+                setSelectedSounds((prev) => prev.filter((s) => s !== id));
+            }
+            setPendingDelete(null);
+        } catch {
+            if (type === "visual") setUploadError("Failed to delete visual.");
+            else setSoundUploadError("Failed to delete sound.");
+            setPendingDelete(null);
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     const selectedVisualItem = envVisuals.find((v) => v.id === selectedVisual);
@@ -325,18 +354,25 @@ const HomeScreenEnvironments: React.FC = () => {
                 ) : (
                     <div className="grid grid-cols-2 gap-4 pt-2">
                         {envVisuals.map((env) => (
-                            <button key={env.id} onClick={() => setSelectedVisual(env.id)}
+                            <div key={env.id}
                                 className={`group relative aspect-[1.4/1] rounded-2xl overflow-hidden transition-all duration-300 ${selectedVisual === env.id ? "ring-4 ring-purple-600 ring-offset-2 dark:ring-offset-gray-800 scale-[1.02]" : "hover:scale-[1.02]"}`}>
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img src={env.image} alt={env.name} className="w-full h-full object-cover" />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80" />
-                                {selectedVisual === env.id && (
-                                    <div className="absolute top-2 right-2 w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center">
-                                        <Check className="w-3 h-3 text-white" />
-                                    </div>
-                                )}
-                                <span className="absolute bottom-3 left-3 text-[11px] font-semibold text-white leading-none">{env.name}</span>
-                            </button>
+                                <button onClick={() => setSelectedVisual(env.id)} className="absolute inset-0 w-full h-full">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src={env.image} alt={env.name} className="w-full h-full object-cover" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80" />
+                                    {selectedVisual === env.id && (
+                                        <div className="absolute top-2 right-2 w-5 h-5 bg-purple-600 rounded-full flex items-center justify-center">
+                                            <Check className="w-3 h-3 text-white" />
+                                        </div>
+                                    )}
+                                    <span className="absolute bottom-3 left-3 text-[11px] font-semibold text-white leading-none">{env.name}</span>
+                                </button>
+                                <button onClick={(e) => { e.stopPropagation(); setPendingDelete({ type: "visual", id: env.id }); }}
+                                    title="Delete visual"
+                                    className="absolute top-2 left-2 p-1.5 bg-black/50 hover:bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
                         ))}
                         <button onClick={() => uploadInputRef.current?.click()} disabled={isUploading}
                             className="aspect-[1.4/1] rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-purple-600 hover:bg-purple-50/50 dark:hover:bg-purple-900/10 transition-all flex flex-col items-center justify-center gap-3 group disabled:opacity-50">
@@ -395,6 +431,11 @@ const HomeScreenEnvironments: React.FC = () => {
                                                 {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                                             </button>
                                         )}
+                                        <button onClick={() => setPendingDelete({ type: "sound", id: sound.id })}
+                                            title="Delete sound"
+                                            className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all shrink-0">
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
                                     </div>
                                     {isSelected && (
                                         <div className="px-4 pb-3 space-y-1.5">
@@ -557,6 +598,19 @@ const HomeScreenEnvironments: React.FC = () => {
                     </button>
                 </div>
             </div>
+
+            <ConfirmDeleteModal
+                isOpen={pendingDelete !== null}
+                title={pendingDelete?.type === "visual" ? "Delete Visual" : "Delete Sound"}
+                message={
+                    pendingDelete?.type === "visual"
+                        ? "Are you sure you want to delete this visual? This action cannot be undone."
+                        : "Are you sure you want to delete this sound? This action cannot be undone."
+                }
+                isLoading={isDeleting}
+                onConfirm={confirmDelete}
+                onClose={() => setPendingDelete(null)}
+            />
         </div>
     );
 };

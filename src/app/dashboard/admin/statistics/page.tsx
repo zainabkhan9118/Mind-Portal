@@ -1,17 +1,21 @@
 "use client";
 import { useState } from 'react';
-import { LayoutGrid, Headphones, Trophy } from 'lucide-react';
+import { LayoutGrid, Headphones, Trophy, Brain, Target } from 'lucide-react';
 import OverviewTab from './components/OverviewTab';
 import ContentPlaysTab from './components/ContentPlaysTab';
 import TopRankingsTab from './components/TopRankingsTab';
+import MindsTab from './components/MindsTab';
+import MindCoverageTab from './components/MindCoverageTab';
 
 export default function StatisticsPage() {
   const [activeTab, setActiveTab] = useState('Overview');
 
   const tabs = [
     { id: 'Overview', icon: <LayoutGrid className="w-4 h-4" /> },
-    { id: 'Content Plays', icon: <Headphones className="w-4 h-4" /> },
-    { id: 'Top Rankings', icon: <Trophy className="w-4 h-4" /> },
+    { id: 'Content', icon: <Headphones className="w-4 h-4" /> },
+    { id: 'Minds', icon: <Brain className="w-4 h-4" /> },
+    { id: 'Mind Coverage', icon: <Target className="w-4 h-4" /> },
+    // { id: 'Top Rankings', icon: <Trophy className="w-4 h-4" /> },
   ];
 
   return (
@@ -47,8 +51,8 @@ export default function StatisticsPage() {
       {/* Content */}
       <div className="min-h-[500px]">
         {activeTab === 'Overview' && <OverviewTab />}
-        {activeTab === 'Content Plays' && <ContentPlaysTab />}
-        {activeTab === 'Top Rankings' && <TopRankingsTab />}
+        {activeTab === 'Content' && <ContentPlaysTab />}
+        {/* {activeTab === 'Top Rankings' && <TopRankingsTab />} */}
       </div>
     </div>
   );

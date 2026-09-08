@@ -79,9 +79,9 @@ const KeyMetricsOverview: React.FC<{ dateParams?: AnalyticsParams }> = ({ datePa
             changeLabel: 'in last 4h',
         },
         {
-            label: 'Avg Mind Time per User',
-            value: fmtTime(kpi?.avg_time_per_user),
-            change: kpi?.avg_time_per_user_change,
+            label: 'Total Minds Played',
+            value: fmtNum(kpi?.total_minds_played),
+            change: kpi?.total_minds_played_change,
             changeLabel: 'in last 24h',
         },
         {

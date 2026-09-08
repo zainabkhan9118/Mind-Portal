@@ -12,11 +12,11 @@ const AvgListeningTimeChart: React.FC = () => {
         { type: 'Sound', title: 'Ocean Calm', time: '5m 33s', icon: <Waves className="w-5 h-5 text-cyan-500" />, bg: 'bg-cyan-50 dark:bg-cyan-900/20', text: 'text-cyan-600 dark:text-cyan-400' },
         { type: 'Music', title: 'Deep Focus Flow', time: '8m 42s', icon: <Music className="w-5 h-5 text-purple-600" />, bg: 'bg-purple-50 dark:bg-purple-900/20', text: 'text-purple-600 dark:text-purple-400' },
         { type: 'Guided', title: 'Sleep Journey', time: '12m 18s', icon: <Mic className="w-5 h-5 text-amber-500" />, bg: 'bg-amber-50 dark:bg-amber-900/20', text: 'text-amber-600 dark:text-amber-400' },
-        { type: 'VR', title: 'Cosmic Journey VR', time: '15m 47s', icon: <Glasses className="w-5 h-5 text-indigo-500" />, bg: 'bg-indigo-50 dark:bg-indigo-900/20', text: 'text-indigo-600 dark:text-indigo-400' },
+        { type: 'Visuals', title: 'Cosmic Journey', time: '15m 47s', icon: <Glasses className="w-5 h-5 text-indigo-500" />, bg: 'bg-indigo-50 dark:bg-indigo-900/20', text: 'text-indigo-600 dark:text-indigo-400' },
     ];
 
     const series = [
-        { name: 'VR', data: [16, 14.5, 17, 15.5, 17.5, 18.5, 17] },
+        { name: 'Visuals', data: [16, 14.5, 17, 15.5, 17.5, 18.5, 17] },
         { name: 'Guided', data: [12.5, 12, 13.5, 12.2, 11.8, 15, 14] },
         { name: 'Music', data: [8.5, 9.2, 8, 10.2, 9, 11.5, 11] },
         { name: 'Sound', data: [6.2, 7, 8.5, 6.8, 7.5, 9.2, 8.8] },
@@ -29,7 +29,7 @@ const AvgListeningTimeChart: React.FC = () => {
             toolbar: { show: false },
             zoom: { enabled: false }
         },
-        colors: ["#6366F1", "#06B6D4", "#A855F7", "#3B82F6"], // Indigo (VR), Cyan (Guided), Purple (Music), Blue (Sound) - matching standard palette roughly
+        colors: ["#6366F1", "#06B6D4", "#A855F7", "#3B82F6"], // Indigo (Visuals), Cyan (Guided), Purple (Music), Blue (Sound) - matching standard palette roughly
         stroke: {
             curve: 'smooth',
             width: 3

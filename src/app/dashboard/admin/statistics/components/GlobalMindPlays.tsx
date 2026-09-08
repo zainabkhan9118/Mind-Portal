@@ -4,18 +4,20 @@ import { Music, Waves, Image as ImageIcon, Sun, Mic } from 'lucide-react';
 import analyticsApi from '@/lib/api/analyticsApi';
 import type { TrendingContent } from '@/lib/api/types';
 
+// Note: the analytics API returns "guided_session" for this content type — NOT "mind_session"
+// (the slug used by Content Management). Don't "fix" this back to mind_session.
 const TYPE_ICON: Record<string, React.ReactNode> = {
     music: <Music className="w-6 h-6" />,
     env_sound: <Waves className="w-6 h-6" />,
     env_visual: <ImageIcon className="w-6 h-6" />,
-    mind_session: <Mic className="w-6 h-6" />,
+    guided_session: <Mic className="w-6 h-6" />,
 };
 
 const TYPE_COLOR: Record<string, string> = {
     music: 'from-purple-500 to-indigo-600',
     env_sound: 'from-blue-500 to-cyan-400',
     env_visual: 'from-blue-500 to-purple-500',
-    mind_session: 'from-cyan-400 to-blue-500',
+    guided_session: 'from-cyan-400 to-blue-500',
 };
 
 const GlobalMindPlays: React.FC = () => {

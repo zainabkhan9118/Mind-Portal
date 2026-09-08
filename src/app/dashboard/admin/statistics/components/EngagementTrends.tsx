@@ -4,11 +4,15 @@ import dynamic from 'next/dynamic';
 import { ApexOptions } from 'apexcharts';
 import { Sun, Utensils, Moon, BedDouble } from 'lucide-react';
 import analyticsApi from '@/lib/api/analyticsApi';
-import type { PlaysTimeseriesPoint } from '@/lib/api/types';
+import type { PlaysTimeseriesPoint, AnalyticsParams } from '@/lib/api/types';
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
-const EngagementTrends: React.FC = () => {
+interface EngagementTrendsProps {
+    dateParams?: AnalyticsParams;
+}
+
+const EngagementTrends: React.FC<EngagementTrendsProps> = ({ dateParams }) => {
     const [timeRange, setTimeRange] = useState<'daily' | 'monthly'>('monthly');
     const [data, setData] = useState<PlaysTimeseriesPoint[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -16,11 +20,12 @@ const EngagementTrends: React.FC = () => {
     useEffect(() => {
         setIsLoading(true);
         analyticsApi
-            .getPlaysTimeseries(timeRange === 'daily' ? 'daily' : 'monthly')
+            .getPlaysTimeseries(timeRange === 'daily' ? 'daily' : 'monthly', dateParams)
             .then(setData)
             .catch(console.error)
             .finally(() => setIsLoading(false));
-    }, [timeRange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [timeRange, dateParams?.start_date, dateParams?.end_date, dateParams?.content_type]);
 
     const periods = data.map((d) => d.period ?? '');
     const plays = data.map((d) => d.plays ?? 0);
@@ -70,7 +75,7 @@ const EngagementTrends: React.FC = () => {
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">Engagement Trends</h3>
-                    <p className="text-sm text-purple-600 dark:text-purple-400">Plays over time</p>
+                    <p className="text-sm text-purple-600 dark:text-purple-400">Minds Plays over time</p>
                 </div>
                 <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                     {(['daily', 'monthly'] as const).map((range) => (
