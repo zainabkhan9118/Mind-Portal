@@ -664,6 +664,22 @@ export interface AnalyticsParams extends DateRangeParams {
     search?: string;
 }
 
+/**
+ * One row of the "Mind Coverage" report: how many Minds have this exact
+ * (Primary Goal, Primary State) pathway. Not implemented on the backend yet —
+ * see API_SPEC.md.
+ */
+export interface MindCoverageRow {
+    primary_goal: string;
+    primary_state: string;
+    count: number;
+}
+
+export interface MindCoverageParams {
+    /** Filter to Minds whose primary_goal is one of these goal ids (multi-select, OR'd together). */
+    goal_ids?: number[];
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // 6. MONETIZATION
 // ═══════════════════════════════════════════════════════════════════════════

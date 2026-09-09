@@ -13,6 +13,8 @@ import type {
     RankedCategory,
     TrendingContent,
     AnalyticsParams,
+    MindCoverageRow,
+    MindCoverageParams,
     ExportTaskResponse,
     ContentType,
     GrowthGranularity,
@@ -144,6 +146,18 @@ const analyticsApi = {
         const response = await apiClient.get<
             TrendingContent[] | { results: TrendingContent[] }
         >("admin/analytics/rankings/trending/");
+        return unwrapArray(response.data);
+    },
+
+    // ── Mind Coverage ───────────────────────────────────────────────────
+
+    /** Coverage of Minds across (Primary Goal, Primary State) pathways. Not live yet — see API_SPEC.md. */
+    getMindCoverage: async (
+        params?: MindCoverageParams,
+    ): Promise<MindCoverageRow[]> => {
+        const response = await apiClient.get<
+            MindCoverageRow[] | { results: MindCoverageRow[] }
+        >("admin/analytics/minds/coverage/", { params });
         return unwrapArray(response.data);
     },
 
