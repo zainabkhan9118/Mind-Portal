@@ -15,6 +15,14 @@ import type {
     AnalyticsParams,
     MindCoverageRow,
     MindCoverageParams,
+    MindsAnalyticsParams,
+    MindsOverviewKPI,
+    MindsHelpfulRateByGoal,
+    MindsTopStatePathway,
+    MindsStateResponseRow,
+    MindDetail,
+    MindStateEntryPoint,
+    MindPerformanceRow,
     ExportTaskResponse,
     ContentType,
     GrowthGranularity,
@@ -159,6 +167,89 @@ const analyticsApi = {
             MindCoverageRow[] | { results: MindCoverageRow[] }
         >("admin/analytics/minds/coverage/", { params });
         return unwrapArray(response.data);
+    },
+
+    // ── Minds Analytics tab ─────────────────────────────────────────────
+    // None of these exist on the backend yet — see API_SPEC.md "Minds Analytics tab".
+
+    /** The 6 top KPI cards: Total Minds, Active Minds, Overall Helpful Rate, Avg Time per User, Replays, Top Pathway. */
+    getMindsOverview: async (params?: MindsAnalyticsParams): Promise<MindsOverviewKPI> => {
+        const response = await apiClient.get<MindsOverviewKPI>(
+            "admin/analytics/minds/overview/",
+            { params },
+        );
+        return response.data;
+    },
+
+    /** "Helpful Rate by Goal" horizontal bar list. */
+    getMindsHelpfulRateByGoal: async (
+        params?: MindsAnalyticsParams,
+    ): Promise<MindsHelpfulRateByGoal[]> => {
+        const response = await apiClient.get<
+            MindsHelpfulRateByGoal[] | { results: MindsHelpfulRateByGoal[] }
+        >("admin/analytics/minds/helpful-rate-by-goal/", { params });
+        return unwrapArray(response.data);
+    },
+
+    /** "Top State Pathways" — top (primary_goal, primary_state) pairs by share of plays. */
+    getMindsTopStatePathways: async (
+        params?: MindsAnalyticsParams & { limit?: number },
+    ): Promise<MindsTopStatePathway[]> => {
+        const response = await apiClient.get<
+            MindsTopStatePathway[] | { results: MindsTopStatePathway[] }
+        >("admin/analytics/minds/top-state-pathways/", { params });
+        return unwrapArray(response.data);
+    },
+
+    /** "State Response Overview" heatmap — helpful rate per individual State, all states. */
+    getMindsStateResponseOverview: async (
+        params?: MindsAnalyticsParams,
+    ): Promise<MindsStateResponseRow[]> => {
+        const response = await apiClient.get<
+            MindsStateResponseRow[] | { results: MindsStateResponseRow[] }
+        >("admin/analytics/minds/state-response-overview/", { params });
+        return unwrapArray(response.data);
+    },
+
+    /** Metadata + totals for one Mind, shown in the "selected mind" detail card. */
+    getMindDetail: async (mindId: number, params?: MindsAnalyticsParams): Promise<MindDetail> => {
+        const response = await apiClient.get<MindDetail>(
+            `admin/analytics/minds/${mindId}/`,
+            { params },
+        );
+        return response.data;
+    },
+
+    /** "Helpful by State Entry Point" — helpful rate + sample size per entry state, for one Mind. */
+    getMindStateEntryPoints: async (
+        mindId: number,
+        params?: MindsAnalyticsParams,
+    ): Promise<MindStateEntryPoint[]> => {
+        const response = await apiClient.get<
+            MindStateEntryPoint[] | { results: MindStateEntryPoint[] }
+        >(`admin/analytics/minds/${mindId}/state-entry-points/`, { params });
+        return unwrapArray(response.data);
+    },
+
+    /** "Mind Performance" table — one row per Mind. */
+    getMindsPerformance: async (
+        params?: MindsAnalyticsParams & PaginationParams & { search?: string },
+    ): Promise<PaginatedResponse<MindPerformanceRow>> => {
+        const response = await apiClient.get<PaginatedResponse<MindPerformanceRow>>(
+            "admin/analytics/minds/performance/",
+            { params },
+        );
+        return response.data;
+    },
+
+    /** Trigger async Minds analytics CSV export. Returns { task_id }. */
+    exportMinds: async (params?: MindsAnalyticsParams): Promise<ExportTaskResponse> => {
+        const response = await apiClient.post<ExportTaskResponse>(
+            "admin/analytics/minds/export/",
+            null,
+            { params },
+        );
+        return response.data;
     },
 
     // ── Export ──────────────────────────────────────────────────────────

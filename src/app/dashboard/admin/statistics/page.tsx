@@ -52,7 +52,7 @@ export default function StatisticsPage() {
       <div className="min-h-[500px]">
         {activeTab === 'Overview' && <OverviewTab />}
         {activeTab === 'Content' && <ContentPlaysTab />}
-        {activeTab === 'Minds' && <MindsTab />}
+        {activeTab === 'Minds' && <MindsTab onNavigateToMindCoverage={() => setActiveTab('Mind Coverage')} />}
         {activeTab === 'Mind Coverage' && <MindCoverageTab />}
         {/* {activeTab === 'Top Rankings' && <TopRankingsTab />} */}
       </div>

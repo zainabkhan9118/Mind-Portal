@@ -680,6 +680,87 @@ export interface MindCoverageParams {
     goal_ids?: number[];
 }
 
+// ── Minds Analytics tab — none of this is implemented on the backend yet, see API_SPEC.md ──
+
+export interface MindsAnalyticsParams extends DateRangeParams {
+    goal_id?: number;
+    state_id?: number;
+    effect_id?: number;
+    /** e.g. "music", "env_sound", "env_visual", "guided_session" — which components make up the Mind. */
+    components?: AnalyticsContentType[];
+}
+
+export interface MindsOverviewKPI {
+    total_minds: number;
+    active_minds: number;
+    active_minds_change?: number;        // % vs previous period
+    overall_helpful_rate: number;        // % (0–100)
+    overall_helpful_rate_prior?: number;  // % from the prior period, for "vs X% prior 31 days"
+    avg_time_per_user: number;           // seconds
+    avg_time_per_user_prior?: number;    // seconds
+    replays: number;                     // avg replays per user, e.g. 1.8
+    replays_prior?: number;
+    top_pathway_goal?: string;
+    top_pathway_state?: string;
+}
+
+export interface MindsHelpfulRateByGoal {
+    goal: string;
+    helpful_rate: number; // %
+}
+
+export interface MindsTopStatePathway {
+    primary_goal: string;
+    primary_state: string;
+    share: number; // % of total plays represented by this pathway
+}
+
+export interface MindsStateResponseRow {
+    state: string;
+    helpful_rate: number; // %
+}
+
+export interface MindDetail {
+    id: number;
+    name: string;
+    image?: string | null;
+    primary_goal: string;
+    secondary_goals?: string[];
+    primary_state: string;
+    secondary_states?: string[];
+    primary_effect: string;
+    secondary_effects?: string[];
+    total_plays: number;
+    helpful_rate: number; // %
+}
+
+export interface MindStateEntryPoint {
+    state: string;
+    helpful_rate: number; // %
+    n: number; // sample size
+}
+
+export interface MindPerformanceRow {
+    id: number;
+    name: string;
+    primary_goal: string;
+    primary_state: string;
+    components: string[]; // e.g. ["music", "env_sound"]
+    helpful_rate: number; // %
+    best_state: string;
+    best_state_rate: number; // %
+    weakest_state: string;
+    weakest_state_rate: number; // %
+    plays: number;
+    unique_users: number;
+    avg_time_per_user: number;      // seconds
+    avg_duration_per_play: number;  // seconds
+    repeat_rate: number;            // %
+    saved: number;      // count of users who saved this Mind
+    timer_used: number; // % (0–100) of users who used the sleep/session timer while playing
+    growth: number; // % change, signed
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // 6. MONETIZATION
 // ═══════════════════════════════════════════════════════════════════════════
