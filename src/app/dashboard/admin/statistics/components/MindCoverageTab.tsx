@@ -26,12 +26,18 @@ const MindCoverageTab: React.FC = () => {
             .catch(() => {});
     }, []);
 
-    // Fetch coverage whenever the selected goals change
+    // Fetch coverage whenever the selected goals change.
+    // The backend's `goal_id` param is singular, so to support selecting multiple goals we
+    // fire one request per selected goal and concatenate the results (each response only
+    // contains rows for its own goal, so there's no overlap to merge/sum).
     useEffect(() => {
         setIsLoading(true);
-        analyticsApi
-            .getMindCoverage({ goal_ids: selectedGoals })
-            .then(setRows)
+        const requests = selectedGoals.length === 0
+            ? [analyticsApi.getMindCoverage({})]
+            : selectedGoals.map((goal_id) => analyticsApi.getMindCoverage({ goal_id }));
+
+        Promise.all(requests)
+            .then((results) => setRows(results.flat()))
             .catch(() => setRows([]))
             .finally(() => setIsLoading(false));
     }, [selectedGoals]);

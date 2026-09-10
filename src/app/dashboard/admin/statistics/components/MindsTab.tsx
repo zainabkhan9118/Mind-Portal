@@ -17,8 +17,7 @@ import MindsKpiRow from './minds/MindsKpiRow';
 import HelpfulRateByGoalCard from './minds/HelpfulRateByGoalCard';
 import TopStatePathwaysCard from './minds/TopStatePathwaysCard';
 import StateResponseOverviewCard from './minds/StateResponseOverviewCard';
-import MindDetailCard from './minds/MindDetailCard';
-import HelpfulByStateEntryPointCard from './minds/HelpfulByStateEntryPointCard';
+import SelectedMindPanel from './minds/SelectedMindPanel';
 import MindPerformanceTable from './minds/MindPerformanceTable';
 
 interface MindsTabProps {
@@ -116,10 +115,7 @@ const MindsTab: React.FC<MindsTabProps> = ({ onNavigateToMindCoverage }) => {
         setIsPerformanceLoading(true);
         analyticsApi.getMindsPerformance({ ...filterParams, size: 100 })
             .then((res) => {
-                const results = res.results ?? [];
-                setPerformanceRows(results);
-                setSelectedMindId((prev) => prev ?? results[0]?.id ?? null);
-                setSelectedRow((prev) => prev ?? results[0] ?? null);
+                setPerformanceRows(res.results ?? []);
             })
             .catch(() => setPerformanceRows([]))
             .finally(() => setIsPerformanceLoading(false));
@@ -129,6 +125,11 @@ const MindsTab: React.FC<MindsTabProps> = ({ onNavigateToMindCoverage }) => {
     // Selected Mind detail + state entry points
     useEffect(() => {
         if (selectedMindId == null) { setSelectedMind(null); setEntryPoints([]); return; }
+        // Clear the previous mind's full detail (image, secondary fields) right away so we
+        // never show stale data from the old selection while the new one is still loading —
+        // the panel falls back to the freshly-clicked row's data in the meantime.
+        setSelectedMind(null);
+        setEntryPoints([]);
         setIsMindDetailLoading(true);
         analyticsApi.getMindDetail(selectedMindId, filterParams)
             .then(setSelectedMind)
@@ -151,6 +152,13 @@ const MindsTab: React.FC<MindsTabProps> = ({ onNavigateToMindCoverage }) => {
         setSelectedMindId(row.id);
         setSelectedRow(row);
         detailSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    const handleCloseDetail = () => {
+        setSelectedMindId(null);
+        setSelectedRow(null);
+        setSelectedMind(null);
+        setEntryPoints([]);
     };
 
     // Show the real fetched detail once it's in; until then (or if the endpoint fails),
@@ -178,9 +186,15 @@ const MindsTab: React.FC<MindsTabProps> = ({ onNavigateToMindCoverage }) => {
                 <StateResponseOverviewCard data={stateResponse} isLoading={isStateResponseLoading} />
             </div>
 
-            <div ref={detailSectionRef} className="grid grid-cols-1 lg:grid-cols-2 gap-6 scroll-mt-6">
-                <MindDetailCard mind={displayedMind} isLoading={isMindDetailLoading && !displayedMind} />
-                <HelpfulByStateEntryPointCard data={entryPoints} isLoading={isEntryPointsLoading} />
+            <div ref={detailSectionRef} className="scroll-mt-6">
+                <SelectedMindPanel
+                    mind={displayedMind}
+                    isMindLoading={isMindDetailLoading && !displayedMind}
+                    isRefreshing={isMindDetailLoading}
+                    entryPoints={entryPoints}
+                    isEntryPointsLoading={isEntryPointsLoading}
+                    onClose={handleCloseDetail}
+                />
             </div>
 
             <MindPerformanceTable

@@ -676,8 +676,13 @@ export interface MindCoverageRow {
 }
 
 export interface MindCoverageParams {
-    /** Filter to Minds whose primary_goal is one of these goal ids (multi-select, OR'd together). */
-    goal_ids?: number[];
+    /**
+     * Filter to Minds whose primary_goal is this goal id. Singular — the live endpoint uses the
+     * same `goal_id` convention as every other Minds analytics endpoint, not the `goal_ids` array
+     * originally speculated in API_SPEC.md. To support the "Multi-select" Goals filter in the UI,
+     * the frontend fires one request per selected goal and merges the results — see MindCoverageTab.tsx.
+     */
+    goal_id?: number;
 }
 
 // ── Minds Analytics tab — none of this is implemented on the backend yet, see API_SPEC.md ──
