@@ -149,14 +149,16 @@ const OverviewFilterBar: React.FC<OverviewFilterBarProps> = ({
         return () => document.removeEventListener('mousedown', handler);
     }, []);
 
-    // Emit the backend-supported subset of the filter (date range + single content-type)
+    // Emit the backend-supported subset of the filter (date range + content-type(s))
     useEffect(() => {
         const dateRange = time === 'Custom Range'
             ? { start_date: customStart || undefined, end_date: customEnd || undefined }
             : getDateParams(time);
         const params: AnalyticsParams = {
             ...dateRange,
-            ...(contentTypes.length === 1 ? { content_type: CONTENT_TYPE_FOR_ANALYTICS[contentTypes[0]] } : {}),
+            ...(contentTypes.length > 0
+                ? { content_type: contentTypes.map((ct) => CONTENT_TYPE_FOR_ANALYTICS[ct]) }
+                : {}),
         };
         onFilterChange(params);
     // eslint-disable-next-line react-hooks/exhaustive-deps

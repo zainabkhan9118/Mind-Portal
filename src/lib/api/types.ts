@@ -659,7 +659,14 @@ export interface TrendingContent {
 export type AnalyticsContentType = "music" | "guided_session" | "env_sound" | "env_visual";
 
 export interface AnalyticsParams extends DateRangeParams {
-    content_type?: AnalyticsContentType;
+    /**
+     * One or more content types to filter by. Always an array on the wire — axios serializes
+     * it as repeated query params (`content_type=music&content_type=env_sound`), which also
+     * degrades correctly to a single `content_type=music` param for a one-element array, so
+     * this is safe to send even before the backend ships multi-value support (see API_SPEC.md,
+     * "Needed: content_type should accept multiple values, not just one").
+     */
+    content_type?: AnalyticsContentType[];
     granularity?: GrowthGranularity;
     search?: string;
 }

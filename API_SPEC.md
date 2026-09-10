@@ -3,6 +3,8 @@
 > **✅ Verified in production — 9 September 2026.** The backend team confirmed every endpoint in this document is now live and working as specced (commit `4d5d980c00dcd24c14c219e2b61a9005622714df`). Full verification evidence — request/response pairs, status codes, seed data counts — is in [`API_VERIFICATION.md`](./API_VERIFICATION.md). Two things surfaced during verification worth a second look:
 > - **Home Screen Environments** now confirmed to accept `environment_ids` as an array in one request (not just the single-id workaround) — the frontend has been updated to match.
 > - **Minds overview** (`admin/analytics/minds/overview/`) does not return the "vs prior period" comparison fields (`active_minds_change`, `overall_helpful_rate_prior`, `avg_time_per_user_prior`, `replays_prior`) that were speculatively specced as optional — the UI already handles their absence gracefully, but confirm with backend whether those are planned.
+> - **⚠️ New bug found 10 Sept 2026:** `admin/analytics/minds/coverage/` accepts `goal_id` but doesn't actually filter by it — see the "Mind Coverage" section below for the captured request/response.
+> - **🆕 New ask 10 Sept 2026:** `content_type` on `plays/kpi/`, `plays/timeseries/`, and `plays/by-content/` needs to accept multiple values (the Analysis filter's Content-type step is a multi-select, but these endpoints only take one value today) — see the "Overview tab" section below.
 >
 > This doc is kept as a historical record of what was requested and why — it is no longer describing missing endpoints.
 
@@ -149,6 +151,20 @@ The Analysis dropdown offers `Content-type + Goals`, `Category + Goals`, `Sub Ca
 
 ✅ Confirmed live 9 Sept 2026 (`goal`, category, and integer sub-category filters all verified on `plays/by-type/`) — see `API_VERIFICATION.md`.
 
+### 🆕 Needed: `content_type` should accept multiple values, not just one
+
+The Analysis filter's "Content-type" step is a multi-select in the UI (an admin can check Music **and** Sounds together), but `content_type` on these endpoints only accepts a single value today. When 2+ types are selected, the dashboard currently can't apply the filter at all and falls back to showing all types combined — which is confusing since the UI shows specific types as checked.
+
+Please update these three endpoints to accept `content_type` as a **repeated** query param (same convention as any other multi-value filter, e.g. `?content_type=music&content_type=env_sound`), and return data aggregated across all the given types:
+
+- `admin/analytics/plays/kpi/`
+- `admin/analytics/plays/timeseries/`
+- `admin/analytics/plays/by-content/`
+
+For `plays/kpi/` specifically, please compute `total_plays`, `total_minds_played`, `avg_time_per_user`, and `avg_duration_per_play` **already combined server-side** across the selected types — the frontend cannot correctly merge two averages into one without the underlying counts, so client-side aggregation isn't a safe substitute here.
+
+(`admin/analytics/plays/by-type/` doesn't need this — it already returns a full breakdown by type in one response, so filtering it by content_type isn't really meaningful.)
+
 ### Custom Range time filter
 
 The Time dropdown's "Custom Range" option now shows real Start/End date pickers and sends them as `start_date`/`end_date` — no backend change needed, since those params already exist on all the endpoints above.
@@ -196,16 +212,16 @@ Same situation on the Content Plays tab: `AvgListeningTimeChart` (the "Average L
 
 ---
 
-## Statistics & Analytics — new "Mind Coverage" tab ✅ Verified
+## Statistics & Analytics — new "Mind Coverage" tab ⚠️ Live, but filter bug found (see below)
 
 New tab on the Statistics & Analytics page. It shows, for every distinct `(primary_goal, primary_state)` pathway across all Minds content, how many Minds currently have that exact pathway — i.e. it's an aggregation over the `primary_goal` and `primary_state` fields on `admin/content/minds/` (see the "Content Management — Primary/Secondary Goal, State, Effect" section above).
 
-### New: `GET admin/analytics/minds/coverage/`
+### `GET admin/analytics/minds/coverage/`
 
 **Query params:**
 | Param | Type | Notes |
 |---|---|---|
-| `goal_ids` | integer[] | Optional. When provided, only include Minds whose `primary_goal` is one of these ids (OR'd together — a multi-select). Omit to include all goals. Sent as repeated query params, e.g. `?goal_ids=3&goal_ids=7`. |
+| `goal_id` | integer | Optional. Singular — matches the convention used by every other Minds analytics endpoint (`overview/`, `helpful-rate-by-goal/`, etc.), not the `goal_ids` array originally requested here. Omit to include all goals. |
 
 **Response 200:**
 ```json
@@ -222,13 +238,29 @@ New tab on the Statistics & Analytics page. It shows, for every distinct `(prima
 ```
 - `primary_goal` — the Goal's display name (from `explore/goals/`).
 - `primary_state` — the State's display name (from the new `admin/content/states/` entity).
-- `count` — number of Minds with that exact `(primary_goal, primary_state)` pair, honoring `goal_ids` when given.
+- `count` — number of Minds with that exact `(primary_goal, primary_state)` pair, honoring `goal_id` when given.
 
 Rows with `count: 0` can be omitted — the dashboard only renders rows that exist in the response.
 
+### 🐛 `goal_id` is accepted but not applied as a filter — confirmed 10 Sept 2026
+
+Live request/response captured against production, right after the 9 Sept verification round:
+```
+GET https://d-api.mindplayer.com/api/v1/admin/analytics/minds/coverage/?goal_id=8
+200 OK
+```
+```json
+{
+  "results": [
+    { "primary_goal": "Motivation", "primary_state": "Unmotivated", "count": 1 }
+  ]
+}
+```
+`goal_id=8` corresponds to a different Goal (e.g. "Sleep & Dreams") than "Motivation" — the response should have been empty (or at minimum, not this row), but the endpoint returned the exact same result regardless of which valid `goal_id` was sent, including values that don't match any Mind's `primary_goal`. The request itself is well-formed (confirmed via the dashboard's network tab), so this looks like the endpoint isn't applying the `goal_id` filter to its query at all — it's returning the full, unfiltered dataset every time (which currently only contains this one row, since it's the only Mind with `primary_goal`/`primary_state` populated so far). Please check the query logic on this endpoint specifically — the sibling endpoints (`overview/`, `helpful-rate-by-goal/`, etc.) were separately confirmed to filter correctly by `goal_id` during the 9 Sept round.
+
 ### Frontend status
 
-✅ `MindCoverageTab.tsx` calls `GET admin/analytics/minds/coverage/` and this is confirmed live in production (9 Sept 2026, pathway count verified) — see `API_VERIFICATION.md`.
+The Goals filter is a multi-select in the UI, but the endpoint only accepts one `goal_id` at a time — to preserve the multi-select UX, `MindCoverageTab.tsx` fires one request per selected goal and concatenates the results client-side, rather than sending multiple ids in one call. This will keep working once the filter bug above is fixed; no frontend change needed for that.
 
 ---
 

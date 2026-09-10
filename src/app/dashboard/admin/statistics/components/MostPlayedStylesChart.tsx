@@ -36,7 +36,7 @@ const MostPlayedStylesChart: React.FC<MostPlayedStylesChartProps> = ({ dateParam
             .catch(console.error)
             .finally(() => setIsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dateParams?.start_date, dateParams?.end_date, dateParams?.content_type]);
+    }, [dateParams?.start_date, dateParams?.end_date, (dateParams?.content_type ?? []).join(',')]);
 
     // ── Chart ─────────────────────────────────────────────────────────────
     const total = byType.reduce((s, t) => s + (t.plays ?? 0), 0) || 1;

@@ -87,7 +87,7 @@ const TopRankingsTable: React.FC<TopRankingsTableProps> = ({ dateParams, searchT
             .then((res) => setAllData(res.results ?? []))
             .catch(console.error)
             .finally(() => setIsLoading(false));
-    }, [dateParams?.start_date, dateParams?.end_date, dateParams?.content_type]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [dateParams?.start_date, dateParams?.end_date, (dateParams?.content_type ?? []).join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const filteredData = useMemo(() => {
         let result = allData;
