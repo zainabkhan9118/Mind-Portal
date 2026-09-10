@@ -267,18 +267,14 @@ const HomeScreenEnvironments: React.FC = () => {
     };
 
     // ── Save Home Screen (active selection) ─────────────────────────────
-    // The backend endpoint only accepts one `environment_id` at a time, so to
-    // activate multiple environments we fire one request per selected id.
+    // Verified in production (9 Sept 2026): the backend accepts `environment_ids`
+    // as an array in a single request and replaces the full active set with it.
     const handleSaveHomeScreen = async () => {
         const activeIds = Array.from(activeEnvIds);
         if (activeIds.length === 0) { setSaveActiveError("Please select at least one environment first."); return; }
         setIsSavingActive(true); setSaveActiveError(null); setSaveActiveSuccess(false);
         try {
-            await Promise.all(
-                activeIds.map((id) =>
-                    apiClient.post("explore/home-screen-environments/active/", { environment_id: id })
-                )
-            );
+            await apiClient.post("explore/home-screen-environments/active/", { environment_ids: activeIds });
             setSaveActiveSuccess(true);
             setTimeout(() => setSaveActiveSuccess(false), 3000);
         } catch {
