@@ -20,6 +20,12 @@ const apiClient: AxiosInstance = axios.create({
         Accept: "application/json",
     },
     timeout: 30000,
+    // Axios's default array serialization uses bracket notation (`content_type[]=music`),
+    // which this Django/DRF backend does not recognize as a query param at all — it expects
+    // the plain repeated-key form (`content_type=music&content_type=env_sound`). `indexes: null`
+    // is axios's option for that exact format. Without this, every array-valued GET param
+    // (content_type, goal_ids, etc.) is silently ignored by the backend.
+    paramsSerializer: { indexes: null },
 });
 
 // ── Request Interceptor ────────────────────────────────────────────────

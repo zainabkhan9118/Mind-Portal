@@ -4,7 +4,7 @@
 > - **Home Screen Environments** now confirmed to accept `environment_ids` as an array in one request (not just the single-id workaround) — the frontend has been updated to match.
 > - **Minds overview** (`admin/analytics/minds/overview/`) does not return the "vs prior period" comparison fields (`active_minds_change`, `overall_helpful_rate_prior`, `avg_time_per_user_prior`, `replays_prior`) that were speculatively specced as optional — the UI already handles their absence gracefully, but confirm with backend whether those are planned.
 > - **⚠️ New bug found 10 Sept 2026:** `admin/analytics/minds/coverage/` accepts `goal_id` but doesn't actually filter by it — see the "Mind Coverage" section below for the captured request/response.
-> - **🆕 New ask 10 Sept 2026:** `content_type` on `plays/kpi/`, `plays/timeseries/`, and `plays/by-content/` needs to accept multiple values (the Analysis filter's Content-type step is a multi-select, but these endpoints only take one value today) — see the "Overview tab" section below.
+> - **✅ Resolved 11 Sept 2026:** `content_type` on `plays/kpi/`, `plays/timeseries/`, and `plays/by-content/` now accepts multiple values, deployed to production — see the "Overview tab" section below.
 >
 > This doc is kept as a historical record of what was requested and why — it is no longer describing missing endpoints.
 
@@ -151,17 +151,18 @@ The Analysis dropdown offers `Content-type + Goals`, `Category + Goals`, `Sub Ca
 
 ✅ Confirmed live 9 Sept 2026 (`goal`, category, and integer sub-category filters all verified on `plays/by-type/`) — see `API_VERIFICATION.md`.
 
-### 🆕 Needed: `content_type` should accept multiple values, not just one
+### ✅ `content_type` now accepts multiple values — deployed to production
 
-The Analysis filter's "Content-type" step is a multi-select in the UI (an admin can check Music **and** Sounds together), but `content_type` on these endpoints only accepts a single value today. When 2+ types are selected, the dashboard currently can't apply the filter at all and falls back to showing all types combined — which is confusing since the UI shows specific types as checked.
+Backend confirmation (11 Sept 2026):
+- All three endpoints (`admin/analytics/plays/kpi/`, `admin/analytics/plays/timeseries/`, `admin/analytics/plays/by-content/`) now accept repeated `content_type` params (e.g. `?content_type=music&content_type=env_sound`).
+- KPI totals and averages are calculated server-side across the combined records — no client-side aggregation needed.
+- Timeseries listeners are de-duplicated across selected types.
+- Invalid selections return `400 VALIDATION_ERROR`.
+- Existing single-value requests remain compatible.
 
-Please update these three endpoints to accept `content_type` as a **repeated** query param (same convention as any other multi-value filter, e.g. `?content_type=music&content_type=env_sound`), and return data aggregated across all the given types:
+Frontend already sends this shape as of the previous change (`AnalyticsParams.content_type` is an array; `OverviewFilterBar.tsx` emits every checked Content-type, not just the first) — no further frontend change needed for the happy path. One thing worth adding: none of the consuming components (`KeyMetricsOverview`, `EngagementTrends`, `TopRankingsTable`) currently surface a `400` from an invalid selection to the admin — they just `console.error` and show an empty/loading state. Low priority, but worth a follow-up if invalid selections become reachable from the UI (today the Content-type checkboxes only ever send valid values, so this shouldn't occur in practice).
 
-- `admin/analytics/plays/kpi/`
-- `admin/analytics/plays/timeseries/`
-- `admin/analytics/plays/by-content/`
-
-For `plays/kpi/` specifically, please compute `total_plays`, `total_minds_played`, `avg_time_per_user`, and `avg_duration_per_play` **already combined server-side** across the selected types — the frontend cannot correctly merge two averages into one without the underlying counts, so client-side aggregation isn't a safe substitute here.
+**🐛 Frontend bug found and fixed 11 Sept 2026 (self-inflicted, not a backend issue):** after switching `content_type` to an array, even a *single* selected type stopped filtering — selecting only "Music" on the Overview tab still returned all types. Axios's default array serialization uses bracket notation (`?content_type[]=music`), which this key format isn't `content_type` at all as far as Django/DRF is concerned, so the backend silently ignored it and returned everything unfiltered. Confirmed via the browser network tab: the request literally showed a `content_type[]` param, not `content_type`. Fixed by setting `paramsSerializer: { indexes: null }` on the shared axios instance (`src/lib/api/axiosInstance.ts`), which makes arrays serialize as the plain repeated-key form (`?content_type=music&content_type=env_sound`) the backend expects — verified with `axios.getUri()` for both the single- and multi-select cases. No backend change needed for this one.
 
 (`admin/analytics/plays/by-type/` doesn't need this — it already returns a full breakdown by type in one response, so filtering it by content_type isn't really meaningful.)
 
