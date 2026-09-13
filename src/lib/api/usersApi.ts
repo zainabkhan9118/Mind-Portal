@@ -179,10 +179,10 @@ const usersApi = {
     },
 
     /** List users who have submitted a Mind Expert application (pending_mind_expert=true). */
-    getMindExpertApplications: async (): Promise<{ count: number; results: ApiUser[] }> => {
+    getMindExpertApplications: async (params?: { size?: number }): Promise<{ count: number; results: ApiUser[] }> => {
         const response = await apiClient.get<{ count: number; results: ApiUser[] }>(
             "admin/users/",
-            { params: { mind_expert_pending: true, size: 50 } },
+            { params: { mind_expert_pending: true, size: 50, ...params } },
         );
         return response.data;
     },

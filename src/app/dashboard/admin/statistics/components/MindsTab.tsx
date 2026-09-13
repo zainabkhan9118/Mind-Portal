@@ -1,7 +1,8 @@
 "use client";
 import React, { useEffect, useRef, useState } from 'react';
-import { Download } from 'lucide-react';
+import { Download, Loader2 } from 'lucide-react';
 import analyticsApi from '@/lib/api/analyticsApi';
+import globalApi from '@/lib/api/globalApi';
 import type {
     MindsAnalyticsParams,
     MindsOverviewKPI,
@@ -46,6 +47,9 @@ const MindsTab: React.FC<MindsTabProps> = ({ onNavigateToMindCoverage }) => {
     const [selectedMindId, setSelectedMindId] = useState<number | null>(null);
     const [selectedRow, setSelectedRow] = useState<MindPerformanceRow | null>(null);
     const detailSectionRef = useRef<HTMLDivElement>(null);
+
+    const [isExporting, setIsExporting] = useState(false);
+    const [exportError, setExportError] = useState<string | null>(null);
 
     const [kpi, setKpi] = useState<MindsOverviewKPI | null>(null);
     const [isKpiLoading, setIsKpiLoading] = useState(true);
@@ -144,8 +148,17 @@ const MindsTab: React.FC<MindsTabProps> = ({ onNavigateToMindCoverage }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedMindId, dateKey]);
 
-    const handleExport = () => {
-        analyticsApi.exportMinds(filterParams).catch(() => {});
+    const handleExport = async () => {
+        setIsExporting(true);
+        setExportError(null);
+        try {
+            await globalApi.exportAndDownload(() => analyticsApi.exportMinds(filterParams));
+        } catch {
+            setExportError('Export failed. Please try again.');
+            setTimeout(() => setExportError(null), 4000);
+        } finally {
+            setIsExporting(false);
+        }
     };
 
     const handleSelectMind = (row: MindPerformanceRow) => {
@@ -169,13 +182,17 @@ const MindsTab: React.FC<MindsTabProps> = ({ onNavigateToMindCoverage }) => {
         <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
                 <MindsFilterBar onFilterChange={setFilterParams} />
-                <button
-                    onClick={handleExport}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#9810FA] hover:bg-[#8000E0] transition-colors shrink-0"
-                >
-                    <Download className="w-4 h-4" />
-                    Export
-                </button>
+                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <button
+                        onClick={handleExport}
+                        disabled={isExporting}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#9810FA] hover:bg-[#8000E0] disabled:opacity-60 transition-colors"
+                    >
+                        {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                        {isExporting ? 'Exporting…' : 'Export'}
+                    </button>
+                    {exportError && <span className="text-xs text-red-500">{exportError}</span>}
+                </div>
             </div>
 
             <MindsKpiRow kpi={kpi} isLoading={isKpiLoading} />

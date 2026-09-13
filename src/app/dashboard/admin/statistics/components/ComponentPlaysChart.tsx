@@ -39,7 +39,7 @@ const ComponentPlaysChart: React.FC<{ dateParams?: AnalyticsParams }> = ({ dateP
             .then(setByType)
             .catch(console.error)
             .finally(() => setIsLoading(false));
-    }, [dateParams?.start_date, dateParams?.end_date, (dateParams?.content_type ?? []).join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [dateParams?.start_date, dateParams?.end_date, (dateParams?.content_type ?? []).join(','), dateParams?.category, dateParams?.sub_category, dateParams?.goal]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Always show every known content type, defaulting to 0 plays when the API omits one
     const allTypesData = KNOWN_TYPES.map((contentType) => ({

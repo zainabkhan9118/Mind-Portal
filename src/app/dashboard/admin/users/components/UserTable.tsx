@@ -24,7 +24,6 @@ const UserTable: React.FC<UserTableProps> = ({
     totalPages,
     onPageChange,
 }) => {
-    const [selectedUsers, setSelectedUsers] = useState<Set<number>>(new Set());
     const [openMenuId, setOpenMenuId] = useState<number | null>(null);
     const menuRef = useRef<HTMLDivElement>(null);
 
@@ -37,24 +36,6 @@ const UserTable: React.FC<UserTableProps> = ({
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
-
-    const toggleSelectAll = () => {
-        if (selectedUsers.size === users.length) {
-            setSelectedUsers(new Set());
-        } else {
-            setSelectedUsers(new Set(users.map((u) => u.id)));
-        }
-    };
-
-    const toggleSelectUser = (id: number) => {
-        const newSelected = new Set(selectedUsers);
-        if (newSelected.has(id)) {
-            newSelected.delete(id);
-        } else {
-            newSelected.add(id);
-        }
-        setSelectedUsers(newSelected);
-    };
 
     const getAccessBadgeColor = (isPremium: boolean) =>
         isPremium
@@ -79,14 +60,6 @@ const UserTable: React.FC<UserTableProps> = ({
                 <Table className="min-w-full">
                     <TableHeader className="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
                         <TableRow>
-                            <TableCell isHeader className="w-12 px-6 py-4">
-                                <input
-                                    type="checkbox"
-                                    className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                                    checked={users.length > 0 && selectedUsers.size === users.length}
-                                    onChange={toggleSelectAll}
-                                />
-                            </TableCell>
                             <TableCell isHeader className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-left">Name</TableCell>
                             <TableCell isHeader className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-left">Email</TableCell>
                             <TableCell isHeader className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-left">Joined</TableCell>
@@ -98,7 +71,7 @@ const UserTable: React.FC<UserTableProps> = ({
                     <TableBody>
                         {users.length === 0 && (
                             <TableRow>
-                                <td colSpan={7} className="px-6 py-16 text-center text-sm text-gray-400">
+                                <td colSpan={6} className="px-6 py-16 text-center text-sm text-gray-400">
                                     No users found
                                 </td>
                             </TableRow>
@@ -113,14 +86,6 @@ const UserTable: React.FC<UserTableProps> = ({
 
                             return (
                                 <TableRow key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors border-b border-gray-100 dark:border-gray-700 last:border-0">
-                                    <TableCell className="px-6 py-4">
-                                        <input
-                                            type="checkbox"
-                                            className="w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                                            checked={selectedUsers.has(user.id)}
-                                            onChange={() => toggleSelectUser(user.id)}
-                                        />
-                                    </TableCell>
                                     <TableCell className="px-6 py-4">
                                         <div className="flex items-center gap-3">
                                             {user.avatar ? (

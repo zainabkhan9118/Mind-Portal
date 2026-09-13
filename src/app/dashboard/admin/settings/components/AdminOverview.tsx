@@ -263,7 +263,7 @@ const AdminOverview: React.FC = () => {
         <>
         <div className="space-y-8 animate-in fade-in duration-500">
             {/* Top Section: Permissions and Notifications */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
                 <div className="bg-white dark:bg-gray-800 p-8 rounded-[32px] border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
                     <div className="flex items-center justify-between mb-8">
                         <div className="flex items-center gap-2">
@@ -325,7 +325,7 @@ const AdminOverview: React.FC = () => {
                 </div>
 
                 {/* Push Notifications */}
-                <div className="bg-white dark:bg-gray-800 p-8 rounded-[32px] border border-gray-100 dark:border-gray-700 shadow-sm">
+                <div className="bg-white dark:bg-gray-800 p-8 rounded-[32px] border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col">
                     <PushNotifications />
                 </div>
             </div>

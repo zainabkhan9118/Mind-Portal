@@ -1,5 +1,6 @@
 'use client'
-import { useState, useEffect, useCallback } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import AddMusicModal from "./components/AddMusicModal";
 import AddNewContentModal from "./components/AddMusicModal/AddNewContentModal";
 import ManageCategoriesModal from "./components/ManageCategoriesModal";
@@ -37,6 +38,14 @@ const tabs = [
   "Visuals",
   "Minds",
 ];
+
+function tabToSlug(tab: string): string {
+  return tab.toLowerCase();
+}
+
+function slugToTab(slug: string | null): string | null {
+  return tabs.find((t) => tabToSlug(t) === slug) ?? null;
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -170,7 +179,31 @@ function adaptMind(item: AdminMind, goalsMap: Record<number, string>): MindItem 
 type AnyRow = ContentItem | EnvironmentSoundItem | MindSessionItem | EnvironmentVisualItem | MindItem;
 
 export default function ContentManagementPage() {
-  const [activeTab, setActiveTab] = useState("Music");
+  return (
+    <Suspense fallback={null}>
+      <ContentManagementPageInner />
+    </Suspense>
+  );
+}
+
+function ContentManagementPageInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState(slugToTab(tabParam) ?? "Music");
+
+  // Keep in sync with the URL — a Link to this same route only changes the query
+  // string, it doesn't remount the page, so the initial useState value won't update.
+  useEffect(() => {
+    const tab = slugToTab(tabParam);
+    if (tab) setActiveTab(tab);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tabParam]);
+
+  const selectTab = (tab: string) => {
+    setActiveTab(tab);
+    router.replace(`/dashboard/admin/content?tab=${tabToSlug(tab)}`, { scroll: false });
+  };
   const [searchTerm, setSearchTerm] = useState("");
   const [accessFilter, setAccessFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
@@ -407,7 +440,7 @@ export default function ContentManagementPage() {
           {tabs.map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => selectTab(tab)}
               className={`flex items-center gap-2 pb-3 px-1 text-sm font-medium transition-all border-b-2 whitespace-nowrap ${activeTab === tab
                 ? "border-purple-600 text-purple-600 dark:text-purple-400"
                 : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"

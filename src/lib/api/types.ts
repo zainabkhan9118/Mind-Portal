@@ -669,6 +669,15 @@ export interface AnalyticsParams extends DateRangeParams {
     content_type?: AnalyticsContentType[];
     granularity?: GrowthGranularity;
     search?: string;
+    /**
+     * Singular on the wire (confirmed live on `plays/by-type/`; not yet confirmed on
+     * `plays/kpi/`, `plays/timeseries/`, `plays/by-content/` — see API_SPEC.md). Only sent
+     * when exactly one Category/Sub-category/Goal is selected in the Analysis filter, since
+     * the backend doesn't support multiple values for these (unlike content_type).
+     */
+    category?: number;
+    sub_category?: number;
+    goal?: number;
 }
 
 /**

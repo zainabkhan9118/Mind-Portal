@@ -49,7 +49,7 @@ const KeyMetricsOverview: React.FC<{ dateParams?: AnalyticsParams }> = ({ datePa
             .then(([ov, k]) => { setOverview(ov); setKpi(k); })
             .catch(console.error)
             .finally(() => setIsLoading(false));
-    }, [dateParams?.start_date, dateParams?.end_date, (dateParams?.content_type ?? []).join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [dateParams?.start_date, dateParams?.end_date, (dateParams?.content_type ?? []).join(','), dateParams?.category, dateParams?.sub_category, dateParams?.goal]); // eslint-disable-line react-hooks/exhaustive-deps
 
     if (isLoading) {
         return (

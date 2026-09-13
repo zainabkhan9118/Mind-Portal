@@ -2,12 +2,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { ChevronDown, ChevronUp, X } from 'lucide-react';
 import { contentApi } from '@/lib/api';
+import apiClient from '@/lib/api/axiosInstance';
 import type { AnalyticsParams, AnalyticsContentType, ContentType } from '@/lib/api/types';
 
 // ── Static taxonomy ────────────────────────────────────────────────────────
 
 /** Default Analysis options shown when a consuming tab doesn't specify its own. */
-export const DEFAULT_ANALYSIS_OPTIONS = ['Content-type + Goals', 'Category + Goals', 'Sub Category + Goals'];
+export const DEFAULT_ANALYSIS_OPTIONS = ['Content-type', 'Category', 'Sub Category'];
 
 const CONTENT_TYPES = ['Music', 'Guided', 'Sounds', 'Visuals'];
 
@@ -29,11 +30,7 @@ const CONTENT_TYPE_FOR_ANALYTICS: Record<string, AnalyticsContentType> = {
 
 interface CatEntry { id: number; name: string; group: string; }
 interface SubCatEntry { id: number; name: string; parentName: string; }
-
-const GOALS = [
-    'Relax & Unwind', 'Focus', 'Motivation', 'Creativity & Inspiration',
-    'Productivity', 'Sleep & Dreams', 'Emotional Balance',
-];
+interface GoalEntry { id: number; name: string; }
 
 export const TIME_OPTIONS = ['All-time', 'Last 24h', 'Last Week', 'Last Month', 'Last Year', 'Custom Range'];
 
@@ -41,9 +38,9 @@ export const TIME_OPTIONS = ['All-time', 'Last 24h', 'Last Week', 'Last Month', 
 type StepKey = 'contentType' | 'category' | 'subCategory' | 'goals';
 
 const ANALYSIS_STEPS: Record<string, StepKey[]> = {
-    'Content-type + Goals': ['contentType', 'goals'],
-    'Category + Goals': ['contentType', 'category', 'goals'],
-    'Sub Category + Goals': ['contentType', 'category', 'subCategory', 'goals'],
+    'Content-type': ['contentType', 'goals'],
+    'Category': ['contentType', 'category', 'goals'],
+    'Sub Category': ['contentType', 'category', 'subCategory', 'goals'],
     'Minds + Goals': ['goals'],
 };
 
@@ -109,6 +106,7 @@ const OverviewFilterBar: React.FC<OverviewFilterBarProps> = ({
     const containerRef = useRef<HTMLDivElement>(null);
     const [allCategories, setAllCategories] = useState<CatEntry[]>([]);
     const [subCatPool, setSubCatPool] = useState<SubCatEntry[]>([]);
+    const [goalsList, setGoalsList] = useState<GoalEntry[]>([]);
 
     // Fetch all categories on mount
     useEffect(() => {
@@ -122,6 +120,14 @@ const OverviewFilterBar: React.FC<OverviewFilterBarProps> = ({
             .then((results) => setAllCategories(results.flat()))
             .catch(console.error);
     }, []); // eslint-disable-line
+
+    // Fetch real goals on mount (previously a hardcoded, id-less list — needed real ids to filter by)
+    useEffect(() => {
+        apiClient
+            .get<{ results: GoalEntry[] }>('explore/goals/', { params: { size: 100 } })
+            .then((res) => setGoalsList(res.data.results ?? []))
+            .catch(() => {});
+    }, []);
 
     // Fetch sub-categories when selected categories change
     useEffect(() => {
@@ -149,20 +155,36 @@ const OverviewFilterBar: React.FC<OverviewFilterBarProps> = ({
         return () => document.removeEventListener('mousedown', handler);
     }, []);
 
-    // Emit the backend-supported subset of the filter (date range + content-type(s))
+    // Emit the backend-supported subset of the filter: date range, content-type(s), and
+    // category/sub_category/goal — the latter three only when exactly one is selected, since
+    // (unlike content_type) the backend doesn't support multiple values for them yet.
     useEffect(() => {
         const dateRange = time === 'Custom Range'
             ? { start_date: customStart || undefined, end_date: customEnd || undefined }
             : getDateParams(time);
+
+        const categoryId = categories.length === 1
+            ? allCategories.find((c) => c.name === categories[0])?.id
+            : undefined;
+        const subCategoryId = subCategories.length === 1
+            ? subCatPool.find((s) => s.name === subCategories[0])?.id
+            : undefined;
+        const goalId = goals.length === 1
+            ? goalsList.find((g) => g.name === goals[0])?.id
+            : undefined;
+
         const params: AnalyticsParams = {
             ...dateRange,
             ...(contentTypes.length > 0
                 ? { content_type: contentTypes.map((ct) => CONTENT_TYPE_FOR_ANALYTICS[ct]) }
                 : {}),
+            ...(categoryId != null ? { category: categoryId } : {}),
+            ...(subCategoryId != null ? { sub_category: subCategoryId } : {}),
+            ...(goalId != null ? { goal: goalId } : {}),
         };
         onFilterChange(params);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [time, contentTypes, customStart, customEnd]);
+    }, [time, contentTypes, categories, subCategories, goals, customStart, customEnd, allCategories, subCatPool, goalsList]);
 
     const toggle_ = (key: string) => setOpenKey((k) => (k === key ? null : key));
 
@@ -359,10 +381,12 @@ const OverviewFilterBar: React.FC<OverviewFilterBarProps> = ({
                                 </button>
                                 {isOpen && (
                                     <div className="absolute left-0 top-full mt-1 z-30 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-lg py-1 min-w-[200px]">
-                                        {GOALS.map((g) => (
-                                            <label key={g} className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
-                                                <span className={`text-sm ${goals.includes(g) ? 'text-[#9810FA] font-medium' : 'text-gray-700 dark:text-gray-200'}`}>{g}</span>
-                                                <input type="checkbox" checked={goals.includes(g)} onChange={() => setGoals(toggle(goals, g))} className="w-4 h-4 accent-[#9810FA] cursor-pointer" />
+                                        {goalsList.length === 0 ? (
+                                            <p className="px-4 py-3 text-sm text-gray-400">No goals yet.</p>
+                                        ) : goalsList.map((g) => (
+                                            <label key={g.id} className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
+                                                <span className={`text-sm ${goals.includes(g.name) ? 'text-[#9810FA] font-medium' : 'text-gray-700 dark:text-gray-200'}`}>{g.name}</span>
+                                                <input type="checkbox" checked={goals.includes(g.name)} onChange={() => setGoals(toggle(goals, g.name))} className="w-4 h-4 accent-[#9810FA] cursor-pointer" />
                                             </label>
                                         ))}
                                     </div>

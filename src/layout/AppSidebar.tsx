@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useSidebar } from "../context/SidebarContext";
 import { useAuth } from "../context/AuthContext";
@@ -288,14 +289,14 @@ const AppSidebar: React.FC = () => {
       <div className={`py-6 flex flex-col ${!isExpanded && !isHovered ? 'items-center justify-center' : 'w-full'}`}>
         <div className={`flex items-center justify-between ${!isExpanded && !isHovered ? 'w-auto' : 'w-full px-6'}`}>
           <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-inherit flex items-center justify-center">
-              {/* Simple approximation of the logo icon - Grid of dots */}
-              <div className="grid grid-cols-2 gap-0.5">
-                <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                <div className="w-2 h-2 rounded-full bg-orange-400"></div>
-                <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                <div className="w-2 h-2 rounded-full bg-orange-400"></div>
-              </div>
+            <div className="w-8 h-8 rounded-full bg-inherit flex items-center justify-center shrink-0 overflow-hidden">
+              <Image
+                src="/images/logo/mp-playstore-icon.png"
+                alt="Mind Player"
+                width={32}
+                height={32}
+                className="w-full h-full object-cover"
+              />
             </div>
             {(isExpanded || isHovered || isMobileOpen) && <span
               className="text-2xl font-bold tracking-wide text-purple-700 dark:text-purple-300 select-none whitespace-nowrap"

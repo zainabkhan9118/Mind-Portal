@@ -25,7 +25,6 @@ interface ContentTableProps {
 }
 
 const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, onDuplicate, onChangeStatus, onEdit }) => {
-    const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
     const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -38,24 +37,6 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
-
-    const toggleSelectAll = () => {
-        if (selectedItems.size === data.length) {
-            setSelectedItems(new Set());
-        } else {
-            setSelectedItems(new Set(data.map(item => item.id)));
-        }
-    };
-
-    const toggleSelectItem = (id: number) => {
-        const newSelected = new Set(selectedItems);
-        if (newSelected.has(id)) {
-            newSelected.delete(id);
-        } else {
-            newSelected.add(id);
-        }
-        setSelectedItems(newSelected);
-    };
 
     const getAccessBadgeColor = (access: string) => {
         switch (access) {
@@ -71,14 +52,6 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
             <Table className="w-full text-left border-collapse">
                 <TableHeader className="border-b border-gray-100 dark:border-gray-700">
                     <TableRow>
-                        <TableCell isHeader className="p-4 w-10">
-                            <input
-                                type="checkbox"
-                                className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                                checked={data.length > 0 && selectedItems.size === data.length}
-                                onChange={toggleSelectAll}
-                            />
-                        </TableCell>
                         <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">ID</TableCell>
                         <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">
                             <div className="flex items-center gap-1 cursor-pointer">
@@ -145,14 +118,6 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                 <TableBody className="divide-y divide-gray-50 dark:divide-gray-700">
                     {data.map((item) => (
                         <TableRow key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
-                            <TableCell className="p-4 text-center">
-                                <input
-                                    type="checkbox"
-                                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
-                                    checked={selectedItems.has(item.id)}
-                                    onChange={() => toggleSelectItem(item.id)}
-                                />
-                            </TableCell>
                             <TableCell className="p-4 text-xs text-gray-500">
                                 {item.id < 10 ? `0${item.id}` : item.id}
                             </TableCell>

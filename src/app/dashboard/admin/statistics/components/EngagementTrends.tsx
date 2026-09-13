@@ -25,7 +25,7 @@ const EngagementTrends: React.FC<EngagementTrendsProps> = ({ dateParams }) => {
             .catch(console.error)
             .finally(() => setIsLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [timeRange, dateParams?.start_date, dateParams?.end_date, (dateParams?.content_type ?? []).join(',')]);
+    }, [timeRange, dateParams?.start_date, dateParams?.end_date, (dateParams?.content_type ?? []).join(','), dateParams?.category, dateParams?.sub_category, dateParams?.goal]);
 
     const periods = data.map((d) => d.period ?? '');
     const plays = data.map((d) => d.plays ?? 0);

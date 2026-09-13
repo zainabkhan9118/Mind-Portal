@@ -79,7 +79,6 @@ const TopRankingsTable: React.FC<TopRankingsTableProps> = ({ dateParams, searchT
     const [allData, setAllData] = useState<PlaysByContent[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [page, setPage] = useState(1);
-    const [selected, setSelected] = useState<Set<number>>(new Set());
 
     useEffect(() => {
         setIsLoading(true);
@@ -87,7 +86,7 @@ const TopRankingsTable: React.FC<TopRankingsTableProps> = ({ dateParams, searchT
             .then((res) => setAllData(res.results ?? []))
             .catch(console.error)
             .finally(() => setIsLoading(false));
-    }, [dateParams?.start_date, dateParams?.end_date, (dateParams?.content_type ?? []).join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [dateParams?.start_date, dateParams?.end_date, (dateParams?.content_type ?? []).join(','), dateParams?.category, dateParams?.sub_category, dateParams?.goal]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const filteredData = useMemo(() => {
         let result = allData;
@@ -108,19 +107,6 @@ const TopRankingsTable: React.FC<TopRankingsTableProps> = ({ dateParams, searchT
     // Reset to page 1 when external filters change
     useEffect(() => { setPage(1); }, [searchTerm, typeFilter]);
 
-    const allPageSelected = pageData.length > 0 && pageData.every((r) => selected.has(r.content_id));
-    const toggleAll = () => {
-        setSelected((prev) => {
-            const next = new Set(prev);
-            if (allPageSelected) pageData.forEach((r) => next.delete(r.content_id));
-            else pageData.forEach((r) => next.add(r.content_id));
-            return next;
-        });
-    };
-    const toggleRow = (id: number) => {
-        setSelected((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
-    };
-
     return (
         <div className="space-y-4">
             {/* Table */}
@@ -129,15 +115,7 @@ const TopRankingsTable: React.FC<TopRankingsTableProps> = ({ dateParams, searchT
                     <table className="w-full text-left">
                         <thead>
                             <tr className="border-b border-gray-100 dark:border-gray-800">
-                                <th className="pl-5 pr-2 py-4 w-10">
-                                    <input
-                                        type="checkbox"
-                                        checked={allPageSelected}
-                                        onChange={toggleAll}
-                                        className="w-4 h-4 rounded border-gray-300 text-purple-600 cursor-pointer accent-purple-600"
-                                    />
-                                </th>
-                                <th className="px-4 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                                <th className="pl-5 pr-4 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                                     <div className="flex items-center gap-1">Title <ArrowUpDown className="w-3 h-3" /></div>
                                 </th>
                                 <th className="px-4 py-4 text-xs font-semibold text-gray-400 uppercase tracking-wider min-w-[180px]">Retention</th>
@@ -155,7 +133,7 @@ const TopRankingsTable: React.FC<TopRankingsTableProps> = ({ dateParams, searchT
                         <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
                             {isLoading ? (
                                 <tr>
-                                    <td colSpan={12} className="py-16 text-center">
+                                    <td colSpan={11} className="py-16 text-center">
                                         <div className="flex justify-center">
                                             <div className="w-7 h-7 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
                                         </div>
@@ -163,7 +141,7 @@ const TopRankingsTable: React.FC<TopRankingsTableProps> = ({ dateParams, searchT
                                 </tr>
                             ) : pageData.length === 0 ? (
                                 <tr>
-                                    <td colSpan={12} className="py-16 text-center text-sm text-gray-400">
+                                    <td colSpan={11} className="py-16 text-center text-sm text-gray-400">
                                         No content found
                                     </td>
                                 </tr>
@@ -171,24 +149,14 @@ const TopRankingsTable: React.FC<TopRankingsTableProps> = ({ dateParams, searchT
                                 pageData.map((item, index) => {
                                     const retention = item.retention;
                                     const growthRate = item.growth_rate;
-                                    const isSelected = selected.has(item.content_id);
 
                                     return (
                                         <tr
                                             key={`${item.content_id}-${index}`}
-                                            className={`transition-colors ${isSelected ? 'bg-purple-50/40 dark:bg-purple-900/10' : 'hover:bg-gray-50/50 dark:hover:bg-gray-800/50'}`}
+                                            className="transition-colors hover:bg-gray-50/50 dark:hover:bg-gray-800/50"
                                         >
-                                            {/* Checkbox */}
-                                            <td className="pl-5 pr-2 py-4">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={isSelected}
-                                                    onChange={() => toggleRow(item.content_id)}
-                                                    className="w-4 h-4 rounded border-gray-300 text-purple-600 cursor-pointer accent-purple-600"
-                                                />
-                                            </td>
                                             {/* Title + icon */}
-                                            <td className="px-4 py-4">
+                                            <td className="pl-5 pr-4 py-4">
                                                 <div className="flex items-center gap-2">
                                                     {getTypeIcon(item.content_type)}
                                                     <span className="text-sm font-semibold text-gray-900 dark:text-white">

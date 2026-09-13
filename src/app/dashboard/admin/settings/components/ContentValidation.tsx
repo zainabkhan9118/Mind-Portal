@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Brain, Music2, ShieldCheck } from "lucide-react";
 import ValidationStats from "./validation/ValidationStats";
 import ValidationItem, { ValidationItemData } from "./validation/ValidationItem";
@@ -15,7 +16,27 @@ const ContentValidation: React.FC = () => {
     const [mindsTotal, setMindsTotal] = useState(0);
     const [playlistsTotal, setPlaylistsTotal] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
-    const [subTab, setSubTab] = useState<"minds" | "playlists" | "mind_experts">("playlists");
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const subtabParam = searchParams.get("subtab");
+    const isValidSubTab = (v: string | null): v is "minds" | "playlists" | "mind_experts" =>
+        v === "minds" || v === "playlists" || v === "mind_experts";
+    const [subTab, setSubTab] = useState<"minds" | "playlists" | "mind_experts">(
+        isValidSubTab(subtabParam) ? subtabParam : "minds",
+    );
+
+    // Stay in sync with the URL — a Link to this same route (e.g. from the notification
+    // bell) only updates the query string, it doesn't remount this component, so the
+    // initial useState value above won't update on its own.
+    useEffect(() => {
+        if (isValidSubTab(subtabParam)) setSubTab(subtabParam);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [subtabParam]);
+
+    const selectSubTab = (tab: "minds" | "playlists" | "mind_experts") => {
+        setSubTab(tab);
+        router.replace(`/dashboard/admin/settings?tab=content-validation&subtab=${tab}`, { scroll: false });
+    };
     const [selectedItem, setSelectedItem] = useState<ValidationItemData | null>(null);
     const [isMindModalOpen, setIsMindModalOpen] = useState(false);
     const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false);
@@ -98,7 +119,7 @@ const ContentValidation: React.FC = () => {
                 {/* Sub Tab Switcher */}
                 <div className="inline-flex p-1.5 bg-[#F5F5F5] dark:bg-gray-900/40 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-inner">
                     <button
-                        onClick={() => setSubTab("minds")}
+                        onClick={() => selectSubTab("minds")}
                         className={`flex items-center gap-2 px-10 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${subTab === "minds"
                             ? "bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 shadow-xl shadow-gray-200/50 dark:shadow-none transform scale-[1.02] border border-gray-100/50 dark:border-gray-700"
                             : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -108,7 +129,7 @@ const ContentValidation: React.FC = () => {
                         Minds
                     </button>
                     <button
-                        onClick={() => setSubTab("playlists")}
+                        onClick={() => selectSubTab("playlists")}
                         className={`flex items-center gap-2 px-10 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${subTab === "playlists"
                             ? "bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 shadow-xl shadow-gray-200/50 dark:shadow-none transform scale-[1.02] border border-gray-100/50 dark:border-gray-700"
                             : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
@@ -118,7 +139,7 @@ const ContentValidation: React.FC = () => {
                         Playlist
                     </button>
                     <button
-                        onClick={() => setSubTab("mind_experts")}
+                        onClick={() => selectSubTab("mind_experts")}
                         className={`flex items-center gap-2 px-10 py-3 rounded-xl text-sm font-bold transition-all duration-300 ${subTab === "mind_experts"
                             ? "bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 shadow-xl shadow-gray-200/50 dark:shadow-none transform scale-[1.02] border border-gray-100/50 dark:border-gray-700"
                             : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"

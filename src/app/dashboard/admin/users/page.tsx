@@ -1,11 +1,37 @@
 "use client";
-import React, { useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { LayoutGrid, Users } from 'lucide-react';
 import UsersOverview from './components/UsersOverview';
 import RecentUsers from './components/RecentUsers';
 
 const UsersPage: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'overview' | 'recent'>('overview');
+    return (
+        <Suspense fallback={null}>
+            <UsersPageInner />
+        </Suspense>
+    );
+};
+
+const UsersPageInner: React.FC = () => {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const tabParam = searchParams.get('tab');
+    const [activeTab, setActiveTab] = useState<'overview' | 'recent'>(
+        tabParam === 'recent' ? 'recent' : 'overview',
+    );
+
+    // Keep in sync with the URL — a Link to this same route only changes the query
+    // string, it doesn't remount the page, so the initial useState value won't update.
+    useEffect(() => {
+        if (tabParam === 'overview' || tabParam === 'recent') setActiveTab(tabParam);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [tabParam]);
+
+    const selectTab = (tab: 'overview' | 'recent') => {
+        setActiveTab(tab);
+        router.replace(`/dashboard/admin/users?tab=${tab}`, { scroll: false });
+    };
 
     return (
         <div className="p-6 space-y-8">
@@ -19,7 +45,7 @@ const UsersPage: React.FC = () => {
             <div className="border-b border-gray-200 dark:border-gray-700">
                 <div className="flex gap-8">
                     <button
-                        onClick={() => setActiveTab('overview')}
+                        onClick={() => selectTab('overview')}
                         className={`pb-4 text-sm font-medium flex items-center gap-2 transition-all relative ${activeTab === 'overview'
                                 ? 'text-purple-600 dark:text-purple-400'
                                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
@@ -32,7 +58,7 @@ const UsersPage: React.FC = () => {
                         )}
                     </button>
                     <button
-                        onClick={() => setActiveTab('recent')}
+                        onClick={() => selectTab('recent')}
                         className={`pb-4 text-sm font-medium flex items-center gap-2 transition-all relative ${activeTab === 'recent'
                                 ? 'text-purple-600 dark:text-purple-400'
                                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'

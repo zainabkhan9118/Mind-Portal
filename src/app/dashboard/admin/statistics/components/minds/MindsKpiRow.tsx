@@ -67,8 +67,8 @@ const MindsKpiRow: React.FC<{ kpi: MindsOverviewKPI | null; isLoading: boolean }
                 iconBgClass="bg-green-50 dark:bg-green-900/20" iconColorClass="text-green-600 dark:text-green-400"
                 label="Active Minds"
                 value={kpi.active_minds.toLocaleString()}
-                compareText={kpi.active_minds_change != null ? `↑ ${kpi.active_minds_change.toFixed(0)}% Apr 1 – Apr 30` : undefined}
-                compareColorClass="text-green-500"
+                compareText={kpi.active_minds_change != null ? `${kpi.active_minds_change >= 0 ? '↑' : '↓'} ${Math.abs(kpi.active_minds_change).toFixed(0)}% vs prior period` : undefined}
+                compareColorClass={kpi.active_minds_change != null && kpi.active_minds_change < 0 ? 'text-red-500' : 'text-green-500'}
             />
             <KpiCard
                 icon={<ThumbsUp className="w-4 h-4" />}
