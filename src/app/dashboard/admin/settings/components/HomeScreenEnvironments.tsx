@@ -365,7 +365,7 @@ const HomeScreenEnvironments: React.FC = () => {
                                 </button>
                                 <button onClick={(e) => { e.stopPropagation(); setPendingDelete({ type: "visual", id: env.id }); }}
                                     title="Delete visual"
-                                    className="absolute top-2 left-2 p-1.5 bg-black/50 hover:bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                    className="absolute top-2 left-2 p-1.5 bg-black/50 hover:bg-red-500 text-white rounded-lg transition-colors">
                                     <Trash2 className="w-3.5 h-3.5" />
                                 </button>
                             </div>

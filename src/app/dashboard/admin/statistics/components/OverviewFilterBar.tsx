@@ -38,9 +38,9 @@ export const TIME_OPTIONS = ['All-time', 'Last 24h', 'Last Week', 'Last Month', 
 type StepKey = 'contentType' | 'category' | 'subCategory' | 'goals';
 
 const ANALYSIS_STEPS: Record<string, StepKey[]> = {
-    'Content-type': ['contentType', 'goals'],
-    'Category': ['contentType', 'category', 'goals'],
-    'Sub Category': ['contentType', 'category', 'subCategory', 'goals'],
+    'Content-type': ['contentType'],
+    'Category': ['contentType', 'category'],
+    'Sub Category': ['contentType', 'category', 'subCategory'],
     'Minds + Goals': ['goals'],
 };
 
