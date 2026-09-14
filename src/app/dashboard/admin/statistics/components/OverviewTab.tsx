@@ -20,7 +20,7 @@ const OverviewTab: React.FC = () => {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <MostPlayedStylesChart dateParams={dateParams} />
-                <VrVsMobileChart />
+                <VrVsMobileChart dateParams={dateParams} />
             </div>
 
             <EngagementTrends dateParams={dateParams} />

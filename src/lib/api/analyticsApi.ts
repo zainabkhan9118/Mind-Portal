@@ -6,6 +6,9 @@ import type {
     PlaysKPI,
     PlaysTimeseriesPoint,
     PlaysByType,
+    PlaysByPlatform,
+    AvgDurationByType,
+    AvgDurationTimeseriesPoint,
     PlaysByRegion,
     PlaysByContent,
     RankedContent,
@@ -92,6 +95,31 @@ const analyticsApi = {
         const response = await apiClient.get<
             PlaysByType[] | { results: PlaysByType[] }
         >("admin/analytics/plays/by-type/", { params });
+        return unwrapArray(response.data);
+    },
+
+    /** Platform (mobile/VR) share, device breakdown, and avg session duration per platform. */
+    getPlaysByPlatform: async (params?: AnalyticsParams): Promise<PlaysByPlatform> => {
+        const response = await apiClient.get<PlaysByPlatform>(
+            "admin/analytics/plays/by-platform/",
+            { params },
+        );
+        return response.data;
+    },
+
+    /** Avg listening/experience duration per content type (stat cards). */
+    getAvgDurationByType: async (params?: AnalyticsParams): Promise<AvgDurationByType[]> => {
+        const response = await apiClient.get<
+            AvgDurationByType[] | { results: AvgDurationByType[] }
+        >("admin/analytics/plays/avg-duration-by-type/", { params });
+        return unwrapArray(response.data);
+    },
+
+    /** Daily avg duration trend per content type (line chart). */
+    getAvgDurationTimeseries: async (params?: AnalyticsParams): Promise<AvgDurationTimeseriesPoint[]> => {
+        const response = await apiClient.get<
+            AvgDurationTimeseriesPoint[] | { results: AvgDurationTimeseriesPoint[] }
+        >("admin/analytics/plays/avg-duration-timeseries/", { params });
         return unwrapArray(response.data);
     },
 

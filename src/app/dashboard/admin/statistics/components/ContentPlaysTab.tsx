@@ -18,7 +18,7 @@ const ContentPlaysTab: React.FC = () => {
 
             <KeyMetricsOverview dateParams={dateParams} />
             <ComponentPlaysChart dateParams={dateParams} />
-            <AvgListeningTimeChart />
+            <AvgListeningTimeChart dateParams={dateParams} />
 
             {/* ── Content Performance ── */}
             <div>

@@ -603,6 +603,50 @@ export interface PlaysByRegion {
     unique_listeners?: number;
 }
 
+export interface PlatformShare {
+    platform: string; // "mobile" | "vr"
+    plays: number;
+    percentage: number;
+}
+
+export interface DeviceBreakdownEntry {
+    device_type: string; // "ios" | "android" | "meta_quest" | "other_vr" | ""
+    plays: number;
+    percentage: number;
+}
+
+export interface PlatformAvgSessionDuration {
+    platform: string;
+    average_duration_seconds: number;
+    plays_with_duration: number;
+}
+
+/** `GET admin/analytics/plays/by-platform/` — verified in production 14 Sept 2026. */
+export interface PlaysByPlatform {
+    total_plays: number;
+    classified_plays: number;
+    unclassified_plays: number;
+    platform_share: PlatformShare[];
+    device_breakdown: DeviceBreakdownEntry[];
+    average_session_duration: PlatformAvgSessionDuration[];
+}
+
+/** One row of `GET admin/analytics/plays/avg-duration-by-type/` — verified in production 14 Sept 2026. */
+export interface AvgDurationByType {
+    content_type: AnalyticsContentType;
+    average_duration_seconds: number;
+    plays_with_duration: number;
+    total_plays: number;
+}
+
+/** One row of `GET admin/analytics/plays/avg-duration-timeseries/` — verified in production 14 Sept 2026. */
+export interface AvgDurationTimeseriesPoint {
+    date: string;
+    content_type: AnalyticsContentType;
+    average_duration_seconds: number;
+    plays_with_duration: number;
+}
+
 export interface PlaysByContent {
     content_id: number;
     content_name: string;
