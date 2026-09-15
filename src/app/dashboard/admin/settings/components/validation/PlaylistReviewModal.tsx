@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { X, Music2, Calendar, ChevronDown, Search, Loader2, XCircle } from "lucide-react";
+import { Music2, Calendar, ChevronDown, Search, Loader2, XCircle } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
 import Label from "@/components/form/Label";
@@ -128,13 +128,10 @@ const PlaylistReviewModal: React.FC<PlaylistReviewModalProps> = ({ isOpen, onClo
         <Modal isOpen={isOpen} onClose={onClose} className="max-w-[700px] m-4">
             <div className="relative flex flex-col w-full bg-white dark:bg-gray-900 rounded-[32px] p-10 overflow-hidden shadow-2xl">
                 {/* Header */}
-                <div className="flex justify-between items-start mb-8">
+                <div className="mb-8">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                         Review Playlist: <span className="text-purple-600 font-extrabold">{item.title}</span>
                     </h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-400">
-                        <X className="w-6 h-6" />
-                    </button>
                 </div>
 
                 {/* Item Details */}

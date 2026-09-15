@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { X, Brain, Calendar, Clock, ChevronDown, Search, Loader2, XCircle } from "lucide-react";
+import { Brain, Calendar, Clock, ChevronDown, Search, Loader2, XCircle } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
 import Label from "@/components/form/Label";
@@ -128,13 +128,10 @@ const MindReviewModal: React.FC<MindReviewModalProps> = ({ isOpen, onClose, item
         <Modal isOpen={isOpen} onClose={onClose} className="max-w-[700px] m-4">
             <div className="relative flex flex-col w-full bg-white dark:bg-gray-900 rounded-3xl p-8 overflow-hidden">
                 {/* Header */}
-                <div className="flex justify-between items-start mb-8">
+                <div className="mb-8">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                         Review Mind: <span className="text-purple-600 font-extrabold">{item.title}</span>
                     </h2>
-                    <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-400">
-                        <X className="w-6 h-6" />
-                    </button>
                 </div>
 
                 {/* Item Details */}
@@ -146,7 +143,7 @@ const MindReviewModal: React.FC<MindReviewModalProps> = ({ isOpen, onClose, item
                         <div className="flex items-center gap-3">
                             <h3 className="text-xl font-bold text-gray-900 dark:text-white">{item.title}</h3>
                             <span className="px-3 py-1 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[10px] font-bold rounded-lg uppercase tracking-wide border border-gray-200 dark:border-gray-700">
-                                Mind Session
+                                Mind
                             </span>
                         </div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -154,7 +151,7 @@ const MindReviewModal: React.FC<MindReviewModalProps> = ({ isOpen, onClose, item
                         </p>
                         <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-lg">{item.description}</p>
                         <div className="flex items-center gap-4 text-xs text-gray-400 font-medium pt-1">
-                            <span>{item.itemCount} items</span>
+                            <span>{item.itemCount} goals</span>
                             <span className="w-1 h-1 bg-gray-300 dark:bg-gray-700 rounded-full" />
                             <span>Created: {item.createdAt}</span>
                         </div>

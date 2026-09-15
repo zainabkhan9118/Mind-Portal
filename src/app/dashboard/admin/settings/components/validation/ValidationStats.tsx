@@ -1,5 +1,5 @@
 import React from "react";
-import { Users, Brain, LayoutList } from "lucide-react";
+import { Users, Brain, ShieldCheck, LayoutList } from "lucide-react";
 
 interface StatCardProps {
     icon: React.ReactNode;
@@ -22,21 +22,21 @@ const StatCard: React.FC<StatCardProps> = ({ icon, label, value, iconBg, iconCol
 );
 
 interface ValidationStatsProps {
-    total: number;
     pendingMinds: number;
+    pendingMindExperts: number;
     pendingPlaylists: number;
     isLoading?: boolean;
 }
 
-const ValidationStats: React.FC<ValidationStatsProps> = ({ total, pendingMinds, pendingPlaylists, isLoading }) => {
+const ValidationStats: React.FC<ValidationStatsProps> = ({ pendingMinds, pendingMindExperts, pendingPlaylists, isLoading }) => {
     const display = (n: number) => isLoading ? '—' : n.toLocaleString();
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <StatCard
                 icon={<Users className="w-7 h-7" />}
                 label="Total Pending"
-                value={display(total)}
+                value={display(pendingMinds + pendingMindExperts + pendingPlaylists)}
                 iconBg="bg-green-50 dark:bg-green-900/10"
                 iconColor="text-green-500"
             />
@@ -46,6 +46,13 @@ const ValidationStats: React.FC<ValidationStatsProps> = ({ total, pendingMinds, 
                 value={display(pendingMinds)}
                 iconBg="bg-purple-50 dark:bg-purple-900/10"
                 iconColor="text-purple-500"
+            />
+            <StatCard
+                icon={<ShieldCheck className="w-7 h-7" />}
+                label="Pending Mind Experts"
+                value={display(pendingMindExperts)}
+                iconBg="bg-amber-50 dark:bg-amber-900/10"
+                iconColor="text-amber-500"
             />
             <StatCard
                 icon={<LayoutList className="w-7 h-7" />}

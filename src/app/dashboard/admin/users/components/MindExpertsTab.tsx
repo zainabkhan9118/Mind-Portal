@@ -4,7 +4,14 @@ import { ShieldCheck, ShieldX, ExternalLink, Loader2, RefreshCw } from "lucide-r
 import usersApi from "@/lib/api/usersApi";
 import type { ApiUser } from "@/lib/api/types";
 
-const MindExpertsTab: React.FC = () => {
+interface MindExpertsTabProps {
+    /** Reports the real, current pending count up to the parent — this component mounts
+     * fresh each time this sub-tab is opened and fetches independently, so the parent's
+     * own header stat would otherwise go stale after this loads or after an approve/reject. */
+    onCountChange?: (count: number) => void;
+}
+
+const MindExpertsTab: React.FC<MindExpertsTabProps> = ({ onCountChange }) => {
     const [applications, setApplications] = useState<ApiUser[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -16,7 +23,9 @@ const MindExpertsTab: React.FC = () => {
         setError(null);
         try {
             const res = await usersApi.getMindExpertApplications();
-            setApplications(res.results ?? []);
+            const results = res.results ?? [];
+            setApplications(results);
+            onCountChange?.(results.length);
         } catch {
             setError("Could not load applications. The backend endpoint may not be available yet.");
         } finally {
@@ -31,7 +40,11 @@ const MindExpertsTab: React.FC = () => {
         try {
             await usersApi.approveMindExpert(user.id);
             setActionDone(p => ({ ...p, [user.id]: "approved" }));
-            setApplications(prev => prev.filter(u => u.id !== user.id));
+            setApplications(prev => {
+                const next = prev.filter(u => u.id !== user.id);
+                onCountChange?.(next.length);
+                return next;
+            });
         } catch {
             setError(`Failed to approve ${[user.first_name, user.last_name].filter(Boolean).join(" ") || user.email}.`);
         } finally {
@@ -44,7 +57,11 @@ const MindExpertsTab: React.FC = () => {
         try {
             await usersApi.rejectMindExpert(user.id);
             setActionDone(p => ({ ...p, [user.id]: "rejected" }));
-            setApplications(prev => prev.filter(u => u.id !== user.id));
+            setApplications(prev => {
+                const next = prev.filter(u => u.id !== user.id);
+                onCountChange?.(next.length);
+                return next;
+            });
         } catch {
             setError(`Failed to reject ${[user.first_name, user.last_name].filter(Boolean).join(" ") || user.email}.`);
         } finally {

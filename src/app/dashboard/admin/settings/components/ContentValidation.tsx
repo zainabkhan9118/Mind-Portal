@@ -8,13 +8,15 @@ import MindReviewModal from "./validation/MindReviewModal";
 import PlaylistReviewModal from "./validation/PlaylistReviewModal";
 import MindExpertsTab from "../../users/components/MindExpertsTab";
 import contentApi from "@/lib/api/contentApi";
-import type { AdminMindSession, AdminMusic } from "@/lib/api/types";
+import usersApi from "@/lib/api/usersApi";
+import type { AdminMind, AdminMusic } from "@/lib/api/types";
 
 const ContentValidation: React.FC = () => {
     const [minds, setMinds] = useState<ValidationItemData[]>([]);
     const [playlists, setPlaylists] = useState<ValidationItemData[]>([]);
     const [mindsTotal, setMindsTotal] = useState(0);
     const [playlistsTotal, setPlaylistsTotal] = useState(0);
+    const [mindExpertsTotal, setMindExpertsTotal] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -43,19 +45,19 @@ const ContentValidation: React.FC = () => {
 
     useEffect(() => {
         Promise.all([
-            contentApi.getAll({ status: 'review', type: 'mind_session', size: 20 }),
+            contentApi.getAll({ status: 'review', type: 'minds', size: 20 }),
             contentApi.getAll({ status: 'review', type: 'music', size: 20 }),
-        ]).then(([mindsRes, playlistsRes]) => {
-            const mindItems = (mindsRes.results as AdminMindSession[]).map((item): ValidationItemData => ({
+            usersApi.getMindExpertApplications(),
+        ]).then(([mindsRes, playlistsRes, mindExpertsRes]) => {
+            const mindItems = (mindsRes.results as AdminMind[]).map((item): ValidationItemData => ({
                 id: String(item.id),
                 type: 'mind',
                 title: item.name,
                 description: item.description ?? '',
-                creator: item.artist ?? '',
-                itemCount: item.steps?.length ?? 0,
+                creator: item.author ?? '',
+                itemCount: item.goals?.length ?? 0,
                 createdAt: item.created_at.split('T')[0],
                 status: 'Pending',
-                category: item.category_names || undefined,
             }));
 
             const playlistItems = (playlistsRes.results as AdminMusic[]).map((item): ValidationItemData => ({
@@ -74,6 +76,7 @@ const ContentValidation: React.FC = () => {
             setPlaylists(playlistItems);
             setMindsTotal(mindsRes.count ?? 0);
             setPlaylistsTotal(playlistsRes.count ?? 0);
+            setMindExpertsTotal(mindExpertsRes.results?.length ?? 0);
         }).catch(console.error).finally(() => setIsLoading(false));
     }, []);
 
@@ -108,8 +111,8 @@ const ContentValidation: React.FC = () => {
         <div className="space-y-10 animate-in fade-in duration-700">
             {/* Stats Header */}
             <ValidationStats
-                total={mindsTotal + playlistsTotal}
                 pendingMinds={mindsTotal}
+                pendingMindExperts={mindExpertsTotal}
                 pendingPlaylists={playlistsTotal}
                 isLoading={isLoading}
             />
@@ -151,7 +154,7 @@ const ContentValidation: React.FC = () => {
                 </div>
 
                 {/* Mind Experts sub-tab */}
-                {subTab === "mind_experts" && <MindExpertsTab />}
+                {subTab === "mind_experts" && <MindExpertsTab onCountChange={setMindExpertsTotal} />}
 
                 {/* List of Items — Minds / Playlists only */}
                 {subTab !== "mind_experts" && (
@@ -171,7 +174,7 @@ const ContentValidation: React.FC = () => {
                         </div>
                     ) : currentItems.length === 0 ? (
                         <p className="text-sm text-gray-400 text-center py-16">
-                            No {subTab === "minds" ? "mind sessions" : "playlists"} pending review
+                            {subTab === "minds" ? "No minds pending review" : "No playlists pending review"}
                         </p>
                     ) : (
                         <div className="grid grid-cols-1 gap-5">
