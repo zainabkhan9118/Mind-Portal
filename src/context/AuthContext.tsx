@@ -124,6 +124,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log("Signed in via API:", userObj);
 
     } catch (err) {
+      // A failed login (e.g. a non-staff account gets 403'd on the admin/me/ profile
+      // fetch inside authApi.login) must not leave a stale `user` from a previous,
+      // successful session in this tab — otherwise isAuthenticated stays true and
+      // ProtectedRoute lets the dashboard render while every API call 403s underneath it.
+      setUser(null);
+      localStorage.removeItem("user");
+      localStorage.removeItem("authToken");
       setError(err instanceof Error ? err.message : "Authentication failed");
       console.error("Signin error:", err);
     } finally {
