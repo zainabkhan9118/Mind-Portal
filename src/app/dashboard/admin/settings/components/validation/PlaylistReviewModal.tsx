@@ -97,7 +97,7 @@ const PlaylistReviewModal: React.FC<PlaylistReviewModalProps> = ({ isOpen, onClo
             if (publishedAt) payload.published_at = publishedAt;
             if (visibility === "restricted") payload.allowed_user_ids = allowedUsers.map(u => u.id);
 
-            await contentApi.approveContent("music", Number(item.id), payload);
+            await contentApi.approveContent(item.contentKind ?? "music", Number(item.id), payload);
             onApproved?.(item.id);
             onClose();
         } catch {
@@ -112,7 +112,7 @@ const PlaylistReviewModal: React.FC<PlaylistReviewModalProps> = ({ isOpen, onClo
         setError(null);
         setIsRejecting(true);
         try {
-            await contentApi.approveContent("music", Number(item.id), { status: "archived" });
+            await contentApi.approveContent(item.contentKind ?? "music", Number(item.id), { status: "archived" });
             onRejected?.(item.id);
             onClose();
         } catch {
@@ -143,7 +143,7 @@ const PlaylistReviewModal: React.FC<PlaylistReviewModalProps> = ({ isOpen, onClo
                         <div className="flex items-center gap-2">
                             <h3 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">{item.title}</h3>
                             <span className="px-2.5 py-1 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-[9px] font-bold rounded-md uppercase tracking-wider border border-gray-200 dark:border-gray-700">
-                                Playlist
+                                {item.category ?? "Playlist"}
                             </span>
                         </div>
                         <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">

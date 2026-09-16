@@ -4,6 +4,10 @@ import { Eye, Music2, Brain } from "lucide-react";
 export interface ValidationItemData {
     id: string;
     type: "mind" | "playlist";
+    /** For `type: "playlist"` — which content-type endpoint this item actually lives under
+     * (Admin can publish a "playlist" as either Music or Guided content), so Approve/Reject
+     * PATCH the correct resource. Unused for Minds. */
+    contentKind?: "music" | "guided-sessions";
     title: string;
     description: string;
     creator: string;

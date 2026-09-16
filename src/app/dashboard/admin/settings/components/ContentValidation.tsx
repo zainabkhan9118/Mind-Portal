@@ -9,7 +9,7 @@ import PlaylistReviewModal from "./validation/PlaylistReviewModal";
 import MindExpertsTab from "../../users/components/MindExpertsTab";
 import contentApi from "@/lib/api/contentApi";
 import usersApi from "@/lib/api/usersApi";
-import type { AdminMind, AdminMusic } from "@/lib/api/types";
+import type { AdminMind, AdminMusic, AdminMindSession } from "@/lib/api/types";
 
 const ContentValidation: React.FC = () => {
     const [minds, setMinds] = useState<ValidationItemData[]>([]);
@@ -46,9 +46,13 @@ const ContentValidation: React.FC = () => {
     useEffect(() => {
         Promise.all([
             contentApi.getAll({ status: 'review', type: 'minds', size: 20 }),
+            // "Playlist" validation covers Admin-created content in either the Music or
+            // Guided Sessions catalog (e.g. a Music playlist under "Piano", or a Guided
+            // playlist under "Meditation") — both go through the same review → publish flow.
             contentApi.getAll({ status: 'review', type: 'music', size: 20 }),
+            contentApi.getAll({ status: 'review', type: 'mind_session', size: 20 }),
             usersApi.getMindExpertApplications(),
-        ]).then(([mindsRes, playlistsRes, mindExpertsRes]) => {
+        ]).then(([mindsRes, musicRes, guidedRes, mindExpertsRes]) => {
             const mindItems = (mindsRes.results as AdminMind[]).map((item): ValidationItemData => ({
                 id: String(item.id),
                 type: 'mind',
@@ -60,22 +64,36 @@ const ContentValidation: React.FC = () => {
                 status: 'Pending',
             }));
 
-            const playlistItems = (playlistsRes.results as AdminMusic[]).map((item): ValidationItemData => ({
+            const musicItems = (musicRes.results as AdminMusic[]).map((item): ValidationItemData => ({
                 id: String(item.id),
                 type: 'playlist',
+                contentKind: 'music',
                 title: item.name,
                 description: item.description ?? '',
                 creator: item.artist ?? '',
                 itemCount: 0,
                 createdAt: item.created_at.split('T')[0],
                 status: 'Pending',
-                category: item.music_category_names || undefined,
+                category: item.music_category_names ? `Music · ${item.music_category_names}` : 'Music',
+            }));
+
+            const guidedItems = (guidedRes.results as AdminMindSession[]).map((item): ValidationItemData => ({
+                id: String(item.id),
+                type: 'playlist',
+                contentKind: 'guided-sessions',
+                title: item.name,
+                description: item.description ?? '',
+                creator: item.artist ?? '',
+                itemCount: item.steps?.length ?? 0,
+                createdAt: item.created_at.split('T')[0],
+                status: 'Pending',
+                category: item.category_names ? `Guided · ${item.category_names}` : 'Guided',
             }));
 
             setMinds(mindItems);
-            setPlaylists(playlistItems);
+            setPlaylists([...musicItems, ...guidedItems]);
             setMindsTotal(mindsRes.count ?? 0);
-            setPlaylistsTotal(playlistsRes.count ?? 0);
+            setPlaylistsTotal((musicRes.count ?? 0) + (guidedRes.count ?? 0));
             setMindExpertsTotal(mindExpertsRes.results?.length ?? 0);
         }).catch(console.error).finally(() => setIsLoading(false));
     }, []);
