@@ -212,6 +212,11 @@ function ContentManagementPageInner() {
   const [isNewContentModalOpen, setIsNewContentModalOpen] = useState(false);
   const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
   const [editItemId, setEditItemId] = useState<number | null>(null);
+  // Captured at the moment Edit is clicked — if the admin switches tabs while the modal is
+  // still open, `activeTab` changes but the item being edited doesn't, so deriving the
+  // modal's content-type props live from `activeTab` would send e.g. a Music item's id to
+  // the Minds endpoint. Falls back to `activeTab` for the "Add New" (no id) case.
+  const [editItemTab, setEditItemTab] = useState<string | null>(null);
 
   const [data, setData] = useState<AnyRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -374,6 +379,7 @@ function ContentManagementPageInner() {
 
   const handleEdit = (id: number) => {
     setEditItemId(id);
+    setEditItemTab(activeTab);
     setIsModalOpen(true);
   };
 
@@ -540,15 +546,15 @@ function ContentManagementPageInner() {
 
       <AddMusicModal
         isOpen={isModalOpen}
-        onClose={() => { setIsModalOpen(false); setEditItemId(null); }}
-        isEnvironmentSound={activeTab === "Sounds"}
-        isMindSession={activeTab === "Guided"}
-        isEnvironmentVisual={activeTab === "Visuals"}
-        isMind={activeTab === "Minds"}
+        onClose={() => { setIsModalOpen(false); setEditItemId(null); setEditItemTab(null); }}
+        isEnvironmentSound={(editItemTab ?? activeTab) === "Sounds"}
+        isMindSession={(editItemTab ?? activeTab) === "Guided"}
+        isEnvironmentVisual={(editItemTab ?? activeTab) === "Visuals"}
+        isMind={(editItemTab ?? activeTab) === "Minds"}
         categories={categories}
         onSuccess={fetchData}
         editItemId={editItemId}
-        activeTab={activeTab}
+        activeTab={editItemTab ?? activeTab}
       />
 
       <AddNewContentModal
