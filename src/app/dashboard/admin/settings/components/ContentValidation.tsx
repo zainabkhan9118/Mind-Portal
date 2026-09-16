@@ -45,12 +45,20 @@ const ContentValidation: React.FC = () => {
 
     useEffect(() => {
         Promise.all([
-            contentApi.getAll({ status: 'review', type: 'minds', size: 20 }),
+            // Using the type-specific `admin/content/minds/` endpoint directly, NOT the
+            // generic combined `admin/content/?type=minds` one — confirmed via Swagger on
+            // 16 Sept 2026 that the combined endpoint's `type=minds&status=review` filter
+            // returns 0 results despite matching Minds existing, while this dedicated
+            // endpoint filters correctly. See API_SPEC.md for the backend bug report.
+            contentApi.minds.list({ status: 'review', size: 20 }),
             // "Playlist" validation covers Admin-created content in either the Music or
             // Guided Sessions catalog (e.g. a Music playlist under "Piano", or a Guided
             // playlist under "Meditation") — both go through the same review → publish flow.
-            contentApi.getAll({ status: 'review', type: 'music', size: 20 }),
-            contentApi.getAll({ status: 'review', type: 'mind_session', size: 20 }),
+            // Also using the type-specific endpoints here rather than the generic combined
+            // `admin/content/` one, given it's confirmed broken for `type=minds` — same risk
+            // hasn't been ruled out for these types, so avoid it defensively.
+            contentApi.music.list({ status: 'review', size: 20 }),
+            contentApi.guidedSessions.list({ status: 'review', size: 20 }),
             usersApi.getMindExpertApplications(),
         ]).then(([mindsRes, musicRes, guidedRes, mindExpertsRes]) => {
             const mindItems = (mindsRes.results as AdminMind[]).map((item): ValidationItemData => ({
