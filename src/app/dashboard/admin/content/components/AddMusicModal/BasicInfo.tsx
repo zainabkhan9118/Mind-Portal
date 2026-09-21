@@ -9,21 +9,15 @@ interface BasicInfoProps {
     isMindSession?: boolean;
     isEnvironmentVisual?: boolean;
     isMind?: boolean;
-    onCreateSubCategory?: () => void;
     title: string;
     onTitleChange: (v: string) => void;
     artist: string;
     onArtistChange: (v: string) => void;
-    categoryId: string;
-    onCategoryChange: (v: string) => void;
-    categories: { id: number; name: string }[];
     details: string;
     onDetailsChange: (v: string) => void;
     audioFile: File | null;
     onAudioFileChange: (f: File | null) => void;
     onDurationExtracted?: (seconds: number) => void;
-    subCategory?: string;
-    onSubCategoryChange?: (v: string) => void;
     existingAudioUrl?: string | null;
 }
 
@@ -32,21 +26,15 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
     isMindSession = false,
     isEnvironmentVisual = false,
     isMind = false,
-    onCreateSubCategory,
     title,
     onTitleChange,
     artist,
     onArtistChange,
-    categoryId,
-    onCategoryChange,
-    categories,
     details,
     onDetailsChange,
     audioFile,
     onAudioFileChange,
     onDurationExtracted,
-    subCategory = "",
-    onSubCategoryChange,
     existingAudioUrl,
 }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -191,46 +179,6 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
                     onChange={(e) => onDetailsChange(e.target.value)}
                 />
             </div>
-
-            {!isMind && (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                    <Label htmlFor="category">Category</Label>
-                    <select
-                        id="category"
-                        value={categoryId}
-                        onChange={(e) => onCategoryChange(e.target.value)}
-                        className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs focus:outline-none focus:ring-2 focus:ring-purple-500/20 bg-transparent text-gray-800 dark:text-white border-gray-300 dark:border-gray-700 dark:bg-gray-900"
-                    >
-                        <option value="">Select category...</option>
-                        {categories.map(cat => (
-                            <option key={cat.id} value={String(cat.id)}>{cat.name}</option>
-                        ))}
-                    </select>
-                </div>
-                <div>
-                    <div className="flex items-center justify-between mb-0">
-                        <Label htmlFor="subCategory" className="mb-0">Sub Category</Label>
-                        {(isEnvironmentSound || isMindSession || isEnvironmentVisual) && onCreateSubCategory && (
-                            <button
-                                type="button"
-                                onClick={onCreateSubCategory}
-                                className="text-[11px] font-medium text-[#9810FA] hover:text-[#8000E0]"
-                            >
-                                Create new Sub Category
-                            </button>
-                        )}
-                    </div>
-                    <Input
-                        type="text"
-                        id="subCategory"
-                        placeholder="Sub category name"
-                        value={subCategory}
-                        onChange={(e) => onSubCategoryChange?.(e.target.value)}
-                    />
-                </div>
-            </div>
-            )}
         </div>
     );
 };

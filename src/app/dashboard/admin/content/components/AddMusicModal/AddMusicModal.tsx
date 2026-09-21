@@ -9,11 +9,13 @@ import CoverImage from "./CoverImage";
 import AddTags from "./AddTags";
 import StateEffectSelector from "./StateEffectSelector";
 import GoalSelector from "./GoalSelector";
+import CategorySelector from "./CategorySelector";
+import SubCategoryPicker from "./SubCategoryPicker";
 import IconSelection from "./IconSelection";
 import CreateSubCategoryModal from "./CreateSubCategoryModal";
 import { contentApi } from "@/lib/api";
 import apiClient from "@/lib/api/axiosInstance";
-import type { AdminCategory, AdminState, AdminEffect } from "@/lib/api/types";
+import type { AdminCategory, AdminState, AdminEffect, SubCategory, ContentType } from "@/lib/api/types";
 
 interface Goal {
     id: number;
@@ -51,10 +53,24 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [loadError, setLoadError] = useState<string | null>(null);
 
+    const contentTypeForApi: ContentType = isEnvironmentSound
+        ? "env_sound"
+        : isMindSession
+        ? "mind_session"
+        : isEnvironmentVisual
+        ? "env_visual"
+        : "music";
+
     // Goals
     const [goalsList, setGoalsList] = useState<Goal[]>([]);
     const [primaryGoal, setPrimaryGoal] = useState<number | null>(null);
     const [secondaryGoals, setSecondaryGoals] = useState<number[]>([]);
+
+    // Categories — "primary" is a frontend convention (first id in the array); the backend
+    // stores a single flat array per type (music_category / category / mind_session_category),
+    // it has no dedicated primary/secondary fields the way Goals does.
+    const [primaryCategory, setPrimaryCategory] = useState<number | null>(null);
+    const [secondaryCategories, setSecondaryCategories] = useState<number[]>([]);
 
     // States & Effects
     const [statesList, setStatesList] = useState<AdminState[]>([]);
@@ -67,7 +83,6 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
     // Form state
     const [title, setTitle] = useState("");
     const [artist, setArtist] = useState("");
-    const [categoryId, setCategoryId] = useState("");
     const [tags, setTags] = useState<string[]>([]);
     const [status, setStatus] = useState("draft");
     const [accessLevel, setAccessLevel] = useState("free");
@@ -78,6 +93,8 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
     const [contentType, setContentType] = useState("");
     const [duration, setDuration] = useState<number>(0);
     const [subCategory, setSubCategory] = useState("");
+    const [subCategoryOptions, setSubCategoryOptions] = useState<SubCategory[]>([]);
+    const [isLoadingSubCategories, setIsLoadingSubCategories] = useState(false);
     const [iconId, setIconId] = useState<number | null>(null);
     const [iconFile, setIconFile] = useState<File | null>(null);
     const [iconUrl, setIconUrl] = useState<string | null>(null);
@@ -101,6 +118,19 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
             .then((res) => setEffectsList(res.results ?? []))
             .catch(() => {});
     }, []);
+
+    // Sub-category options are scoped to whichever Primary Category is selected — the
+    // read-only `sub-categories` endpoint already supports filtering by `category`.
+    useEffect(() => {
+        if (primaryCategory == null) { setSubCategoryOptions([]); return; }
+        setIsLoadingSubCategories(true);
+        contentApi.subCategories
+            .list({ type: contentTypeForApi, category: primaryCategory, size: 100 })
+            .then((res) => setSubCategoryOptions(res.results ?? []))
+            .catch(() => setSubCategoryOptions([]))
+            .finally(() => setIsLoadingSubCategories(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [primaryCategory, contentTypeForApi]);
 
     // Pre-fill form when editing
     useEffect(() => {
@@ -143,23 +173,28 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
                     setReleaseTime("");
                 }
 
+                const applyCategoryIds = (ids: number[]) => {
+                    setPrimaryCategory(ids[0] ?? null);
+                    setSecondaryCategories(ids.slice(1));
+                };
+
                 if (isEnvironmentSound) {
                     setArtist(item.environment_sound_type ?? "");
                     setFrequency(item.frequency ?? "");
-                    setCategoryId(String(item.category?.[0] ?? ""));
+                    applyCategoryIds(item.category ?? []);
                 } else if (isMindSession) {
                     setArtist(item.instructor_name || item.artist || "");
                     setContentType(item.mind_session_type ?? "");
-                    setCategoryId(String(item.mind_session_category?.[0] ?? ""));
+                    applyCategoryIds(item.mind_session_category ?? []);
                 } else if (isEnvironmentVisual) {
                     setArtist(item.mood ?? "");
                     setContentType(item.environment_visual_type ?? "");
-                    setCategoryId(String(item.category?.[0] ?? ""));
+                    applyCategoryIds(item.category ?? []);
                 } else if (isMind) {
                     setArtist(item.author ?? "");
                 } else {
                     setArtist(item.artist ?? "");
-                    setCategoryId(String(item.music_category?.[0] ?? ""));
+                    applyCategoryIds(item.music_category ?? []);
                 }
             } catch {
                 setLoadError("Could not load item details. It may have been deleted.");
@@ -172,7 +207,8 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
     const resetForm = () => {
         setTitle("");
         setArtist("");
-        setCategoryId("");
+        setPrimaryCategory(null);
+        setSecondaryCategories([]);
         setTags([]);
         setStatus("draft");
         setAccessLevel("free");
@@ -211,6 +247,14 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
     };
     const toggleSecondaryGoal = (id: number) => {
         setSecondaryGoals((prev) => (prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]));
+    };
+
+    const handlePrimaryCategoryChange = (id: number | null) => {
+        setPrimaryCategory(id);
+        if (id != null) setSecondaryCategories((prev) => prev.filter((c) => c !== id));
+    };
+    const toggleSecondaryCategory = (id: number) => {
+        setSecondaryCategories((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
     };
 
     const handlePrimaryStateChange = (id: number | null) => {
@@ -260,24 +304,31 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
             fd.append("image", coverImageFile);
         }
 
+        // "Primary" is a frontend-only convention — the backend just stores one flat array per
+        // type, with primary first, so this is what actually carries both selections to it.
+        const appendCategories = (fieldName: string) => {
+            if (primaryCategory != null) fd.append(fieldName, String(primaryCategory));
+            secondaryCategories.forEach((id) => fd.append(fieldName, String(id)));
+        };
+
         if (isEnvironmentSound) {
             fd.append("environment_sound_type", artist);
             if (frequency) fd.append("frequency", frequency);
-            if (categoryId) fd.append("category", categoryId);
+            appendCategories("category");
         } else if (isMindSession) {
             fd.append("artist", artist);
             fd.append("instructor_name", artist);
             if (contentType) fd.append("mind_session_type", contentType);
-            if (categoryId) fd.append("mind_session_category", categoryId);
+            appendCategories("mind_session_category");
         } else if (isEnvironmentVisual) {
             fd.append("mood", artist);
             if (contentType) fd.append("environment_visual_type", contentType);
-            if (categoryId) fd.append("category", categoryId);
+            appendCategories("category");
         } else if (isMind) {
             fd.append("author", artist);
         } else {
             fd.append("artist", artist);
-            if (categoryId) fd.append("music_category", categoryId);
+            appendCategories("music_category");
         }
 
         if (primaryState != null) fd.append("primary_state", String(primaryState));
@@ -421,23 +472,38 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
                             isMindSession={isMindSession}
                             isEnvironmentVisual={isEnvironmentVisual}
                             isMind={isMind}
-                            onCreateSubCategory={() => setIsCreateSubCategoryOpen(true)}
                             title={title}
                             onTitleChange={setTitle}
                             artist={artist}
                             onArtistChange={setArtist}
-                            categoryId={categoryId}
-                            onCategoryChange={setCategoryId}
-                            categories={categories}
                             details={details}
                             onDetailsChange={setDetails}
                             audioFile={audioFile}
                             onAudioFileChange={setAudioFile}
                             onDurationExtracted={setDuration}
-                            subCategory={subCategory}
-                            onSubCategoryChange={setSubCategory}
                             existingAudioUrl={existingAudioUrl}
                         />
+
+                        {!isMind && (
+                            <CategorySelector
+                                categories={categories}
+                                primaryCategory={primaryCategory}
+                                onPrimaryCategoryChange={handlePrimaryCategoryChange}
+                                secondaryCategories={secondaryCategories}
+                                onToggleSecondaryCategory={toggleSecondaryCategory}
+                            />
+                        )}
+
+                        {!isMind && (
+                            <SubCategoryPicker
+                                options={subCategoryOptions}
+                                isLoading={isLoadingSubCategories}
+                                hasPrimaryCategory={primaryCategory != null}
+                                value={subCategory}
+                                onChange={setSubCategory}
+                                onCreateNew={() => setIsCreateSubCategoryOpen(true)}
+                            />
+                        )}
 
                         <GoalSelector
                             goalsList={goalsList}
@@ -527,6 +593,9 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
             <CreateSubCategoryModal
                 isOpen={isCreateSubCategoryOpen}
                 onClose={() => setIsCreateSubCategoryOpen(false)}
+                categories={categories}
+                defaultCategoryId={primaryCategory}
+                onCreate={setSubCategory}
             />
         </>
     );

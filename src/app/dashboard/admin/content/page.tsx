@@ -230,41 +230,15 @@ function ContentManagementPageInner() {
   const PAGE_SIZE = 10;
 
   const fetchCategories = useCallback(async () => {
+    // Minds have no Category concept at all (no Category UI, no "Add Category" button).
+    if (activeTab === "Minds") { setCategories([]); return; }
     try {
-      if (activeTab === "Music") {
-        const res = await contentApi.categories.list({ size: 100, type: "music" });
-        setCategories(res.results);
-        return;
-      }
-
-      // For other tabs the shared categories endpoint doesn't return their categories,
-      // so extract unique {id, name} pairs directly from the content list.
-      let items: Array<{ category?: number[]; mind_session_category?: number[]; category_names: string }> = [];
-
-      if (activeTab === "Guided") {
-        const res = await contentApi.guidedSessions.list({ size: 100 });
-        items = res.results;
-      } else if (activeTab === "Sounds") {
-        const res = await contentApi.envSounds.list({ size: 100 });
-        items = res.results;
-      } else if (activeTab === "Visuals") {
-        const res = await contentApi.envVisuals.list({ size: 100 });
-        items = res.results;
-      }
-
-      const seen = new Set<number>();
-      const cats: AdminCategory[] = [];
-      for (const item of items) {
-        const ids = item.mind_session_category ?? item.category ?? [];
-        const names = (Array.isArray(item.category_names) ? item.category_names : []) as string[];
-        ids.forEach((id, i) => {
-          if (!seen.has(id) && names[i]) {
-            seen.add(id);
-            cats.push({ id, name: names[i], item_count: 0 });
-          }
-        });
-      }
-      setCategories(cats);
+      // Confirmed working for all 4 non-Mind types (ManageCategoriesModal.tsx already relies
+      // on this same call uniformly) — no need for the derived-from-content-items workaround
+      // this used to fall back to for Guided/Sounds/Visuals, which missed any category with
+      // no content in the first 100 items of that tab.
+      const res = await contentApi.categories.list({ size: 100, type: getContentType(activeTab) });
+      setCategories(res.results);
     } catch {
       setCategories([]);
     }
