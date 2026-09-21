@@ -8,6 +8,9 @@ export interface ValidationItemData {
      * (Admin can publish a "playlist" as either Music or Guided content), so Approve/Reject
      * PATCH the correct resource. Unused for Minds. */
     contentKind?: "music" | "guided-sessions";
+    /** Currently-assigned category ids (Music's `music_category` or Guided's
+     * `mind_session_category`), so the review modal can pre-select them. */
+    categoryIds?: number[];
     title: string;
     description: string;
     creator: string;

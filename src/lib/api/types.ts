@@ -531,6 +531,10 @@ export interface ContentApprovalRequest {
     is_premium?: boolean;
     allowed_user_ids?: number[];
     published_at?: string | null;
+    /** Category(ies) this item appears under once published — only one of these applies,
+     * depending on the item's actual content type (Music vs Guided Session). */
+    music_category?: number[];
+    mind_session_category?: number[];
 }
 
 export type AnyContentItem = AdminMusic | AdminMindSession | AdminEnvironmentSound | AdminEnvironmentVisual | AdminMind;

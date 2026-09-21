@@ -1,13 +1,13 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { Music2, Calendar, ChevronDown, Search, Loader2, XCircle } from "lucide-react";
+import { Music2, Calendar, ChevronDown, Search, Loader2, XCircle, Tag } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
 import Label from "@/components/form/Label";
 import { ValidationItemData } from "./ValidationItem";
 import contentApi from "@/lib/api/contentApi";
 import usersApi from "@/lib/api/usersApi";
-import type { ContentVisibility, UserSearchResult } from "@/lib/api/types";
+import type { ContentVisibility, UserSearchResult, AdminCategory } from "@/lib/api/types";
 
 interface PlaylistReviewModalProps {
     isOpen: boolean;
@@ -38,6 +38,12 @@ const PlaylistReviewModal: React.FC<PlaylistReviewModalProps> = ({ isOpen, onClo
     const [isRejecting, setIsRejecting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Which categories this playlist will appear under once published — e.g. a Music
+    // playlist filed under "Piano", or a Guided playlist filed under "Meditation"/"Hypnosis".
+    const [categoryOptions, setCategoryOptions] = useState<AdminCategory[]>([]);
+    const [selectedCategoryIds, setSelectedCategoryIds] = useState<number[]>([]);
+    const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+
     useEffect(() => {
         if (!isOpen) {
             setVisibility("all");
@@ -47,8 +53,26 @@ const PlaylistReviewModal: React.FC<PlaylistReviewModalProps> = ({ isOpen, onClo
             setUserQuery("");
             setSearchResults([]);
             setError(null);
+            setCategoryOptions([]);
+            setSelectedCategoryIds([]);
         }
     }, [isOpen]);
+
+    useEffect(() => {
+        if (!isOpen || !item) return;
+        setSelectedCategoryIds(item.categoryIds ?? []);
+        setIsLoadingCategories(true);
+        contentApi.categories
+            .list({ type: item.contentKind === "guided-sessions" ? "mind_session" : "music", size: 100 })
+            .then((res) => setCategoryOptions(res.results ?? []))
+            .catch(() => setCategoryOptions([]))
+            .finally(() => setIsLoadingCategories(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isOpen, item?.id]);
+
+    const toggleCategory = (id: number) => {
+        setSelectedCategoryIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
+    };
 
     const searchDebounce = useCallback((q: string) => {
         if (!q.trim()) { setSearchResults([]); return; }
@@ -96,6 +120,8 @@ const PlaylistReviewModal: React.FC<PlaylistReviewModalProps> = ({ isOpen, onClo
             const publishedAt = buildPublishedAt();
             if (publishedAt) payload.published_at = publishedAt;
             if (visibility === "restricted") payload.allowed_user_ids = allowedUsers.map(u => u.id);
+            if (item.contentKind === "guided-sessions") payload.mind_session_category = selectedCategoryIds;
+            else payload.music_category = selectedCategoryIds;
 
             await contentApi.approveContent(item.contentKind ?? "music", Number(item.id), payload);
             onApproved?.(item.id);
@@ -176,6 +202,44 @@ const PlaylistReviewModal: React.FC<PlaylistReviewModalProps> = ({ isOpen, onClo
                             </select>
                             <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 pointer-events-none" />
                         </div>
+                    </div>
+
+                    {/* Categories — which section(s) of the app this playlist will appear under */}
+                    <div>
+                        <Label className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-1 mb-2">
+                            Categories <span className="text-red-500">*</span>
+                        </Label>
+                        <p className="text-xs text-gray-400 mb-3">
+                            Where this {item.contentKind === "guided-sessions" ? "Guided" : "Music"} playlist will appear once published.
+                        </p>
+                        {isLoadingCategories ? (
+                            <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
+                                <Loader2 className="w-4 h-4 animate-spin" /> Loading categories…
+                            </div>
+                        ) : categoryOptions.length === 0 ? (
+                            <p className="text-sm text-gray-400 py-2">No categories available for this content type.</p>
+                        ) : (
+                            <div className="flex flex-wrap gap-2">
+                                {categoryOptions.map((cat) => {
+                                    const isSelected = selectedCategoryIds.includes(cat.id);
+                                    return (
+                                        <button
+                                            key={cat.id}
+                                            type="button"
+                                            onClick={() => toggleCategory(cat.id)}
+                                            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                                                isSelected
+                                                    ? "bg-purple-50 dark:bg-purple-900/20 border-purple-300 dark:border-purple-700 text-purple-700 dark:text-purple-300"
+                                                    : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:border-purple-200 dark:hover:border-purple-700"
+                                            }`}
+                                        >
+                                            <Tag className="w-3.5 h-3.5" />
+                                            {cat.name}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
 
                     {/* Restricted user picker */}
@@ -280,7 +344,7 @@ const PlaylistReviewModal: React.FC<PlaylistReviewModalProps> = ({ isOpen, onClo
                         </Button>
                         <Button
                             onClick={handleApprove}
-                            disabled={isSubmitting || isRejecting || (visibility === "restricted" && allowedUsers.length === 0)}
+                            disabled={isSubmitting || isRejecting || selectedCategoryIds.length === 0 || (visibility === "restricted" && allowedUsers.length === 0)}
                             className="px-10 bg-[#9810FA] hover:bg-[#8000E0] text-white rounded-2xl py-4 h-auto font-bold border-none shadow-2xl shadow-purple-500/30 disabled:opacity-50 transition-all"
                         >
                             {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Approve & Schedule"}
