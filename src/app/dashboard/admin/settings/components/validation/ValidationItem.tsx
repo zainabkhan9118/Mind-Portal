@@ -7,7 +7,7 @@ export interface ValidationItemData {
     /** For `type: "playlist"` — which content-type endpoint this item actually lives under
      * (Admin can publish a "playlist" as either Music or Guided content), so Approve/Reject
      * PATCH the correct resource. Unused for Minds. */
-    contentKind?: "music" | "guided-sessions";
+    contentKind?: "music" | "guided-sessions" | "env-sounds" | "env-visuals";
     /** Currently-assigned category ids (Music's `music_category` or Guided's
      * `mind_session_category`), so the review modal can pre-select them. */
     categoryIds?: number[];

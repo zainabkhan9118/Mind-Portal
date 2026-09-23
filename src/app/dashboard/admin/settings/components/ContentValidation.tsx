@@ -9,7 +9,7 @@ import PlaylistReviewModal from "./validation/PlaylistReviewModal";
 import MindExpertsTab from "../../users/components/MindExpertsTab";
 import contentApi from "@/lib/api/contentApi";
 import usersApi from "@/lib/api/usersApi";
-import type { AdminMind, AdminMusic, AdminMindSession } from "@/lib/api/types";
+import type { AdminMind, AdminMusic, AdminMindSession, AdminEnvironmentSound, AdminEnvironmentVisual } from "@/lib/api/types";
 
 const ContentValidation: React.FC = () => {
     const [minds, setMinds] = useState<ValidationItemData[]>([]);
@@ -51,16 +51,18 @@ const ContentValidation: React.FC = () => {
             // returns 0 results despite matching Minds existing, while this dedicated
             // endpoint filters correctly. See API_SPEC.md for the backend bug report.
             contentApi.minds.list({ status: 'review', size: 20 }),
-            // "Playlist" validation covers Admin-created content in either the Music or
-            // Guided Sessions catalog (e.g. a Music playlist under "Piano", or a Guided
-            // playlist under "Meditation") — both go through the same review → publish flow.
-            // Also using the type-specific endpoints here rather than the generic combined
-            // `admin/content/` one, given it's confirmed broken for `type=minds` — same risk
-            // hasn't been ruled out for these types, so avoid it defensively.
+            // "Playlist" validation covers Admin-created content in the Music, Guided
+            // Sessions, Env Sound, or Env Visual catalogs (e.g. a Music playlist under
+            // "Piano", a Guided playlist under "Meditation") — all four go through the
+            // same review → publish flow. Also using the type-specific endpoints here
+            // rather than the generic combined `admin/content/` one, given it's confirmed
+            // broken for `type=minds` — same risk hasn't been ruled out for these types.
             contentApi.music.list({ status: 'review', size: 20 }),
             contentApi.guidedSessions.list({ status: 'review', size: 20 }),
+            contentApi.envSounds.list({ status: 'review', size: 20 }),
+            contentApi.envVisuals.list({ status: 'review', size: 20 }),
             usersApi.getMindExpertApplications(),
-        ]).then(([mindsRes, musicRes, guidedRes, mindExpertsRes]) => {
+        ]).then(([mindsRes, musicRes, guidedRes, soundsRes, visualsRes, mindExpertsRes]) => {
             const mindItems = (mindsRes.results as AdminMind[]).map((item): ValidationItemData => ({
                 id: String(item.id),
                 type: 'mind',
@@ -100,10 +102,38 @@ const ContentValidation: React.FC = () => {
                 category: item.category_names ? `Guided · ${item.category_names}` : 'Guided',
             }));
 
+            const soundItems = (soundsRes.results as AdminEnvironmentSound[]).map((item): ValidationItemData => ({
+                id: String(item.id),
+                type: 'playlist',
+                contentKind: 'env-sounds',
+                categoryIds: item.category ?? [],
+                title: item.name,
+                description: item.description ?? '',
+                creator: item.environment_sound_type ?? '',
+                itemCount: 0,
+                createdAt: item.created_at.split('T')[0],
+                status: 'Pending',
+                category: item.category_names ? `Sound · ${item.category_names}` : 'Sound',
+            }));
+
+            const visualItems = (visualsRes.results as AdminEnvironmentVisual[]).map((item): ValidationItemData => ({
+                id: String(item.id),
+                type: 'playlist',
+                contentKind: 'env-visuals',
+                categoryIds: item.category ?? [],
+                title: item.name,
+                description: item.description ?? '',
+                creator: item.mood ?? '',
+                itemCount: 0,
+                createdAt: item.created_at.split('T')[0],
+                status: 'Pending',
+                category: item.category_names ? `Visual · ${item.category_names}` : 'Visual',
+            }));
+
             setMinds(mindItems);
-            setPlaylists([...musicItems, ...guidedItems]);
+            setPlaylists([...musicItems, ...guidedItems, ...soundItems, ...visualItems]);
             setMindsTotal(mindsRes.count ?? 0);
-            setPlaylistsTotal((musicRes.count ?? 0) + (guidedRes.count ?? 0));
+            setPlaylistsTotal((musicRes.count ?? 0) + (guidedRes.count ?? 0) + (soundsRes.count ?? 0) + (visualsRes.count ?? 0));
             setMindExpertsTotal(mindExpertsRes.results?.length ?? 0);
         }).catch(console.error).finally(() => setIsLoading(false));
     }, []);

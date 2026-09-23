@@ -1,13 +1,20 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import { Music2, Calendar, ChevronDown, Search, Loader2, XCircle, Tag } from "lucide-react";
+import { Music2, Waves, Image as ImageIcon, Calendar, ChevronDown, Search, Loader2, XCircle, Tag } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
 import Label from "@/components/form/Label";
 import { ValidationItemData } from "./ValidationItem";
 import contentApi from "@/lib/api/contentApi";
 import usersApi from "@/lib/api/usersApi";
-import type { ContentVisibility, UserSearchResult, AdminCategory } from "@/lib/api/types";
+import type { ContentVisibility, UserSearchResult, AdminCategory, ContentType } from "@/lib/api/types";
+
+const KIND_META: Record<string, { label: string; categoryType: ContentType; categoryField: string; icon: typeof Music2 }> = {
+    "music": { label: "Music", categoryType: "music", categoryField: "music_category", icon: Music2 },
+    "guided-sessions": { label: "Guided", categoryType: "mind_session", categoryField: "mind_session_category", icon: Music2 },
+    "env-sounds": { label: "Sound", categoryType: "env_sound", categoryField: "category", icon: Waves },
+    "env-visuals": { label: "Visual", categoryType: "env_visual", categoryField: "category", icon: ImageIcon },
+};
 
 interface PlaylistReviewModalProps {
     isOpen: boolean;
@@ -58,12 +65,14 @@ const PlaylistReviewModal: React.FC<PlaylistReviewModalProps> = ({ isOpen, onClo
         }
     }, [isOpen]);
 
+    const kindMeta = KIND_META[item?.contentKind ?? "music"];
+
     useEffect(() => {
         if (!isOpen || !item) return;
         setSelectedCategoryIds(item.categoryIds ?? []);
         setIsLoadingCategories(true);
         contentApi.categories
-            .list({ type: item.contentKind === "guided-sessions" ? "mind_session" : "music", size: 100 })
+            .list({ type: KIND_META[item.contentKind ?? "music"].categoryType, size: 100 })
             .then((res) => setCategoryOptions(res.results ?? []))
             .catch(() => setCategoryOptions([]))
             .finally(() => setIsLoadingCategories(false));
@@ -120,8 +129,8 @@ const PlaylistReviewModal: React.FC<PlaylistReviewModalProps> = ({ isOpen, onClo
             const publishedAt = buildPublishedAt();
             if (publishedAt) payload.published_at = publishedAt;
             if (visibility === "restricted") payload.allowed_user_ids = allowedUsers.map(u => u.id);
-            if (item.contentKind === "guided-sessions") payload.mind_session_category = selectedCategoryIds;
-            else payload.music_category = selectedCategoryIds;
+            const categoryField = KIND_META[item.contentKind ?? "music"].categoryField as "music_category" | "mind_session_category" | "category";
+            payload[categoryField] = selectedCategoryIds;
 
             await contentApi.approveContent(item.contentKind ?? "music", Number(item.id), payload);
             onApproved?.(item.id);
@@ -163,7 +172,7 @@ const PlaylistReviewModal: React.FC<PlaylistReviewModalProps> = ({ isOpen, onClo
                 {/* Item Details */}
                 <div className="flex gap-8 mb-8">
                     <div className="w-24 h-24 rounded-3xl bg-purple-100/50 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0 border border-purple-50 dark:border-purple-900/30">
-                        <Music2 className="w-12 h-12" />
+                        <kindMeta.icon className="w-12 h-12" />
                     </div>
                     <div className="space-y-2">
                         <div className="flex items-center gap-2">
@@ -210,7 +219,7 @@ const PlaylistReviewModal: React.FC<PlaylistReviewModalProps> = ({ isOpen, onClo
                             Categories <span className="text-red-500">*</span>
                         </Label>
                         <p className="text-xs text-gray-400 mb-3">
-                            Where this {item.contentKind === "guided-sessions" ? "Guided" : "Music"} playlist will appear once published.
+                            Where this {kindMeta.label} playlist will appear once published.
                         </p>
                         {isLoadingCategories ? (
                             <div className="flex items-center gap-2 text-sm text-gray-400 py-2">
