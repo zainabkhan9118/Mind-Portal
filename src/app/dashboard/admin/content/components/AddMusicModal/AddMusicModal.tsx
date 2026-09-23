@@ -13,6 +13,7 @@ import CategorySelector from "./CategorySelector";
 import SubCategoryPicker from "./SubCategoryPicker";
 import IconSelection from "./IconSelection";
 import CreateSubCategoryModal from "./CreateSubCategoryModal";
+import ManageSubCategoriesModal from "./ManageSubCategoriesModal";
 import { contentApi } from "@/lib/api";
 import apiClient from "@/lib/api/axiosInstance";
 import type { AdminCategory, AdminState, AdminEffect, SubCategory, ContentType } from "@/lib/api/types";
@@ -49,6 +50,7 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
 }) => {
     const [useCustomIcon, setUseCustomIcon] = useState(false);
     const [isCreateSubCategoryOpen, setIsCreateSubCategoryOpen] = useState(false);
+    const [isManageSubCategoriesOpen, setIsManageSubCategoriesOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [loadError, setLoadError] = useState<string | null>(null);
@@ -92,7 +94,7 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
     const [frequency, setFrequency] = useState("");
     const [contentType, setContentType] = useState("");
     const [duration, setDuration] = useState<number>(0);
-    const [subCategory, setSubCategory] = useState("");
+    const [subCategoryIds, setSubCategoryIds] = useState<number[]>([]);
     const [subCategoryOptions, setSubCategoryOptions] = useState<SubCategory[]>([]);
     const [isLoadingSubCategories, setIsLoadingSubCategories] = useState(false);
     const [iconId, setIconId] = useState<number | null>(null);
@@ -119,18 +121,45 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
             .catch(() => {});
     }, []);
 
-    // Sub-category options are scoped to whichever Primary Category is selected — the
-    // read-only `sub-categories` endpoint already supports filtering by `category`.
+    // Sub-category options are the union across every currently-selected Primary + Secondary
+    // Category (an item can have multiple parent categories, so its sub-category choices
+    // should span all of them, not just the primary one).
+    const [subCategoryRefreshCount, setSubCategoryRefreshCount] = useState(0);
+    const selectedCategoryIdsKey = [primaryCategory, ...secondaryCategories].filter((id): id is number => id != null).join(",");
     useEffect(() => {
-        if (primaryCategory == null) { setSubCategoryOptions([]); return; }
+        const categoryIds = selectedCategoryIdsKey ? selectedCategoryIdsKey.split(",").map(Number) : [];
+        if (categoryIds.length === 0) { setSubCategoryOptions([]); setSubCategoryIds([]); return; }
         setIsLoadingSubCategories(true);
-        contentApi.subCategories
-            .list({ type: contentTypeForApi, category: primaryCategory, size: 100 })
-            .then((res) => setSubCategoryOptions(res.results ?? []))
+        Promise.all(
+            categoryIds.map((catId) =>
+                contentApi.subCategories
+                    .list({ type: contentTypeForApi, category: catId, size: 100 })
+                    .then((res) => res.results ?? [])
+                    .catch(() => [])
+            ),
+        )
+            .then((lists) => {
+                const merged = new Map<number, SubCategory>();
+                lists.flat().forEach((sc) => merged.set(sc.id, sc));
+                const mergedList = Array.from(merged.values());
+                setSubCategoryOptions(mergedList);
+                // A sub-category tied to a category that's no longer selected is no longer
+                // valid — the backend rejects it with 400, so drop it here too.
+                setSubCategoryIds((prev) => prev.filter((id) => merged.has(id)));
+            })
             .catch(() => setSubCategoryOptions([]))
             .finally(() => setIsLoadingSubCategories(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [primaryCategory, contentTypeForApi]);
+    }, [selectedCategoryIdsKey, contentTypeForApi, subCategoryRefreshCount]);
+
+    const toggleSubCategory = (id: number) => {
+        setSubCategoryIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
+    };
+
+    const handleSubCategoryCreated = (created: SubCategory) => {
+        setSubCategoryOptions((prev) => [...prev, created]);
+        setSubCategoryIds((prev) => [...prev, created.id]);
+    };
 
     // Pre-fill form when editing
     useEffect(() => {
@@ -158,7 +187,7 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
                 setSecondaryStates(item.secondary_states ?? []);
                 setPrimaryEffect(item.primary_effect ?? null);
                 setSecondaryEffects(item.secondary_effects ?? []);
-                setSubCategory(item.sub_category ?? "");
+                setSubCategoryIds(item.sub_categories ?? []);
                 setIconId(item.icon ?? null);
                 setIconUrl(item.icon_url ?? null);
                 setUseCustomIcon(!!item.icon);
@@ -224,7 +253,7 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
         setSecondaryStates([]);
         setPrimaryEffect(null);
         setSecondaryEffects([]);
-        setSubCategory("");
+        setSubCategoryIds([]);
         setIconId(null);
         setIconFile(null);
         setIconUrl(null);
@@ -294,6 +323,11 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
         tags.forEach((tag) => fd.append("tags", tag));
         if (primaryGoal != null) fd.append("primary_goal", String(primaryGoal));
         secondaryGoals.forEach((id) => fd.append("secondary_goals", String(id)));
+        // `goals` is a separate, still-required field on the backend model (non-empty),
+        // distinct from `primary_goal`/`secondary_goals` — sending only the latter two
+        // leaves `goals` empty and fails validation ("goals: This list may not be empty").
+        if (primaryGoal != null) fd.append("goals", String(primaryGoal));
+        secondaryGoals.forEach((id) => fd.append("goals", String(id)));
 
         fd.append("duration", String(duration));
 
@@ -335,7 +369,9 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
         secondaryStates.forEach((id) => fd.append("secondary_states", String(id)));
         if (primaryEffect != null) fd.append("primary_effect", String(primaryEffect));
         secondaryEffects.forEach((id) => fd.append("secondary_effects", String(id)));
-        if (subCategory) fd.append("sub_category", subCategory);
+        // `sub_categories` (stable ids, multi-value) — the backend keeps the legacy
+        // `sub_category` string field in sync from this automatically, no need to send it.
+        subCategoryIds.forEach((id) => fd.append("sub_categories", String(id)));
 
         if (iconFile)            fd.append("icon", iconFile);
         else if (iconId !== null) fd.append("icon", String(iconId));
@@ -498,10 +534,11 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
                             <SubCategoryPicker
                                 options={subCategoryOptions}
                                 isLoading={isLoadingSubCategories}
-                                hasPrimaryCategory={primaryCategory != null}
-                                value={subCategory}
-                                onChange={setSubCategory}
+                                hasParentCategory={primaryCategory != null || secondaryCategories.length > 0}
+                                selectedIds={subCategoryIds}
+                                onToggle={toggleSubCategory}
                                 onCreateNew={() => setIsCreateSubCategoryOpen(true)}
+                                onManage={() => setIsManageSubCategoriesOpen(true)}
                             />
                         )}
 
@@ -593,9 +630,17 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
             <CreateSubCategoryModal
                 isOpen={isCreateSubCategoryOpen}
                 onClose={() => setIsCreateSubCategoryOpen(false)}
-                categories={categories}
+                categories={categories.filter((c) => c.id === primaryCategory || secondaryCategories.includes(c.id))}
                 defaultCategoryId={primaryCategory}
-                onCreate={setSubCategory}
+                contentType={contentTypeForApi}
+                onCreated={handleSubCategoryCreated}
+            />
+
+            <ManageSubCategoriesModal
+                isOpen={isManageSubCategoriesOpen}
+                onClose={() => setIsManageSubCategoriesOpen(false)}
+                subCategories={subCategoryOptions}
+                onChanged={() => setSubCategoryRefreshCount((n) => n + 1)}
             />
         </>
     );

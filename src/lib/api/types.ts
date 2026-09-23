@@ -263,12 +263,23 @@ export interface AdminEffect {
 export type ContentCategory = AdminCategory;
 
 // Sub-categories
+/** A permanent, stable sub-category record (confirmed live in production 21 Sept 2026 —
+ * see content-subcategories.md). `id` is a real database id, safe to store and reuse. */
 export interface SubCategory {
     id: number;
     name: string;
+    type?: ContentType;
     category: number | null;
     category_name: string | null;
     item_count: number;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface SubCategoryCreateRequest {
+    name: string;
+    type: ContentType;
+    category: number;
 }
 
 export interface SubCategoryListParams {
@@ -310,7 +321,11 @@ export interface AdminMusic {
     audio_clip: string;
     duration: number;
     music_category?: number[];
+    /** Legacy — first selected sub-category's name, kept in sync by the backend. Read-only in
+     * practice now; write `sub_categories` instead (see content-subcategories.md). */
     sub_category?: string | null;
+    /** Stable sub-category ids — the real, multi-value field (confirmed live 21 Sept 2026). */
+    sub_categories?: number[];
     album?: number | null;
     goals: number[];
     status?: ContentStatus;
@@ -388,7 +403,11 @@ export interface AdminMindSession {
     secondary_states?: number[];
     primary_effect?: number | null;
     secondary_effects?: number[];
+    /** Legacy — first selected sub-category's name, kept in sync by the backend. Read-only in
+     * practice now; write `sub_categories` instead (see content-subcategories.md). */
     sub_category?: string | null;
+    /** Stable sub-category ids — the real, multi-value field (confirmed live 21 Sept 2026). */
+    sub_categories?: number[];
     visibility?: ContentVisibility;
     allowed_users?: AllowedUser[];
     allowed_user_ids?: number[];
@@ -435,7 +454,11 @@ export interface AdminEnvironmentSound {
     secondary_states?: number[];
     primary_effect?: number | null;
     secondary_effects?: number[];
+    /** Legacy — first selected sub-category's name, kept in sync by the backend. Read-only in
+     * practice now; write `sub_categories` instead (see content-subcategories.md). */
     sub_category?: string | null;
+    /** Stable sub-category ids — the real, multi-value field (confirmed live 21 Sept 2026). */
+    sub_categories?: number[];
     visibility?: ContentVisibility;
     allowed_users?: AllowedUser[];
     allowed_user_ids?: number[];
@@ -478,7 +501,11 @@ export interface AdminEnvironmentVisual {
     secondary_states?: number[];
     primary_effect?: number | null;
     secondary_effects?: number[];
+    /** Legacy — first selected sub-category's name, kept in sync by the backend. Read-only in
+     * practice now; write `sub_categories` instead (see content-subcategories.md). */
     sub_category?: string | null;
+    /** Stable sub-category ids — the real, multi-value field (confirmed live 21 Sept 2026). */
+    sub_categories?: number[];
     visibility?: ContentVisibility;
     allowed_users?: AllowedUser[];
     allowed_user_ids?: number[];

@@ -22,6 +22,7 @@ import type {
     AdminEffect,
     SubCategory,
     SubCategoryListParams,
+    SubCategoryCreateRequest,
     SoundLayer,
     SessionStep,
     ReorderStepsRequest,
@@ -400,6 +401,26 @@ const contentApi = {
                 { params },
             );
             return response.data;
+        },
+
+        create: async (data: SubCategoryCreateRequest): Promise<SubCategory> => {
+            const response = await apiClient.post<SubCategory>(
+                "admin/content/sub-categories/",
+                data,
+            );
+            return response.data;
+        },
+
+        update: async (id: number, data: { name: string }): Promise<SubCategory> => {
+            const response = await apiClient.patch<SubCategory>(
+                `admin/content/sub-categories/${id}/`,
+                data,
+            );
+            return response.data;
+        },
+
+        delete: async (id: number): Promise<void> => {
+            await apiClient.delete(`admin/content/sub-categories/${id}/`);
         },
     },
 

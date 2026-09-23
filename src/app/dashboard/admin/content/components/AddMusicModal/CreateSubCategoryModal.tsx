@@ -3,7 +3,9 @@ import { Modal } from "@/components/ui/modal";
 import Button from "@/components/ui/button/Button";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
-import { X, Layers } from "lucide-react";
+import { X, Layers, Loader2 } from "lucide-react";
+import contentApi from "@/lib/api/contentApi";
+import type { ContentType, SubCategory } from "@/lib/api/types";
 
 interface CategoryOption {
     id: number;
@@ -13,15 +15,12 @@ interface CategoryOption {
 interface CreateSubCategoryModalProps {
     isOpen: boolean;
     onClose: () => void;
+    /** Only the categories already selected on this item (Primary + Secondary) — a new
+     * sub-category must be linked to one of them, per the backend's validation rule. */
     categories: CategoryOption[];
-    /** Pre-select whichever category the admin already has picked as Primary Category. */
     defaultCategoryId?: number | null;
-    /**
-     * `sub_category` is a plain free-text field on the content item (not a separate linked
-     * entity — see API_SPEC.md), so "creating" one just means setting this form's Sub Category
-     * text to the new name. The parent category is informational context for the admin only.
-     */
-    onCreate: (name: string) => void;
+    contentType: ContentType;
+    onCreated: (created: SubCategory) => void;
 }
 
 const CreateSubCategoryModal: React.FC<CreateSubCategoryModalProps> = ({
@@ -29,10 +28,12 @@ const CreateSubCategoryModal: React.FC<CreateSubCategoryModalProps> = ({
     onClose,
     categories,
     defaultCategoryId = null,
-    onCreate,
+    contentType,
+    onCreated,
 }) => {
     const [parentCategoryId, setParentCategoryId] = useState<string>("");
     const [name, setName] = useState("");
+    const [isCreating, setIsCreating] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -43,13 +44,25 @@ const CreateSubCategoryModal: React.FC<CreateSubCategoryModalProps> = ({
         }
     }, [isOpen, defaultCategoryId]);
 
-    const handleCreate = () => {
-        if (!name.trim()) {
-            setError("Please enter a sub category name.");
-            return;
+    const handleCreate = async () => {
+        if (!name.trim()) { setError("Please enter a sub category name."); return; }
+        if (!parentCategoryId) { setError("Please select a parent category."); return; }
+        setError(null);
+        setIsCreating(true);
+        try {
+            const created = await contentApi.subCategories.create({
+                name: name.trim(),
+                type: contentType,
+                category: Number(parentCategoryId),
+            });
+            onCreated(created);
+            onClose();
+        } catch (err: unknown) {
+            const axiosErr = err as { response?: { data?: { error?: { message?: string } } } };
+            setError(axiosErr?.response?.data?.error?.message ?? "Failed to create sub category. It may already exist.");
+        } finally {
+            setIsCreating(false);
         }
-        onCreate(name.trim());
-        onClose();
     };
 
     return (
@@ -85,6 +98,9 @@ const CreateSubCategoryModal: React.FC<CreateSubCategoryModalProps> = ({
                                 <option key={c.id} value={c.id}>{c.name}</option>
                             ))}
                         </select>
+                        {categories.length === 0 && (
+                            <p className="text-xs text-gray-400">Select a Primary or Secondary Category on this item first.</p>
+                        )}
                     </div>
 
                     {/* Sub Category Name Input */}
@@ -104,8 +120,14 @@ const CreateSubCategoryModal: React.FC<CreateSubCategoryModalProps> = ({
 
                 {/* Footer Buttons */}
                 <div className="flex justify-end gap-3 p-6 pt-0">
-                    <Button variant="outline" onClick={onClose} className="px-6">Cancel</Button>
-                    <Button onClick={handleCreate} className="bg-[#9810FA] hover:bg-[#8000E0] text-white border-none px-6">Create</Button>
+                    <Button variant="outline" onClick={onClose} disabled={isCreating} className="px-6">Cancel</Button>
+                    <Button
+                        onClick={handleCreate}
+                        disabled={isCreating || categories.length === 0}
+                        className="bg-[#9810FA] hover:bg-[#8000E0] text-white border-none px-6 disabled:opacity-50"
+                    >
+                        {isCreating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Create"}
+                    </Button>
                 </div>
             </div>
         </Modal>
