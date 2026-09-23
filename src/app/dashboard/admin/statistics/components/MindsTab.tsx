@@ -126,6 +126,22 @@ const MindsTab: React.FC<MindsTabProps> = ({ onNavigateToMindCoverage }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dateKey]);
 
+    // Backend's `components` filter matches "has any of the selected components" rather
+    // than "has exactly these components, no others" — e.g. selecting Sound alone still
+    // returns Sound+Visual or Sound+Guided Minds. Enforce the exact-set match client-side
+    // until that's fixed backend-side (see API_SPEC.md). Only this table can be corrected
+    // this way, since it's the only Minds-tab response that includes each row's full
+    // component list — the aggregate cards (KPIs, Helpful Rate by Goal, etc.) have no
+    // per-item data to re-filter and stay affected by the backend's looser matching.
+    const selectedComponents = filterParams.components ?? [];
+    const filteredPerformanceRows = selectedComponents.length === 0
+        ? performanceRows
+        : performanceRows.filter((row) => {
+            const rowSet = new Set(row.components);
+            return rowSet.size === selectedComponents.length
+                && selectedComponents.every((c) => rowSet.has(c));
+        });
+
     // Selected Mind detail + state entry points
     useEffect(() => {
         if (selectedMindId == null) { setSelectedMind(null); setEntryPoints([]); return; }
@@ -215,7 +231,7 @@ const MindsTab: React.FC<MindsTabProps> = ({ onNavigateToMindCoverage }) => {
             </div>
 
             <MindPerformanceTable
-                rows={performanceRows}
+                rows={filteredPerformanceRows}
                 isLoading={isPerformanceLoading}
                 selectedMindId={selectedMindId}
                 onSelectMind={handleSelectMind}

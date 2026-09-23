@@ -232,13 +232,45 @@ function ContentManagementPageInner() {
   const fetchCategories = useCallback(async () => {
     // Minds have no Category concept at all (no Category UI, no "Add Category" button).
     if (activeTab === "Minds") { setCategories([]); return; }
+    const contentType = getContentType(activeTab);
+    let direct: AdminCategory[] = [];
     try {
-      // Confirmed working for all 4 non-Mind types (ManageCategoriesModal.tsx already relies
-      // on this same call uniformly) — no need for the derived-from-content-items workaround
-      // this used to fall back to for Guided/Sounds/Visuals, which missed any category with
-      // no content in the first 100 items of that tab.
-      const res = await contentApi.categories.list({ size: 100, type: getContentType(activeTab) });
-      setCategories(res.results);
+      const res = await contentApi.categories.list({ size: 100, type: contentType });
+      direct = res.results ?? [];
+    } catch {
+      direct = [];
+    }
+
+    if (direct.length > 0 || activeTab === "Music") {
+      setCategories(direct);
+      return;
+    }
+
+    // Fallback for Guided/Sounds/Visuals: the direct `type`-filtered endpoint came back
+    // empty even though these items clearly have categories assigned (their own detail
+    // responses include real `category`/`category_names`) — reported to backend as a
+    // likely filter bug on `admin/content/categories/?type=...` for non-music types (see
+    // API_SPEC.md). Derive categories from the content items themselves so the picker
+    // still works while that's investigated. Won't surface a category with zero items yet.
+    try {
+      let items: Array<{ category?: number[]; mind_session_category?: number[]; category_names?: string | string[] }> = [];
+      if (activeTab === "Guided") items = (await contentApi.guidedSessions.list({ size: 100 })).results;
+      else if (activeTab === "Sounds") items = (await contentApi.envSounds.list({ size: 100 })).results;
+      else if (activeTab === "Visuals") items = (await contentApi.envVisuals.list({ size: 100 })).results;
+
+      const seen = new Set<number>();
+      const derived: AdminCategory[] = [];
+      for (const item of items) {
+        const ids = item.mind_session_category ?? item.category ?? [];
+        const names = Array.isArray(item.category_names) ? item.category_names : [];
+        ids.forEach((id, i) => {
+          if (!seen.has(id) && names[i]) {
+            seen.add(id);
+            derived.push({ id, name: names[i], item_count: 0 });
+          }
+        });
+      }
+      setCategories(derived);
     } catch {
       setCategories([]);
     }

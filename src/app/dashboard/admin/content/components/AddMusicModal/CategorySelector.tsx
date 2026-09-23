@@ -27,8 +27,6 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
     secondaryCategories,
     onToggleSecondaryCategory,
 }) => {
-    if (categories.length === 0) return null;
-
     const secondaryOptions = categories.filter((c) => c.id !== primaryCategory);
 
     return (
@@ -37,21 +35,28 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
                 <Label htmlFor="primary-category">
                     Primary Category
                 </Label>
-                <select
-                    id="primary-category"
-                    value={primaryCategory ?? ""}
-                    onChange={(e) => onPrimaryCategoryChange(e.target.value ? Number(e.target.value) : null)}
-                    className={selectClass}
-                >
-                    <option value="" className="bg-white dark:bg-gray-900">Select category...</option>
-                    {categories.map((c) => (
-                        <option key={c.id} value={c.id} className="bg-white dark:bg-gray-900 text-gray-800 dark:text-white">
-                            {c.name}
-                        </option>
-                    ))}
-                </select>
+                {categories.length === 0 ? (
+                    <p className="text-xs text-gray-400 py-2">
+                        No categories yet for this content type — use &quot;Add Category&quot; above to create one.
+                    </p>
+                ) : (
+                    <select
+                        id="primary-category"
+                        value={primaryCategory ?? ""}
+                        onChange={(e) => onPrimaryCategoryChange(e.target.value ? Number(e.target.value) : null)}
+                        className={selectClass}
+                    >
+                        <option value="" className="bg-white dark:bg-gray-900">Select category...</option>
+                        {categories.map((c) => (
+                            <option key={c.id} value={c.id} className="bg-white dark:bg-gray-900 text-gray-800 dark:text-white">
+                                {c.name}
+                            </option>
+                        ))}
+                    </select>
+                )}
             </div>
 
+            {categories.length > 0 && (
             <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
                     Secondary Categories
@@ -77,6 +82,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
                     )}
                 </div>
             </div>
+            )}
         </div>
     );
 };
