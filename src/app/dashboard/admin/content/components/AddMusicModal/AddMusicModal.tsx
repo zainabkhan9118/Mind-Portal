@@ -442,7 +442,9 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
         if (iconId !== null) payload.icon = iconId;
 
         if (apiStatus === "draft") {
-            payload.published_at = "";
+            // Unlike multipart FormData, a JSON body's DateTimeField rejects "" outright
+            // ("Datetime has wrong format") — null is the correct way to clear it here.
+            payload.published_at = null;
         } else if (apiStatus === "review" && releaseDate) {
             const datePart = releaseDate.includes("T") ? releaseDate.split("T")[0] : releaseDate;
             const timePart = releaseTime || "00:00";
