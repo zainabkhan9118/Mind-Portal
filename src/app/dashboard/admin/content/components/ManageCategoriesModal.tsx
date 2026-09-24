@@ -76,7 +76,7 @@ const ManageCategoriesModal: React.FC<Props> = ({ isOpen, onClose, activeTab, on
         setIsSaving(true);
         setError(null);
         try {
-            await contentApi.categories.update(id, { name: editingName.trim() });
+            await contentApi.categories.update(id, { name: editingName.trim() }, { type: contentType });
             setEditingId(null);
             await load();
             onCategoriesChanged();
@@ -90,7 +90,7 @@ const ManageCategoriesModal: React.FC<Props> = ({ isOpen, onClose, activeTab, on
     const handleDelete = async (id: number) => {
         setError(null);
         try {
-            await contentApi.categories.delete(id);
+            await contentApi.categories.delete(id, { type: contentType });
             await load();
             onCategoriesChanged();
         } catch {

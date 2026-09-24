@@ -65,9 +65,7 @@ const HomeScreenEnvironments: React.FC = () => {
 
     const [isUploadingSound, setIsUploadingSound] = useState(false);
     const [soundUploadError, setSoundUploadError] = useState<string | null>(null);
-    const soundUploadInputRef = useRef<HTMLInputElement>(null);
-    const soundImageInputRef = useRef<HTMLInputElement>(null);
-    const pendingSoundAudioFile = useRef<File | null>(null);
+    const soundAudioPickerRef = useRef<HTMLInputElement>(null);
 
     // ── Delete confirmation ──────────────────────────────────────────────
     const [pendingDelete, setPendingDelete] = useState<{ type: "visual" | "sound"; id: number } | null>(null);
@@ -185,6 +183,29 @@ const HomeScreenEnvironments: React.FC = () => {
     const handleVolumeChange = (id: number, volume: number) => {
         setSoundVolumes((prev) => ({ ...prev, [id]: volume }));
         if (audioRefs.current[id]) audioRefs.current[id].volume = volume / 100;
+    };
+
+    // The backend requires a cover `image` on env-sound create, but sounds don't
+    // naturally have artwork — generate a plain placeholder so the admin only has
+    // to pick the audio file; they can still opt to pick a real image instead.
+    const generatePlaceholderSoundImage = (): Promise<File> => {
+        return new Promise((resolve) => {
+            const canvas = document.createElement("canvas");
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext("2d");
+            if (!ctx) { resolve(new File([], "cover.png", { type: "image/png" })); return; }
+            ctx.fillStyle = "#9810FA";
+            ctx.fillRect(0, 0, 512, 512);
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 220px sans-serif";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("♪", 256, 270);
+            canvas.toBlob((blob) => {
+                resolve(new File([blob ?? new Blob()], "cover.png", { type: "image/png" }));
+            }, "image/png");
+        });
     };
 
     // ── Uploads ─────────────────────────────────────────────────────────
@@ -470,7 +491,7 @@ const HomeScreenEnvironments: React.FC = () => {
                 )}
 
                 <div className="space-y-2 pt-2">
-                    <button onClick={() => soundUploadInputRef.current?.click()} disabled={isUploadingSound}
+                    <button onClick={() => soundAudioPickerRef.current?.click()} disabled={isUploadingSound}
                         className="w-full py-4 px-6 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-purple-600 hover:bg-purple-50/50 dark:hover:bg-purple-900/10 transition-all flex items-center justify-center gap-3 group disabled:opacity-50">
                         <div className="p-1.5 bg-gray-900 dark:bg-gray-700 rounded-lg text-white">
                             {isUploadingSound ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
@@ -479,26 +500,15 @@ const HomeScreenEnvironments: React.FC = () => {
                             {isUploadingSound ? "Uploading…" : "Add New Sound"}
                         </span>
                     </button>
-                    <input ref={soundUploadInputRef} type="file" accept="audio/*" className="hidden"
-                        onChange={(e) => {
+                    <input ref={soundAudioPickerRef} type="file" accept="audio/*" className="hidden"
+                        onChange={async (e) => {
                             const f = e.target.files?.[0];
                             e.target.value = "";
                             if (!f) return;
-                            // The backend requires a cover image too — prompt for it right
-                            // after picking the audio file, then upload both together.
-                            pendingSoundAudioFile.current = f;
-                            soundImageInputRef.current?.click();
-                        }} />
-                    <input ref={soundImageInputRef} type="file" accept="image/*" className="hidden"
-                        onChange={(e) => {
-                            const imageFile = e.target.files?.[0];
-                            e.target.value = "";
-                            const audioFile = pendingSoundAudioFile.current;
-                            pendingSoundAudioFile.current = null;
-                            if (audioFile && imageFile) handleSoundUpload(audioFile, imageFile);
+                            const imageFile = await generatePlaceholderSoundImage();
+                            handleSoundUpload(f, imageFile);
                         }} />
                     {soundUploadError && <p className="text-xs text-red-500">{soundUploadError}</p>}
-                    <p className="text-[11px] text-gray-400">You&apos;ll be asked for an audio file, then a cover image.</p>
                 </div>
             </div>
 

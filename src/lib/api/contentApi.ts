@@ -435,9 +435,10 @@ const contentApi = {
             return response.data;
         },
 
-        get: async (id: number): Promise<AdminCategory> => {
+        get: async (id: number, params?: { type?: string }): Promise<AdminCategory> => {
             const response = await apiClient.get<AdminCategory>(
                 `admin/content/categories/${id}/`,
+                { params },
             );
             return response.data;
         },
@@ -457,16 +458,18 @@ const contentApi = {
         update: async (
             id: number,
             data: { name: string; language?: string },
+            params?: { type?: string },
         ): Promise<AdminCategory> => {
             const response = await apiClient.put<AdminCategory>(
                 `admin/content/categories/${id}/`,
                 data,
+                { params },
             );
             return response.data;
         },
 
-        delete: async (id: number): Promise<void> => {
-            await apiClient.delete(`admin/content/categories/${id}/`);
+        delete: async (id: number, params?: { type?: string }): Promise<void> => {
+            await apiClient.delete(`admin/content/categories/${id}/`, { params });
         },
     },
 
