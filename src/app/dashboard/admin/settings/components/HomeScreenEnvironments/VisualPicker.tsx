@@ -52,7 +52,7 @@ const VisualPicker: React.FC<VisualPickerProps> = ({
                 <div className="grid grid-cols-2 gap-4 pt-2 flex-1 min-h-0 overflow-y-auto pr-1">
                     {visuals.map((env) => (
                         <div key={env.id}
-                            className={`group relative aspect-[1.4/1] rounded-2xl overflow-hidden transition-all duration-300 ${selectedVisualId === env.id ? "ring-4 ring-purple-600 ring-offset-2 dark:ring-offset-gray-800 scale-[1.02]" : "hover:scale-[1.02]"}`}>
+                            className={`group relative aspect-[7/5] rounded-2xl overflow-hidden transition-all duration-300 ${selectedVisualId === env.id ? "ring-4 ring-purple-600 ring-offset-2 dark:ring-offset-gray-800 scale-[1.02]" : "hover:scale-[1.02]"}`}>
                             <button onClick={() => onSelect(env.id)} className="absolute inset-0 w-full h-full">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src={env.image} alt={env.name} className="w-full h-full object-cover" />
