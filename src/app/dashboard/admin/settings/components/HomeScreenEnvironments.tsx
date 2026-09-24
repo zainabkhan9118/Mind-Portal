@@ -66,6 +66,8 @@ const HomeScreenEnvironments: React.FC = () => {
     const [isUploadingSound, setIsUploadingSound] = useState(false);
     const [soundUploadError, setSoundUploadError] = useState<string | null>(null);
     const soundUploadInputRef = useRef<HTMLInputElement>(null);
+    const soundImageInputRef = useRef<HTMLInputElement>(null);
+    const pendingSoundAudioFile = useRef<File | null>(null);
 
     // ── Delete confirmation ──────────────────────────────────────────────
     const [pendingDelete, setPendingDelete] = useState<{ type: "visual" | "sound"; id: number } | null>(null);
@@ -202,11 +204,15 @@ const HomeScreenEnvironments: React.FC = () => {
         finally { setIsUploading(false); }
     };
 
-    const handleSoundUpload = async (file: File) => {
+    const handleSoundUpload = async (file: File, imageFile: File) => {
         setIsUploadingSound(true); setSoundUploadError(null);
         const fd = new FormData();
         fd.append("name", file.name.replace(/\.[^/.]+$/, ""));
         fd.append("audio_clip", file);
+        // The backend requires a cover `image` on create (confirmed via a live 400:
+        // `"image": "No file was submitted."`) — unlike Visuals, an audio file can't
+        // double as its own thumbnail, so this needs a real second file from the admin.
+        fd.append("image", imageFile);
         fd.append("status", "published");
         goalIds.forEach((id) => fd.append("goals", String(id)));
         try {
@@ -474,8 +480,25 @@ const HomeScreenEnvironments: React.FC = () => {
                         </span>
                     </button>
                     <input ref={soundUploadInputRef} type="file" accept="audio/*" className="hidden"
-                        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleSoundUpload(f); e.target.value = ""; }} />
+                        onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            e.target.value = "";
+                            if (!f) return;
+                            // The backend requires a cover image too — prompt for it right
+                            // after picking the audio file, then upload both together.
+                            pendingSoundAudioFile.current = f;
+                            soundImageInputRef.current?.click();
+                        }} />
+                    <input ref={soundImageInputRef} type="file" accept="image/*" className="hidden"
+                        onChange={(e) => {
+                            const imageFile = e.target.files?.[0];
+                            e.target.value = "";
+                            const audioFile = pendingSoundAudioFile.current;
+                            pendingSoundAudioFile.current = null;
+                            if (audioFile && imageFile) handleSoundUpload(audioFile, imageFile);
+                        }} />
                     {soundUploadError && <p className="text-xs text-red-500">{soundUploadError}</p>}
+                    <p className="text-[11px] text-gray-400">You&apos;ll be asked for an audio file, then a cover image.</p>
                 </div>
             </div>
 
