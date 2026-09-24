@@ -388,6 +388,79 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
         return fd;
     };
 
+    // Edits are sent as a plain JSON PATCH, not FormData. FormData can only represent a
+    // multi-value field by appending each entry — an emptied selection (e.g. removing the
+    // last Secondary Goal) has nothing to append, so the key is entirely absent from the
+    // request. Under PATCH semantics an absent key means "leave unchanged," so clearing a
+    // multi-select silently failed to persist. A JSON body can send `[]` explicitly, which
+    // PATCH reads as "set this to empty." Any newly-picked files are sent in a separate
+    // multipart follow-up request, since they can't go in a JSON body.
+    const buildUpdatePayload = (): Record<string, unknown> => {
+        const apiStatus = status;
+        const isPremium = accessLevel === "premium";
+        const categoryIds = primaryCategory != null ? [primaryCategory, ...secondaryCategories] : secondaryCategories;
+
+        const payload: Record<string, unknown> = {
+            name: title,
+            description: details,
+            status: apiStatus,
+            is_premium: isPremium,
+            tags,
+            duration,
+            primary_goal: primaryGoal,
+            secondary_goals: secondaryGoals,
+            // `goals` is a separate, still-required field on the backend model (non-empty),
+            // distinct from `primary_goal`/`secondary_goals`.
+            goals: primaryGoal != null ? [primaryGoal, ...secondaryGoals] : secondaryGoals,
+            primary_state: primaryState,
+            secondary_states: secondaryStates,
+            primary_effect: primaryEffect,
+            secondary_effects: secondaryEffects,
+            sub_categories: subCategoryIds,
+        };
+
+        if (isEnvironmentSound) {
+            payload.environment_sound_type = artist;
+            payload.frequency = frequency;
+            payload.category = categoryIds;
+        } else if (isMindSession) {
+            payload.artist = artist;
+            payload.instructor_name = artist;
+            payload.mind_session_type = contentType;
+            payload.mind_session_category = categoryIds;
+        } else if (isEnvironmentVisual) {
+            payload.mood = artist;
+            payload.environment_visual_type = contentType;
+            payload.category = categoryIds;
+        } else if (isMind) {
+            payload.author = artist;
+        } else {
+            payload.artist = artist;
+            payload.music_category = categoryIds;
+        }
+
+        if (iconId !== null) payload.icon = iconId;
+
+        if (apiStatus === "draft") {
+            payload.published_at = "";
+        } else if (apiStatus === "review" && releaseDate) {
+            const datePart = releaseDate.includes("T") ? releaseDate.split("T")[0] : releaseDate;
+            const timePart = releaseTime || "00:00";
+            payload.published_at = `${datePart}T${timePart}:00`;
+        }
+
+        return payload;
+    };
+
+    const updateItem = async (payload: FormData | Record<string, unknown>) => {
+        if (!editItemId) return;
+        if (isEnvironmentSound)       await contentApi.envSounds.update(editItemId, payload as never);
+        else if (isMindSession)       await contentApi.guidedSessions.update(editItemId, payload as never);
+        else if (isEnvironmentVisual) await contentApi.envVisuals.update(editItemId, payload as never);
+        else if (isMind)              await contentApi.minds.update(editItemId, payload as never);
+        else                          await contentApi.music.update(editItemId, payload as never);
+    };
+
     const handleSubmit = async () => {
         if (!title.trim()) {
             setSubmitError("Title is required.");
@@ -421,23 +494,25 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
         setSubmitError(null);
         setIsSubmitting(true);
         try {
-            const fd = buildFormData();
             if (editItemId) {
-                if (isEnvironmentSound)       await contentApi.envSounds.update(editItemId, fd as never);
-                else if (isMindSession)       await contentApi.guidedSessions.update(editItemId, fd as never);
-                else if (isEnvironmentVisual) await contentApi.envVisuals.update(editItemId, fd as never);
-                else if (isMind)              await contentApi.minds.update(editItemId, fd as never);
-                else                          await contentApi.music.update(editItemId, fd as never);
-            } else if (isEnvironmentSound) {
-                await contentApi.envSounds.create(fd as never);
-            } else if (isMindSession) {
-                await contentApi.guidedSessions.create(fd as never);
-            } else if (isEnvironmentVisual) {
-                await contentApi.envVisuals.create(fd as never);
-            } else if (isMind) {
-                await contentApi.minds.create(fd as never);
+                await updateItem(buildUpdatePayload());
+                // Files can't go in a JSON body — send any newly-picked ones as a separate
+                // multipart PATCH so they don't force the metadata update back into FormData
+                // (which is what caused emptied array fields to silently fail to clear).
+                if (audioFile || coverImageFile || iconFile) {
+                    const fileFd = new FormData();
+                    if (audioFile) fileFd.append(isEnvironmentVisual ? "visual_file" : "audio_clip", audioFile);
+                    if (coverImageFile) fileFd.append("image", coverImageFile);
+                    if (iconFile) fileFd.append("icon", iconFile);
+                    await updateItem(fileFd);
+                }
             } else {
-                await contentApi.music.create(fd as never);
+                const fd = buildFormData();
+                if (isEnvironmentSound)       await contentApi.envSounds.create(fd as never);
+                else if (isMindSession)       await contentApi.guidedSessions.create(fd as never);
+                else if (isEnvironmentVisual) await contentApi.envVisuals.create(fd as never);
+                else if (isMind)              await contentApi.minds.create(fd as never);
+                else                          await contentApi.music.create(fd as never);
             }
             resetForm();
             onClose();
