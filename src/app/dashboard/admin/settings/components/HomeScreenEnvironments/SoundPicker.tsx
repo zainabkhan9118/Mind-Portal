@@ -16,6 +16,10 @@ interface SoundPickerProps {
     onVolumeChange: (id: number, volume: number) => void;
     onDeleteRequest: (id: number) => void;
     onUploadAudioFile: (file: File) => void;
+    /** Pixel height (measured from Column 3) to match, so this card lines up with its
+     * neighbors instead of looking out of proportion, and reflows live as Column 3 changes
+     * (e.g. the Preview card appearing/disappearing). Undefined until first measured. */
+    matchHeight?: number;
 }
 
 const SoundPicker: React.FC<SoundPickerProps> = ({
@@ -31,11 +35,13 @@ const SoundPicker: React.FC<SoundPickerProps> = ({
     onVolumeChange,
     onDeleteRequest,
     onUploadAudioFile,
+    matchHeight,
 }) => {
     const soundAudioPickerRef = useRef<HTMLInputElement>(null);
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 p-8 space-y-6 shadow-sm">
+        <div className="self-start flex flex-col bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 p-8 space-y-6 shadow-sm"
+            style={matchHeight ? { height: matchHeight } : undefined}>
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className="p-2.5 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
@@ -48,11 +54,11 @@ const SoundPicker: React.FC<SoundPickerProps> = ({
             <p className="text-sm text-gray-500 dark:text-gray-400">Select sounds to preview live. Adjust each volume to set the mix.</p>
 
             {isLoading ? (
-                <div className="flex items-center justify-center py-12 text-gray-400 gap-2">
+                <div className="flex-1 flex items-center justify-center py-12 text-gray-400 gap-2">
                     <Loader2 className="w-5 h-5 animate-spin" /><span className="text-sm">Loading…</span>
                 </div>
             ) : (
-                <div className="space-y-3 pt-2 max-h-[420px] overflow-y-auto pr-1">
+                <div className="space-y-3 pt-2 flex-1 min-h-0 overflow-y-auto pr-1">
                     {sounds.map((sound) => {
                         const isSelected = selectedSoundIds.includes(sound.id);
                         const isPlaying = playingSoundIds.has(sound.id);

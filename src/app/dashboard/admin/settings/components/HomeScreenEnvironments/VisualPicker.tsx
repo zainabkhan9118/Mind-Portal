@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { Image as ImageIcon, Check, Trash2, Upload, Loader2 } from "lucide-react";
+import { Image as ImageIcon, Check, Trash2, Plus, Loader2 } from "lucide-react";
 import type { AdminEnvironmentVisual } from "@/lib/api/types";
 
 interface VisualPickerProps {
@@ -11,6 +11,10 @@ interface VisualPickerProps {
     onSelect: (id: number) => void;
     onUpload: (file: File) => void;
     onDeleteRequest: (id: number) => void;
+    /** Pixel height (measured from Column 3) to match, so this card lines up with its
+     * neighbors instead of looking out of proportion, and reflows live as Column 3 changes
+     * (e.g. the Preview card appearing/disappearing). Undefined until first measured. */
+    matchHeight?: number;
 }
 
 const VisualPicker: React.FC<VisualPickerProps> = ({
@@ -22,11 +26,13 @@ const VisualPicker: React.FC<VisualPickerProps> = ({
     onSelect,
     onUpload,
     onDeleteRequest,
+    matchHeight,
 }) => {
     const uploadInputRef = useRef<HTMLInputElement>(null);
 
     return (
-        <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 p-8 space-y-6 shadow-sm">
+        <div className="self-start flex flex-col bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 p-8 space-y-6 shadow-sm"
+            style={matchHeight ? { height: matchHeight } : undefined}>
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className="p-2.5 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
@@ -39,11 +45,11 @@ const VisualPicker: React.FC<VisualPickerProps> = ({
             <p className="text-sm text-gray-500 dark:text-gray-400">Choose a 360° panoramic image</p>
 
             {isLoading ? (
-                <div className="flex items-center justify-center py-12 text-gray-400 gap-2">
+                <div className="flex-1 flex items-center justify-center py-12 text-gray-400 gap-2">
                     <Loader2 className="w-5 h-5 animate-spin" /><span className="text-sm">Loading…</span>
                 </div>
             ) : (
-                <div className="grid grid-cols-2 gap-4 pt-2 max-h-[480px] overflow-y-auto pr-1">
+                <div className="grid grid-cols-2 gap-4 pt-2 flex-1 min-h-0 overflow-y-auto pr-1">
                     {visuals.map((env) => (
                         <div key={env.id}
                             className={`group relative aspect-[1.4/1] rounded-2xl overflow-hidden transition-all duration-300 ${selectedVisualId === env.id ? "ring-4 ring-purple-600 ring-offset-2 dark:ring-offset-gray-800 scale-[1.02]" : "hover:scale-[1.02]"}`}>
@@ -65,20 +71,23 @@ const VisualPicker: React.FC<VisualPickerProps> = ({
                             </button>
                         </div>
                     ))}
-                    <button onClick={() => uploadInputRef.current?.click()} disabled={isUploading}
-                        className="aspect-[1.4/1] rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-purple-600 hover:bg-purple-50/50 dark:hover:bg-purple-900/10 transition-all flex flex-col items-center justify-center gap-3 group disabled:opacity-50">
-                        <div className="p-3 bg-gray-50 dark:bg-gray-900 rounded-2xl group-hover:bg-white dark:group-hover:bg-purple-900/30 shadow-sm">
-                            {isUploading ? <Loader2 className="w-5 h-5 text-purple-600 animate-spin" /> : <Upload className="w-5 h-5 text-gray-400 group-hover:text-purple-600" />}
-                        </div>
-                        <span className="text-[11px] font-bold text-gray-500 group-hover:text-purple-600 uppercase tracking-widest">
-                            {isUploading ? "Uploading…" : "Upload New"}
-                        </span>
-                    </button>
-                    <input ref={uploadInputRef} type="file" accept="image/*" className="hidden"
-                        onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ""; }} />
-                    {uploadError && <p className="col-span-2 text-xs text-red-500">{uploadError}</p>}
                 </div>
             )}
+
+            <div className="space-y-2 pt-2">
+                <button onClick={() => uploadInputRef.current?.click()} disabled={isUploading}
+                    className="w-full py-4 px-6 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-purple-600 hover:bg-purple-50/50 dark:hover:bg-purple-900/10 transition-all flex items-center justify-center gap-3 group disabled:opacity-50">
+                    <div className="p-1.5 bg-gray-900 dark:bg-gray-700 rounded-lg text-white">
+                        {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                    </div>
+                    <span className="text-sm font-bold text-gray-500 group-hover:text-purple-600">
+                        {isUploading ? "Uploading…" : "Upload New"}
+                    </span>
+                </button>
+                <input ref={uploadInputRef} type="file" accept="image/*" className="hidden"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ""; }} />
+                {uploadError && <p className="text-xs text-red-500">{uploadError}</p>}
+            </div>
         </div>
     );
 };

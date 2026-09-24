@@ -57,6 +57,24 @@ const HomeScreenEnvironments: React.FC = () => {
     const [previewMuted, setPreviewMuted] = useState(false);
     const [previewVolume, setPreviewVolume] = useState(100);
 
+    // ── Column height matching ──────────────────────────────────────────
+    // Column 3 (Preview + Create Environment + Your Screen Environments stacked) sets the
+    // row's height — it changes live whenever the Preview card appears/disappears. Measure
+    // it and apply that height to the other two columns so all three stay level instead of
+    // one looking out of proportion, and reflow automatically when Column 3's height changes.
+    const column3Ref = useRef<HTMLDivElement>(null);
+    const [sideColumnHeight, setSideColumnHeight] = useState<number>();
+    useEffect(() => {
+        const el = column3Ref.current;
+        if (!el) return;
+        const observer = new ResizeObserver((entries) => {
+            const height = entries[0]?.contentRect.height;
+            if (height) setSideColumnHeight(height);
+        });
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
+
     // ── Cleanup audio on unmount ────────────────────────────────────────
     useEffect(() => {
         return () => {
@@ -351,6 +369,7 @@ const HomeScreenEnvironments: React.FC = () => {
                 onSelect={(id) => setSelectedVisual((prev) => (prev === id ? null : id))}
                 onUpload={handleVisualUpload}
                 onDeleteRequest={(id) => setPendingDelete({ type: "visual", id })}
+                matchHeight={sideColumnHeight}
             />
 
             <SoundPicker
@@ -366,9 +385,10 @@ const HomeScreenEnvironments: React.FC = () => {
                 onVolumeChange={handleVolumeChange}
                 onDeleteRequest={(id) => setPendingDelete({ type: "sound", id })}
                 onUploadAudioFile={handleAudioFilePicked}
+                matchHeight={sideColumnHeight}
             />
 
-            <div className="space-y-6">
+            <div ref={column3Ref} className="self-start space-y-6">
                 {previewVisualImage && (
                     <PhonePreview
                         visualImage={previewVisualImage}
