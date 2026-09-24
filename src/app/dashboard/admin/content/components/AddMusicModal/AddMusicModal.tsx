@@ -310,8 +310,8 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
         setEffectsList((prev) => [...prev, created]);
     };
 
-    const buildFormData = (publish: boolean): FormData => {
-        const apiStatus = publish ? "published" : status;
+    const buildFormData = (): FormData => {
+        const apiStatus = status;
         const isPremium = accessLevel === "premium";
 
         const fd = new FormData();
@@ -378,7 +378,7 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
 
         if (apiStatus === "draft") {
             fd.append("published_at", "");
-        } else if (releaseDate) {
+        } else if (apiStatus === "review" && releaseDate) {
             // releaseDate may be a full ISO string (from edit pre-fill) or "YYYY-MM-DD" (from picker)
             const datePart = releaseDate.includes("T") ? releaseDate.split("T")[0] : releaseDate;
             const timePart = releaseTime || "00:00";
@@ -388,7 +388,7 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
         return fd;
     };
 
-    const handleSubmit = async (publish: boolean) => {
+    const handleSubmit = async () => {
         if (!title.trim()) {
             setSubmitError("Title is required.");
             return;
@@ -421,7 +421,7 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
         setSubmitError(null);
         setIsSubmitting(true);
         try {
-            const fd = buildFormData(publish);
+            const fd = buildFormData();
             if (editItemId) {
                 if (isEnvironmentSound)       await contentApi.envSounds.update(editItemId, fd as never);
                 else if (isMindSession)       await contentApi.guidedSessions.update(editItemId, fd as never);
@@ -598,7 +598,13 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
 
                         <VisibilitySettings
                             status={status}
-                            onStatusChange={setStatus}
+                            onStatusChange={(v) => {
+                                setStatus(v);
+                                // Clear any stale scheduled date/time once the admin switches
+                                // away from "Scheduled" — otherwise it could linger and get
+                                // sent alongside a "Published"/"Unpublished" save.
+                                if (v !== "review") { setReleaseDate(""); setReleaseTime(""); }
+                            }}
                             releaseDate={releaseDate}
                             onReleaseDateChange={setReleaseDate}
                             releaseTime={releaseTime}
@@ -617,11 +623,8 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
                         <Button variant="outline" onClick={handleClose} disabled={isSubmitting} className="w-full sm:w-auto px-10 rounded-xl py-3 h-auto">
                             Cancel
                         </Button>
-                        <Button variant="outline" onClick={() => handleSubmit(false)} disabled={isSubmitting} className="w-full sm:w-auto px-10 rounded-xl py-3 h-auto">
+                        <Button variant="primary" onClick={() => handleSubmit()} disabled={isSubmitting} className="w-full sm:w-auto bg-[#9810FA] border border-[#9810FA] hover:bg-[#8000E0] px-10 rounded-xl py-3 h-auto">
                             {isSubmitting ? "Saving..." : "Save"}
-                        </Button>
-                        <Button variant="primary" onClick={() => handleSubmit(true)} disabled={isSubmitting} className="w-full sm:w-auto bg-[#9810FA] border border-[#9810FA] hover:bg-[#8000E0] px-10 rounded-xl py-3 h-auto">
-                            {isSubmitting ? "Publishing..." : "Save & Publish"}
                         </Button>
                     </div>
                 </div>
