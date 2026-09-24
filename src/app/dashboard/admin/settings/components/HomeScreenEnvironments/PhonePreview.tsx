@@ -1,5 +1,5 @@
 import React from "react";
-import { Smartphone, Volume2, VolumeX, Target, Leaf, Moon, TrendingUp, Menu } from "lucide-react";
+import { Smartphone, Volume2, VolumeX, Target, Leaf, Moon, TrendingUp, Menu, ChevronLeft, ChevronRight } from "lucide-react";
 
 const GOAL_CHIPS = [
     { label: "Focus", icon: Target },
@@ -11,14 +11,37 @@ const GOAL_CHIPS = [
 interface PhonePreviewProps {
     visualImage: string;
     soundNames: string[];
+    isMuted: boolean;
+    onToggleMute: () => void;
+    volume: number;
+    onVolumeChange: (volume: number) => void;
+    /** When more than one saved environment is checked, the real app rotates through
+     * whichever ones are active each login — these let the admin step through each
+     * checked one here instead of only ever previewing the first. */
+    currentIndex: number;
+    totalCount: number;
+    onPrev: () => void;
+    onNext: () => void;
 }
 
 /** Live mockup of the app's real Home Screen, so admins can sanity-check a visual
  * (text legibility, cropping) before publishing instead of having to publish and
  * check the live app. The parent only renders this once there's actually something
  * to preview — a composer-selected visual, or a checked saved environment. */
-const PhonePreview: React.FC<PhonePreviewProps> = ({ visualImage, soundNames }) => {
+const PhonePreview: React.FC<PhonePreviewProps> = ({
+    visualImage,
+    soundNames,
+    isMuted,
+    onToggleMute,
+    volume,
+    onVolumeChange,
+    currentIndex,
+    totalCount,
+    onPrev,
+    onNext,
+}) => {
     const hasSound = soundNames.length > 0;
+    const hasMultiple = totalCount > 1;
 
     return (
         <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 p-8 space-y-5 shadow-sm">
@@ -29,7 +52,10 @@ const PhonePreview: React.FC<PhonePreviewProps> = ({ visualImage, soundNames }) 
                 </div>
                 <span className="px-3 py-1 bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-300 text-[10px] font-bold uppercase tracking-wider rounded-full">Live</span>
             </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">See how this looks on the Home Screen before you publish.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+                See how this looks on the Home Screen before you publish.
+                {hasMultiple && ` Environment ${currentIndex + 1} of ${totalCount}.`}
+            </p>
 
             <div className="mx-auto w-[220px]">
                 <div className="relative aspect-[9/19.5] rounded-[2rem] border-[6px] border-gray-900 bg-black overflow-hidden shadow-xl">
@@ -39,10 +65,31 @@ const PhonePreview: React.FC<PhonePreviewProps> = ({ visualImage, soundNames }) 
                     <img src={visualImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/10 to-black/70" />
 
+                    {hasMultiple && (
+                        <>
+                            <button type="button" onClick={onPrev}
+                                className="absolute left-1 top-1/2 -translate-y-1/2 z-30 w-6 h-6 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center">
+                                <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <button type="button" onClick={onNext}
+                                className="absolute right-1 top-1/2 -translate-y-1/2 z-30 w-6 h-6 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center">
+                                <ChevronRight className="w-4 h-4" />
+                            </button>
+                        </>
+                    )}
+
                     <div className="absolute inset-0 flex flex-col p-3 pt-7">
-                        <button type="button" className="w-6 h-6 rounded-full bg-black/40 flex items-center justify-center">
-                            {hasSound ? <Volume2 className="w-3 h-3 text-white" /> : <VolumeX className="w-3 h-3 text-white" />}
-                        </button>
+                        <div className="flex items-center gap-1.5 bg-black/40 rounded-full pl-1.5 pr-2 py-1 self-start">
+                            <button type="button" onClick={onToggleMute} disabled={!hasSound}
+                                className="w-4 h-4 flex items-center justify-center text-white shrink-0 disabled:opacity-50">
+                                {hasSound && !isMuted ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
+                            </button>
+                            {hasSound && (
+                                <input type="range" min={0} max={100} step={1} value={volume} disabled={isMuted}
+                                    onChange={(e) => onVolumeChange(Number(e.target.value))}
+                                    className="w-12 h-1 accent-white cursor-pointer disabled:opacity-40" />
+                            )}
+                        </div>
 
                         <h3 className="text-white font-bold text-[13px] leading-tight mt-3">
                             What do you need right now?

@@ -50,6 +50,13 @@ const HomeScreenEnvironments: React.FC = () => {
     const [pendingDelete, setPendingDelete] = useState<{ type: "visual" | "sound"; id: number } | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
+    // ── Preview controls ──────────────────────────────────────────────────
+    // Which checked "Your Screen Environments" row the carousel is currently showing,
+    // and the master mute/volume applied to whatever's audible in the preview.
+    const [previewIndex, setPreviewIndex] = useState(0);
+    const [previewMuted, setPreviewMuted] = useState(false);
+    const [previewVolume, setPreviewVolume] = useState(100);
+
     // ── Cleanup audio on unmount ────────────────────────────────────────
     useEffect(() => {
         return () => {
@@ -280,35 +287,58 @@ const HomeScreenEnvironments: React.FC = () => {
         }
     };
 
-    // Checking a saved environment updates the Preview panel (see below), but the panel is
-    // a static mockup — it can't play audio itself. Actually play/stop the checked
-    // environment's sounds here so "previewing" a saved pairing is audible, not just visual.
+    const selectedVisualItem = envVisuals.find((v) => v.id === selectedVisual);
+    const selectedSoundItems = envSounds.filter((s) => selectedSounds.includes(s.id));
+
+    // Multiple saved environments can be checked at once — the real app rotates through
+    // whichever ones are active each time a user logs in, so let the admin step through
+    // each checked one here with Prev/Next, rather than only ever previewing the first.
+    const previewedSavedEnvs = savedEnvironments.filter((e) => activeEnvIds.has(e.id));
+    useEffect(() => {
+        setPreviewIndex((i) => (previewedSavedEnvs.length === 0 ? 0 : Math.min(i, previewedSavedEnvs.length - 1)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [previewedSavedEnvs.length]);
+    const currentPreviewedSavedEnv = previewedSavedEnvs[previewIndex] ?? null;
+
+    // A checked "Your Screen Environments" row previews as its own saved pairing
+    // (visual + its own sounds); with nothing checked there, the preview falls
+    // back to whatever's currently being composed in Steps 1 & 2.
+    const previewVisualImage = currentPreviewedSavedEnv ? currentPreviewedSavedEnv.visual.image : selectedVisualItem?.image;
+    const previewSoundEntries = currentPreviewedSavedEnv
+        ? currentPreviewedSavedEnv.sounds.map((s) => ({ id: s.sound.id, name: s.sound.name, baseVolume: s.volume }))
+        : selectedSoundItems.map((s) => ({ id: s.id, name: s.name, baseVolume: getVolume(s.id) }));
+    const previewSoundEntriesKey = previewSoundEntries.map((e) => `${e.id}:${e.baseVolume}`).join(",");
+
+    // The preview panel is a static mockup — it can't play audio itself. Actually play/stop
+    // the currently-shown saved environment's sounds here so "previewing" one is audible,
+    // not just visual, and swap cleanly when Prev/Next changes which one is shown.
     const previewedSavedEnvIdRef = useRef<number | null>(null);
     useEffect(() => {
-        const nextEnv = savedEnvironments.find((e) => activeEnvIds.has(e.id)) ?? null;
-        const nextId = nextEnv?.id ?? null;
+        const nextId = currentPreviewedSavedEnv?.id ?? null;
         if (previewedSavedEnvIdRef.current === nextId) return;
 
         const prevEnv = savedEnvironments.find((e) => e.id === previewedSavedEnvIdRef.current);
         prevEnv?.sounds.forEach(({ sound }) => stopAndRemoveAudio(sound.id));
 
-        nextEnv?.sounds.forEach(({ sound, volume }) => startAudio(sound, volume));
+        currentPreviewedSavedEnv?.sounds.forEach(({ sound, volume }) => startAudio(sound, volume));
 
         previewedSavedEnvIdRef.current = nextId;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [activeEnvIds, savedEnvironments]);
+    }, [currentPreviewedSavedEnv?.id]);
 
-    const selectedVisualItem = envVisuals.find((v) => v.id === selectedVisual);
-    const selectedSoundItems = envSounds.filter((s) => selectedSounds.includes(s.id));
+    // Master mute/volume for the preview panel — scales whatever's currently audible there
+    // (the previewed saved environment's sounds, or the composer's own selection).
+    useEffect(() => {
+        previewSoundEntries.forEach(({ id, baseVolume }) => {
+            const audio = audioRefs.current[id];
+            if (!audio) return;
+            audio.volume = previewMuted ? 0 : (baseVolume / 100) * (previewVolume / 100);
+        });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [previewSoundEntriesKey, previewMuted, previewVolume]);
 
-    // A checked "Your Screen Environments" row previews as its own saved pairing
-    // (visual + its own sounds); with nothing checked there, the preview falls
-    // back to whatever's currently being composed in Steps 1 & 2.
-    const previewedSavedEnv = savedEnvironments.find((e) => activeEnvIds.has(e.id));
-    const previewVisualImage = previewedSavedEnv ? previewedSavedEnv.visual.image : selectedVisualItem?.image;
-    const previewSoundNames = previewedSavedEnv
-        ? previewedSavedEnv.sounds.map((s) => s.sound.name)
-        : selectedSoundItems.map((s) => s.name);
+    const handlePreviewPrev = () => setPreviewIndex((i) => (i - 1 + previewedSavedEnvs.length) % previewedSavedEnvs.length);
+    const handlePreviewNext = () => setPreviewIndex((i) => (i + 1) % previewedSavedEnvs.length);
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -340,7 +370,18 @@ const HomeScreenEnvironments: React.FC = () => {
 
             <div className="space-y-6">
                 {previewVisualImage && (
-                    <PhonePreview visualImage={previewVisualImage} soundNames={previewSoundNames} />
+                    <PhonePreview
+                        visualImage={previewVisualImage}
+                        soundNames={previewSoundEntries.map((e) => e.name)}
+                        isMuted={previewMuted}
+                        onToggleMute={() => setPreviewMuted((m) => !m)}
+                        volume={previewVolume}
+                        onVolumeChange={setPreviewVolume}
+                        currentIndex={previewIndex}
+                        totalCount={previewedSavedEnvs.length}
+                        onPrev={handlePreviewPrev}
+                        onNext={handlePreviewNext}
+                    />
                 )}
 
                 <CompositionSummary
