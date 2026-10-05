@@ -469,7 +469,7 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
             return;
         }
         if (!artist.trim()) {
-            const artistLabel = isEnvironmentSound ? "Type" : isMindSession ? "Voice (Name of Professional)" : (isEnvironmentVisual || isMind) ? "Author" : "Artist";
+            const artistLabel = isMindSession ? "Voice (Name of Professional)" : (isEnvironmentSound || isEnvironmentVisual || isMind) ? "Author" : "Artist";
             setSubmitError(`${artistLabel} is required.`);
             return;
         }

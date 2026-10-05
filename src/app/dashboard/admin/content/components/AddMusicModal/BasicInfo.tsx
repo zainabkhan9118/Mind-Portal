@@ -90,7 +90,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
                     </div>
                     <div>
                         <Label htmlFor="artist">
-                            {isEnvironmentSound ? "Type" : isMindSession ? "Voice (Name of Professional)" : (isEnvironmentVisual || isMind) ? "Author" : "Artist"}
+                            {isMindSession ? "Voice (Name of Professional)" : (isEnvironmentSound || isEnvironmentVisual || isMind) ? "Author" : "Artist"}
                         </Label>
                         <Input
                             type="text"
