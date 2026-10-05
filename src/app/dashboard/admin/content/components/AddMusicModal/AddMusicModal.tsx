@@ -478,7 +478,7 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
             return;
         }
         if (!isMind && !editItemId && !audioFile) {
-            setSubmitError(`Please upload a${isEnvironmentVisual ? " video" : "n audio"} file.`);
+            setSubmitError(`Please upload a${isEnvironmentVisual ? " video or image" : "n audio"} file.`);
             return;
         }
         if (!isMind && !editItemId && !coverImageFile) {

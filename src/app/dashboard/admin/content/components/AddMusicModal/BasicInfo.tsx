@@ -40,7 +40,9 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isDragging, setIsDragging] = useState(false);
 
-    const acceptType = isEnvironmentVisual ? "video/*" : "audio/*";
+    // Environment Visuals can be either a 360° photo or a video — Music/Guided/Sounds
+    // only ever take audio, so they stay restricted to that.
+    const acceptType = isEnvironmentVisual ? "video/*,image/*" : "audio/*";
 
     const extractDuration = (file: File) => {
         if (isEnvironmentVisual || !onDurationExtracted) return;
@@ -105,7 +107,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
             {!isMind && (
             <div>
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
-                    {isEnvironmentVisual ? "Add Video File" : "Add Audio File"}
+                    {isEnvironmentVisual ? "Add Video or Image File" : "Add Audio File"}
                 </h3>
                 <input
                     ref={fileInputRef}
