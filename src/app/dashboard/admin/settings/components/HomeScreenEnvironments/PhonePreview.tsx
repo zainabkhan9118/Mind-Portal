@@ -61,8 +61,12 @@ const PhonePreview: React.FC<PhonePreviewProps> = ({
                 <div className="relative aspect-[9/19.5] rounded-[2rem] border-[6px] border-gray-900 bg-black overflow-hidden shadow-xl">
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-20 h-4 bg-gray-900 rounded-b-xl z-20" />
 
+                    {/* 360° source images are usually much wider than the phone frame, so a
+                        plain object-cover crop shows the full vertical extent of the panorama
+                        at once — flatter and less immersive than the tighter, zoomed-in crop
+                        the real app shows. Scaling up pushes the crop in further to match. */}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={visualImage} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                    <img src={visualImage} alt="" className="absolute inset-0 w-full h-full object-cover scale-125" />
                     <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/10 to-black/70" />
 
                     {hasMultiple && (
