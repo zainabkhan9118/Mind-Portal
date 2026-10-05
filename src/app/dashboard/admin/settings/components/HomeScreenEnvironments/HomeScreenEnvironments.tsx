@@ -11,6 +11,7 @@ import SavedEnvironmentsList from "./SavedEnvironmentsList";
 import type { SavedEnvironment } from "./types";
 import { useHomeScreenEnvironmentsData } from "./useHomeScreenEnvironmentsData";
 import { DEFAULT_VOLUME } from "./constants";
+import { HOME_SCREEN_ONLY_TAG } from "@/lib/contentTags";
 
 const HomeScreenEnvironments: React.FC = () => {
     const {
@@ -165,6 +166,9 @@ const HomeScreenEnvironments: React.FC = () => {
         fd.append("visual_file", file);
         fd.append("image", file);
         fd.append("status", "published");
+        // Marks this as a quick Home Screen upload, not curated library content —
+        // Content Management's Sounds/Visuals tabs hide anything with this tag.
+        fd.append("tags", HOME_SCREEN_ONLY_TAG);
         goalIds.forEach((id) => fd.append("goals", String(id)));
         try {
             const created = await contentApi.envVisuals.create(fd);
@@ -184,6 +188,9 @@ const HomeScreenEnvironments: React.FC = () => {
         // double as its own thumbnail, so this needs a real second file from the admin.
         fd.append("image", imageFile);
         fd.append("status", "published");
+        // Marks this as a quick Home Screen upload, not curated library content —
+        // Content Management's Sounds/Visuals tabs hide anything with this tag.
+        fd.append("tags", HOME_SCREEN_ONLY_TAG);
         goalIds.forEach((id) => fd.append("goals", String(id)));
         try {
             const created = await contentApi.envSounds.create(fd);

@@ -19,6 +19,7 @@ import ContentTable from "./components/ContentTable";
 import ContentFilter from "./components/ContentFilter";
 import { contentApi } from "@/lib/api";
 import apiClient from "@/lib/api/axiosInstance";
+import { HOME_SCREEN_ONLY_TAG } from "@/lib/contentTags";
 import type {
   AdminMusic,
   AdminMindSession,
@@ -313,8 +314,12 @@ function ContentManagementPageInner() {
         }
         case "Sounds": {
           const res = await contentApi.envSounds.list(params);
-          setData(res.results.map((item) => adaptEnvSound(item, goalsMap)));
-          setTotalCount(res.count);
+          // Hide quick-uploads made from the Home Screen Environments composer (Settings) —
+          // those are building blocks for one specific home screen, not curated library
+          // content, and shouldn't mix into this list. See src/lib/contentTags.ts.
+          const visible = res.results.filter((item) => !item.tags?.includes(HOME_SCREEN_ONLY_TAG));
+          setData(visible.map((item) => adaptEnvSound(item, goalsMap)));
+          setTotalCount(res.count - (res.results.length - visible.length));
           setTotalPages(res.pages_count ?? Math.ceil(res.count / PAGE_SIZE));
           break;
         }
@@ -327,8 +332,10 @@ function ContentManagementPageInner() {
         }
         case "Visuals": {
           const res = await contentApi.envVisuals.list(params);
-          setData(res.results.map((item) => adaptEnvVisual(item, goalsMap)));
-          setTotalCount(res.count);
+          // Same as Sounds above — hide Home Screen Environments quick-uploads.
+          const visible = res.results.filter((item) => !item.tags?.includes(HOME_SCREEN_ONLY_TAG));
+          setData(visible.map((item) => adaptEnvVisual(item, goalsMap)));
+          setTotalCount(res.count - (res.results.length - visible.length));
           setTotalPages(res.pages_count ?? Math.ceil(res.count / PAGE_SIZE));
           break;
         }
