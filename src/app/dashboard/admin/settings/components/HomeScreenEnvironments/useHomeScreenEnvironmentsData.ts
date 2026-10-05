@@ -3,6 +3,7 @@ import { contentApi, apiClient } from "@/lib/api";
 import type { AdminEnvironmentVisual, AdminEnvironmentSound } from "@/lib/api/types";
 import type { SavedEnvironment } from "./types";
 import { DEFAULT_VOLUME } from "./constants";
+import { HOME_SCREEN_ONLY_TAG } from "@/lib/contentTags";
 
 type RawApiEnvironment = {
     id: number;
@@ -24,9 +25,15 @@ export function useHomeScreenEnvironmentsData() {
     const [activeEnvIds, setActiveEnvIds] = useState<Set<number>>(new Set());
 
     useEffect(() => {
+        // Only the Home Screen Environments composer's own quick-uploads should be
+        // pickable here — Content Management's curated library is a separate pool and
+        // shouldn't surface in this picker. See src/lib/contentTags.ts.
+        // Fetching a larger page here (rather than the old size: 20) since we're now
+        // filtering client-side — a small page could miss tagged items sitting further
+        // back in an untagged majority.
         contentApi.envVisuals
-            .list({ status: "published", size: 20 })
-            .then((res) => setEnvVisuals(res.results ?? []))
+            .list({ status: "published", size: 100 })
+            .then((res) => setEnvVisuals((res.results ?? []).filter((v) => v.tags?.includes(HOME_SCREEN_ONLY_TAG))))
             .catch(() => {})
             .finally(() => setLoadingVisuals(false));
 
