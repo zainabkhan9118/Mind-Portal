@@ -43,7 +43,7 @@ export default function AuthLayout({
                 /> */}
 
                 <Image
-                  src="/videos/Feature 3.jpg"
+                  src="/images/sunset-coastal-reflection.jpeg"
                   // src="/videos/vr.png"
                   alt="Background"
                   layout="fill"
