@@ -48,6 +48,7 @@ export default function AuthLayout({
                   alt="Background"
                   layout="fill"
                   objectFit="cover"
+                  objectPosition="right"
                   className="absolute"
                 />
             </div>
