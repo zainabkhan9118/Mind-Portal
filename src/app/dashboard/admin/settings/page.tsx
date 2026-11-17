@@ -5,12 +5,16 @@ import {
     LayoutGrid,
     ListChecks,
     Image as ImageIcon,
-    Monitor
+    Monitor,
+    KeyRound,
+    Gauge,
 } from "lucide-react";
 import AdminOverview from "./components/AdminOverview";
 import ContentValidation from "./components/ContentValidation";
 import ImagesManagement from "./components/ImagesManagement";
 import HomeScreenEnvironments from "./components/HomeScreenEnvironments";
+import AccessLevelsManager from "./components/AccessLevels/AccessLevelsManager";
+import LimitsSettings from "./components/LimitsSettings";
 
 export default function SettingsPage() {
     return (
@@ -25,6 +29,8 @@ const SETTINGS_TABS = [
     { id: "Content Validation", slug: "content-validation", icon: <ListChecks className="w-4 h-4" /> },
     { id: "Home Screen Environments", slug: "home-screen-environments", icon: <Monitor className="w-4 h-4" /> },
     { id: "MP Gallery", slug: "mp-gallery", icon: <ImageIcon className="w-4 h-4" /> },
+    { id: "Access Levels", slug: "access-levels", icon: <KeyRound className="w-4 h-4" /> },
+    { id: "Limits", slug: "limits", icon: <Gauge className="w-4 h-4" /> },
 ];
 
 function slugToTab(slug: string | null): string | null {
@@ -92,6 +98,8 @@ function SettingsPageInner() {
                 {activeTab === "Content Validation" && <ContentValidation />}
                 {activeTab === "Home Screen Environments" && <HomeScreenEnvironments />}
                 {activeTab === "MP Gallery" && <ImagesManagement />}
+                {activeTab === "Access Levels" && <AccessLevelsManager />}
+                {activeTab === "Limits" && <LimitsSettings />}
             </div>
         </div>
     );

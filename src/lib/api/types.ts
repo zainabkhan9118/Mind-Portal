@@ -133,11 +133,16 @@ export type UserStatus = "active" | "inactive" | "suspended" | "banned";
 export interface ApiUser {
     id: number;
     email: string;
+    /** Not yet returned by the backend — see API_SPEC.md "User Management — Edit User". */
+    username?: string | null;
     first_name: string;
     last_name: string;
     avatar?: string;
     status: UserStatus;
     is_premium: boolean;
+    /** When a manually-granted premium ends (null = no end date). Pending backend support. */
+    premium_expires_at?: string | null;
+    access_levels?: UserAccessLevelRef[];
     is_mind_expert?: boolean;
     mind_expert_pending?: boolean;
     credential_files?: string[];
@@ -331,6 +336,8 @@ export interface AdminMusic {
     status?: ContentStatus;
     tags?: string[];
     is_premium?: boolean;
+    /** Custom access level ids — non-empty = exclusive to members of those levels. */
+    access_levels?: number[];
     sort_order?: number;
     file_size_bytes?: number | null;
     mime_type?: string;
@@ -379,6 +386,8 @@ export interface AdminMindSession {
     status?: ContentStatus;
     tags?: string[];
     is_premium?: boolean;
+    /** Custom access level ids — non-empty = exclusive to members of those levels. */
+    access_levels?: number[];
     sort_order?: number;
     file_size_bytes?: number | null;
     mime_type?: string;
@@ -432,6 +441,8 @@ export interface AdminEnvironmentSound {
     status?: ContentStatus;
     tags?: string[];
     is_premium?: boolean;
+    /** Custom access level ids — non-empty = exclusive to members of those levels. */
+    access_levels?: number[];
     sort_order?: number;
     file_size_bytes?: number | null;
     mime_type?: string;
@@ -481,6 +492,8 @@ export interface AdminEnvironmentVisual {
     status?: ContentStatus;
     tags?: string[];
     is_premium?: boolean;
+    /** Custom access level ids — non-empty = exclusive to members of those levels. */
+    access_levels?: number[];
     sort_order?: number;
     file_size_bytes?: number | null;
     mime_type?: string;
@@ -533,6 +546,8 @@ export interface AdminMind {
     status?: ContentStatus;
     tags?: string[];
     is_premium?: boolean;
+    /** Custom access level ids — non-empty = exclusive to members of those levels. */
+    access_levels?: number[];
     visibility?: ContentVisibility;
     allowed_users?: AllowedUser[];
     allowed_user_ids?: number[];
@@ -564,6 +579,14 @@ export interface ContentApprovalRequest {
     music_category?: number[];
     mind_session_category?: number[];
     category?: number[];
+    /** Minds only — goal/state/effect taxonomy confirmed during content validation. */
+    primary_goal?: number | null;
+    secondary_goals?: number[];
+    goals?: number[];
+    primary_state?: number | null;
+    secondary_states?: number[];
+    primary_effect?: number | null;
+    secondary_effects?: number[];
 }
 
 export type AnyContentItem = AdminMusic | AdminMindSession | AdminEnvironmentSound | AdminEnvironmentVisual | AdminMind;
@@ -577,9 +600,95 @@ export interface ContentStatusChangeRequest {
     status: ContentStatus;
 }
 
+export type BulkActionName =
+    | "publish" | "archive" | "delete" | "restore"
+    | "set_premium" | "unset_premium" | "set_access" | "set_status";
+
+/** POST admin/content/bulk-action/ — max 500 items per request, processed per item. */
 export interface BulkActionRequest {
-    action: "publish" | "archive" | "delete";
+    action: BulkActionName;
     items: { type: ContentType; id: number }[];
+    /** set_access → { is_premium?, access_levels? }; set_status → { status, published_at? } */
+    data?: Record<string, unknown>;
+}
+
+export interface BulkActionResult {
+    type: string;
+    id: number;
+    ok: boolean;
+    error?: string;
+}
+
+export interface BulkActionResponse {
+    action: string;
+    processed: number;
+    total_requested: number;
+    succeeded: number;
+    failed: number;
+    results: BulkActionResult[];
+}
+
+/** POST admin/community/{groups|sessions}/bulk-delete/ response. */
+export interface CommunityBulkDeleteResponse {
+    succeeded: number;
+    failed: number;
+    results: { id: number; ok: boolean; error?: string }[];
+}
+
+// ── Access levels (client-specific content, e.g. a sports team) ─────────────
+
+export interface AccessLevel {
+    id: number;
+    name: string;
+    slug?: string;
+    description?: string;
+    /** Members also get the regular Premium library (only when the client's contract includes it). */
+    includes_premium?: boolean;
+    /** Contract end date — access ends automatically after it. */
+    expires_at?: string | null;
+    is_active?: boolean;
+    member_count: number;
+    content_count: number;
+    ai_hourly_limit?: number | null;
+    ai_daily_limit?: number | null;
+    ai_monthly_limit?: number | null;
+    ai_max_input_chars?: number | null;
+    ai_max_response_chars?: number | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export type AccessLevelInput = Partial<Omit<AccessLevel, "id" | "member_count" | "content_count" | "created_at" | "updated_at">>;
+
+export interface AccessLevelMember {
+    id: number;
+    email: string;
+    username?: string | null;
+    name: string;
+}
+
+export interface AccessLevelMembersUpdateResponse {
+    added: AccessLevelMember[];
+    already_members: AccessLevelMember[];
+    not_found: string[];
+}
+
+/** Users return access levels either as ids or as {id, name}. */
+export type UserAccessLevelRef = number | { id: number; name: string };
+
+// ── Limits (Admin Control → Limits) ─────────────────────────────────────────
+
+export interface AILimitTier {
+    hourly: number;
+    daily: number;
+    monthly: number;
+    max_input_chars: number;
+    max_response_chars: number;
+}
+
+export interface AILimitsSettings {
+    free: AILimitTier;
+    premium: AILimitTier;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -897,7 +1006,7 @@ export interface RevenueByRegion {
 }
 
 export type SubscriptionStatus = "active" | "cancelled" | "expired";
-export type SubscriptionTier = "free" | "basic" | "premium" | "enterprise";
+export type SubscriptionTier = "free" | "premium" | "enterprise";
 export type TransactionStatus = "pending" | "completed" | "failed" | "refunded";
 
 export interface Subscription {
@@ -931,6 +1040,19 @@ export interface SubscriptionPlan {
     is_active: boolean;
     stripe_price_id: string;
     subscriber_count: number;
+    description?: string;
+    currency?: string;
+    ai_hourly_limit?: number | null;
+    ai_daily_limit?: number | null;
+    ai_monthly_limit?: number | null;
+    ai_max_input_chars?: number | null;
+    ai_max_response_chars?: number | null;
+    /** First-N annual subscribers launch offer (e.g. 250 at $59.99). */
+    launch_offer_limit?: number;
+    launch_offer_price_yearly?: string | null;
+    launch_offer_claimed_count?: number;
+    launch_offer_remaining?: number;
+    effective_price_yearly?: string | null;
     created_at: string;
     updated_at: string;
 }

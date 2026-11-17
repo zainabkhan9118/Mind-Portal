@@ -98,6 +98,7 @@ const BasicInfo: React.FC<BasicInfoProps> = ({
                             placeholder="Placeholder"
                             value={artist}
                             onChange={(e) => onArtistChange(e.target.value)}
+                            disabled={isMind && !!artist.trim()}
                         />
                     </div>
                 </div>

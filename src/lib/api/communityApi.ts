@@ -1,5 +1,6 @@
 import apiClient from "./axiosInstance";
 import type {
+    CommunityBulkDeleteResponse,
     PaginatedResponse,
     DateRangeParams,
     GrowthGranularity,
@@ -226,9 +227,15 @@ const communityApi = {
         return response.data;
     },
 
-    /** Archive a group (sets is_hidden=true, no hard delete). */
-    archiveGroup: async (id: number): Promise<void> => {
+    /** Permanently delete a group (cascades to its members, posts and sessions). */
+    deleteGroup: async (id: number): Promise<void> => {
         await apiClient.delete(`admin/community/groups/${id}/`);
+    },
+
+    /** Permanently delete many groups in one request, with per-item results. */
+    bulkDeleteGroups: async (ids: number[]): Promise<CommunityBulkDeleteResponse> => {
+        const response = await apiClient.post<CommunityBulkDeleteResponse>("admin/community/groups/bulk-delete/", { ids });
+        return response.data;
     },
 
     // ── Group Sessions ──────────────────────────────────────────────────
@@ -241,6 +248,17 @@ const communityApi = {
             "admin/community/sessions/",
             { params },
         );
+        return response.data;
+    },
+
+    /** Delete a group session. */
+    deleteSession: async (id: number): Promise<void> => {
+        await apiClient.delete(`admin/community/sessions/${id}/`);
+    },
+
+    /** Delete many group sessions in one request, with per-item results. */
+    bulkDeleteSessions: async (ids: number[]): Promise<CommunityBulkDeleteResponse> => {
+        const response = await apiClient.post<CommunityBulkDeleteResponse>("admin/community/sessions/bulk-delete/", { ids });
         return response.data;
     },
 };

@@ -211,7 +211,10 @@ const AdminOverview: React.FC = () => {
     const handleSaveFlags = async () => {
         setIsSavingFlags(true);
         try {
-            const payload: Record<string, boolean> = {};
+            // Start from the latest saved settings: this endpoint is a PUT and also holds
+            // non-flag values (e.g. free_mind_limit, edited in Access Levels → Limits).
+            const current = await settingsApi.getSettings('general').catch(() => ({}));
+            const payload: Record<string, unknown> = { ...current };
             for (const [jsKey, apiKey] of Object.entries(FEATURE_FLAG_KEYS)) {
                 payload[apiKey] = featureFlags[jsKey as keyof typeof featureFlags];
             }

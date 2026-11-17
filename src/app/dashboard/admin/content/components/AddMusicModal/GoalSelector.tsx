@@ -18,6 +18,7 @@ interface GoalSelectorProps {
     onPrimaryGoalChange: (id: number | null) => void;
     secondaryGoals: number[];
     onToggleSecondaryGoal: (id: number) => void;
+    required?: boolean;
 }
 
 const GoalSelector: React.FC<GoalSelectorProps> = ({
@@ -26,6 +27,7 @@ const GoalSelector: React.FC<GoalSelectorProps> = ({
     onPrimaryGoalChange,
     secondaryGoals,
     onToggleSecondaryGoal,
+    required = false,
 }) => {
     if (goalsList.length === 0) return null;
 
@@ -35,7 +37,7 @@ const GoalSelector: React.FC<GoalSelectorProps> = ({
         <div className="space-y-5">
             <div>
                 <Label htmlFor="primary-goal">
-                    Primary Goal <span className="text-red-500">*</span>
+                    Primary Goal {required && <span className="text-red-500">*</span>}
                 </Label>
                 <select
                     id="primary-goal"

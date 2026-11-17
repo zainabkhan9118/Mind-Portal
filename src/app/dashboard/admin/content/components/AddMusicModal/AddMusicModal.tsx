@@ -4,6 +4,7 @@ import Button from "@/components/ui/button/Button";
 import BasicInfo from "./BasicInfo";
 import ThemePlaylist from "./ThemePlaylist";
 import VisibilitySettings from "./VisibilitySettings";
+import { isPastDateTime } from "@/lib/dates";
 import AccessLevels from "./AccessLevels";
 import CoverImage from "./CoverImage";
 import AddTags from "./AddTags";
@@ -15,6 +16,7 @@ import IconSelection from "./IconSelection";
 import CreateSubCategoryModal from "./CreateSubCategoryModal";
 import ManageSubCategoriesModal from "./ManageSubCategoriesModal";
 import { contentApi } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import apiClient from "@/lib/api/axiosInstance";
 import type { AdminCategory, AdminState, AdminEffect, SubCategory, ContentType } from "@/lib/api/types";
 
@@ -88,6 +90,7 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
     const [tags, setTags] = useState<string[]>([]);
     const [status, setStatus] = useState("draft");
     const [accessLevel, setAccessLevel] = useState("free");
+    const [exclusiveLevels, setExclusiveLevels] = useState<number[]>([]);
     const [details, setDetails] = useState("");
     const [audioFile, setAudioFile] = useState<File | null>(null);
     const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
@@ -161,6 +164,13 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
         setSubCategoryIds((prev) => [...prev, created.id]);
     };
 
+    // Minds: the Author is always the creator — pre-fill with the logged-in user's name on create
+    const { user } = useAuth();
+    useEffect(() => {
+        if (!isOpen || !isMind || editItemId) return;
+        if (user?.name) setArtist(user.name);
+    }, [isOpen, isMind, editItemId, user?.name]);
+
     // Pre-fill form when editing
     useEffect(() => {
         if (!isOpen || !editItemId) return;
@@ -178,7 +188,9 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
                 setTitle(item.name ?? "");
                 setDetails(item.description ?? "");
                 setStatus(item.status ?? "draft");
-                setAccessLevel(item.is_premium ? "premium" : "free");
+                const levelIds: number[] = item.access_levels ?? [];
+                setExclusiveLevels(levelIds);
+                setAccessLevel(levelIds.length > 0 ? "exclusive" : item.is_premium ? "premium" : "free");
                 setTags(item.tags ?? []);
                 setPrimaryGoal(item.primary_goal ?? null);
                 setSecondaryGoals(item.secondary_goals ?? item.goals ?? []);
@@ -241,6 +253,7 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
         setTags([]);
         setStatus("draft");
         setAccessLevel("free");
+        setExclusiveLevels([]);
         setDetails("");
         setAudioFile(null);
         setCoverImageFile(null);
@@ -319,6 +332,7 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
         fd.append("description", details);
         fd.append("status", apiStatus);
         fd.append("is_premium", String(isPremium));
+        if (accessLevel === "exclusive") exclusiveLevels.forEach((id) => fd.append("access_levels", String(id)));
 
         tags.forEach((tag) => fd.append("tags", tag));
         if (primaryGoal != null) fd.append("primary_goal", String(primaryGoal));
@@ -405,6 +419,8 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
             description: details,
             status: apiStatus,
             is_premium: isPremium,
+            // Non-empty = exclusive to those custom levels; [] = normal Free/Premium
+            access_levels: accessLevel === "exclusive" ? exclusiveLevels : [],
             tags,
             duration,
             primary_goal: primaryGoal,
@@ -489,8 +505,24 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
             setSubmitError("Audio duration could not be read yet. Please wait a moment or re-upload the file.");
             return;
         }
-        if (primaryGoal == null) {
+        if (isMind && primaryGoal == null) {
             setSubmitError("Please select a primary goal.");
+            return;
+        }
+        if (status === "review" && releaseDate && isPastDateTime(releaseDate, releaseTime)) {
+            setSubmitError("The scheduled release date and time must be in the future.");
+            return;
+        }
+        if (accessLevel === "exclusive" && exclusiveLevels.length === 0) {
+            setSubmitError("Please choose at least one access level for exclusive content.");
+            return;
+        }
+        if (!isMind && primaryCategory == null) {
+            setSubmitError("Please select a primary category.");
+            return;
+        }
+        if (!isMind && primaryEffect == null) {
+            setSubmitError("Please select a primary effect.");
             return;
         }
         setSubmitError(null);
@@ -625,6 +657,7 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
                             onPrimaryGoalChange={handlePrimaryGoalChange}
                             secondaryGoals={secondaryGoals}
                             onToggleSecondaryGoal={toggleSecondaryGoal}
+                            required={isMind}
                         />
 
                         <StateEffectSelector
@@ -640,6 +673,7 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
                             secondaryEffects={secondaryEffects}
                             onToggleSecondaryEffect={toggleSecondaryEffect}
                             onCreateEffect={handleCreateEffect}
+                            effectRequired={!isMind}
                         />
 
                         <AddTags tags={tags} onTagsChange={setTags} />
@@ -687,7 +721,7 @@ const AddMusicModal: React.FC<AddMusicModalProps> = ({
                             releaseTime={releaseTime}
                             onReleaseTimeChange={setReleaseTime}
                         />
-                        <AccessLevels accessLevel={accessLevel} onAccessLevelChange={setAccessLevel} />
+                        <AccessLevels accessLevel={accessLevel} onAccessLevelChange={setAccessLevel} exclusiveLevels={exclusiveLevels} onExclusiveLevelsChange={setExclusiveLevels} />
                     </div>
 
                     {/* Error */}

@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { User as UserIcon, ChevronLeft, ChevronRight, MoreVertical } from 'lucide-react';
+import { User as UserIcon, ChevronLeft, ChevronRight, MoreVertical, Pencil } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHeader, TableRow } from '@/components/ui/table';
 import type { ApiUser, UserStatus } from '@/lib/api/types';
 
 interface UserTableProps {
     users: ApiUser[];
+    onEdit: (user: ApiUser) => void;
     onSwitchExpert: (user: ApiUser) => void;
     onStatusChange: (user: ApiUser, status: UserStatus) => void;
     currentPage: number;
@@ -17,6 +18,7 @@ const PAGE_SIZE = 10;
 
 const UserTable: React.FC<UserTableProps> = ({
     users,
+    onEdit,
     onSwitchExpert,
     onStatusChange,
     currentPage,
@@ -61,6 +63,7 @@ const UserTable: React.FC<UserTableProps> = ({
                     <TableHeader className="bg-gray-50 dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
                         <TableRow>
                             <TableCell isHeader className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-left">Name</TableCell>
+                            <TableCell isHeader className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-left">Username</TableCell>
                             <TableCell isHeader className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-left">Email</TableCell>
                             <TableCell isHeader className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-left">Joined</TableCell>
                             <TableCell isHeader className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-left">Access</TableCell>
@@ -71,7 +74,7 @@ const UserTable: React.FC<UserTableProps> = ({
                     <TableBody>
                         {users.length === 0 && (
                             <TableRow>
-                                <td colSpan={6} className="px-6 py-16 text-center text-sm text-gray-400">
+                                <td colSpan={7} className="px-6 py-16 text-center text-sm text-gray-400">
                                     No users found
                                 </td>
                             </TableRow>
@@ -97,6 +100,9 @@ const UserTable: React.FC<UserTableProps> = ({
                                             )}
                                             <span className="text-sm font-medium text-gray-900 dark:text-white">{displayName}</span>
                                         </div>
+                                    </TableCell>
+                                    <TableCell className="px-6 py-4">
+                                        <span className="text-sm text-gray-600 dark:text-gray-400">{user.username ? `@${user.username}` : '—'}</span>
                                     </TableCell>
                                     <TableCell className="px-6 py-4">
                                         <span className="text-sm text-gray-600 dark:text-gray-400">{user.email}</span>
@@ -125,6 +131,14 @@ const UserTable: React.FC<UserTableProps> = ({
 
                                             {isMenuOpen && (
                                                 <div className="absolute right-0 top-8 z-50 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg py-1 animate-in fade-in slide-in-from-top-2 duration-150">
+                                                    <button
+                                                        onClick={() => { setOpenMenuId(null); onEdit(user); }}
+                                                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors flex items-center gap-2"
+                                                    >
+                                                        <Pencil className="w-3.5 h-3.5" />
+                                                        Edit User
+                                                    </button>
+                                                    <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
                                                     {user.status !== 'active' && (
                                                         <button
                                                             onClick={() => { setOpenMenuId(null); onStatusChange(user, 'active'); }}

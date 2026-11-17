@@ -4,6 +4,7 @@ import UsersFilter from './UsersFilter';
 import UserTable from './UserTable';
 import SwitchExpertModal from './SwitchExpertModal';
 import UserActionModal from './UserActionModal';
+import EditUserModal from './EditUserModal';
 import { usersApi } from '@/lib/api';
 import type { ApiUser, UserStatus } from '@/lib/api/types';
 
@@ -27,6 +28,9 @@ const RecentUsers: React.FC = () => {
     const [selectedUser, setSelectedUser] = useState<ApiUser | null>(null);
     const [isSwitching, setIsSwitching] = useState(false);
     const [switchError, setSwitchError] = useState<string | null>(null);
+
+    // Edit user modal
+    const [editUser, setEditUser] = useState<ApiUser | null>(null);
 
     // Status change modal
     const [isActionModalOpen, setIsActionModalOpen] = useState(false);
@@ -136,6 +140,7 @@ const RecentUsers: React.FC = () => {
             ) : (
                 <UserTable
                     users={users}
+                    onEdit={setEditUser}
                     onSwitchExpert={handleSwitchExpert}
                     onStatusChange={handleStatusChange}
                     currentPage={currentPage}
@@ -152,6 +157,13 @@ const RecentUsers: React.FC = () => {
                 userName={displayName}
                 isLoading={isSwitching}
                 error={switchError}
+            />
+
+            <EditUserModal
+                isOpen={editUser !== null}
+                onClose={() => setEditUser(null)}
+                user={editUser}
+                onSaved={() => setRefreshKey(k => k + 1)}
             />
 
             <UserActionModal

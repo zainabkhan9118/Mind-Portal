@@ -33,7 +33,7 @@ const CategorySelector: React.FC<CategorySelectorProps> = ({
         <div className="space-y-5">
             <div>
                 <Label htmlFor="primary-category">
-                    Primary Category
+                    Primary Category <span className="text-red-500">*</span>
                 </Label>
                 {categories.length === 0 ? (
                     <p className="text-xs text-gray-400 py-2">

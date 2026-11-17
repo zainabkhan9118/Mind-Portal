@@ -1,8 +1,12 @@
 import type { CommunityGroupSession } from "@/lib/api/types";
+import SelectCheckbox from "@/components/common/SelectCheckbox";
 
 interface SessionsTableProps {
     sessions: CommunityGroupSession[];
     emptyMessage: string;
+    selectedIds?: Set<number>;
+    onToggleSelect?: (id: number) => void;
+    onToggleSelectAll?: (ids: number[]) => void;
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -12,12 +16,25 @@ const STATUS_STYLES: Record<string, string> = {
     cancelled: "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400",
 };
 
-export default function SessionsTable({ sessions, emptyMessage }: SessionsTableProps) {
+export default function SessionsTable({ sessions, emptyMessage, selectedIds, onToggleSelect, onToggleSelectAll }: SessionsTableProps) {
+    const selectable = !!selectedIds && !!onToggleSelect && !!onToggleSelectAll;
+    const selectedCount = selectable ? sessions.filter(s => selectedIds!.has(s.id)).length : 0;
+    const allSelected = sessions.length > 0 && selectedCount === sessions.length;
     return (
         <table className="w-full text-left border-collapse">
             <thead>
                 <tr className="sticky top-0 z-10 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-400 uppercase tracking-wider">
-                    <th className="p-4 pl-6">Rank</th>
+                    {selectable && (
+                        <th className="p-4 pl-6 w-10">
+                            <SelectCheckbox
+                                label="Select all sessions shown"
+                                checked={allSelected}
+                                indeterminate={selectedCount > 0 && !allSelected}
+                                onChange={() => onToggleSelectAll!(sessions.map(s => s.id))}
+                            />
+                        </th>
+                    )}
+                    <th className={selectable ? "p-4" : "p-4 pl-6"}>Rank</th>
                     <th className="p-4">Session</th>
                     <th className="p-4">Group</th>
                     <th className="p-4">Host</th>
@@ -29,7 +46,7 @@ export default function SessionsTable({ sessions, emptyMessage }: SessionsTableP
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
                 {sessions.length === 0 ? (
                     <tr>
-                        <td colSpan={7} className="p-8 text-center text-gray-400 text-sm">
+                        <td colSpan={selectable ? 8 : 7} className="p-8 text-center text-gray-400 text-sm">
                             {emptyMessage}
                         </td>
                     </tr>
@@ -42,8 +59,17 @@ export default function SessionsTable({ sessions, emptyMessage }: SessionsTableP
                         const statusClass = STATUS_STYLES[session.status ?? ""] ?? "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400";
                         const dateStr = session.scheduled_at ?? session.started_at ?? session.created_at;
                         return (
-                            <tr key={session.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                                <td className="p-4 pl-6">
+                            <tr key={session.id} className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${selectable && selectedIds!.has(session.id) ? "bg-blue-50/60 dark:bg-blue-900/10" : ""}`}>
+                                {selectable && (
+                                    <td className="p-4 pl-6 w-10">
+                                        <SelectCheckbox
+                                            label={`Select ${session.title}`}
+                                            checked={selectedIds!.has(session.id)}
+                                            onChange={() => onToggleSelect!(session.id)}
+                                        />
+                                    </td>
+                                )}
+                                <td className={selectable ? "p-4" : "p-4 pl-6"}>
                                     <span className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center text-xs font-bold">
                                         {String(index + 1).padStart(2, "0")}
                                     </span>

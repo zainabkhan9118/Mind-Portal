@@ -428,6 +428,25 @@
 .flatpickr-day.prevMonthDay {
   @apply text-gray-400!;
 }
+/* Days that can't be picked (e.g. before minDate): grey chip, grey struck-through text, no hover */
+.flatpickr-calendar .flatpickr-days .flatpickr-day.flatpickr-disabled,
+.flatpickr-calendar .flatpickr-days .flatpickr-day.flatpickr-disabled:hover,
+.flatpickr-calendar .flatpickr-days .flatpickr-day.flatpickr-disabled.prevMonthDay,
+.flatpickr-calendar .flatpickr-days .flatpickr-day.flatpickr-disabled.nextMonthDay {
+  color: #98a2b3 !important;            /* gray-400 */
+  background: #f2f4f7 !important;       /* gray-100 */
+  border-color: #f2f4f7 !important;
+  text-decoration: line-through !important;
+  cursor: not-allowed !important;
+}
+.dark .flatpickr-calendar .flatpickr-days .flatpickr-day.flatpickr-disabled,
+.dark .flatpickr-calendar .flatpickr-days .flatpickr-day.flatpickr-disabled:hover,
+.dark .flatpickr-calendar .flatpickr-days .flatpickr-day.flatpickr-disabled.prevMonthDay,
+.dark .flatpickr-calendar .flatpickr-days .flatpickr-day.flatpickr-disabled.nextMonthDay {
+  color: #667085 !important;            /* gray-500 */
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: transparent !important;
+}
 
 .flatpickr-months > .flatpickr-month {
   background: none !important;

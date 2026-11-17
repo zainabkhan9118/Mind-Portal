@@ -15,8 +15,10 @@ import type {
     ContentTypeEndpoint,
     ContentType,
     ContentStatusChangeRequest,
+    ContentStatus,
     ContentApprovalRequest,
     BulkActionRequest,
+    BulkActionResponse,
     AdminCategory,
     AdminState,
     AdminEffect,
@@ -65,12 +67,9 @@ const contentApi = {
         id: number,
         data: ContentStatusChangeRequest,
     ): Promise<void> => {
-        const typeSlug = type === "mind_session" ? "guided-sessions"
-            : type === "env_sound" ? "env-sounds"
-            : type === "env_visual" ? "env-visuals"
-            : type === "minds" ? "minds"
-            : type;
-        await apiClient.patch(`admin/content/${typeSlug}/${id}/status/`, data);
+        // This endpoint takes the underscore type (music / mind_session / env_sound / env_visual),
+        // NOT the dashed collection slug — "env-sounds" returns 400 "Invalid content type."
+        await apiClient.patch(`admin/content/${type}/${id}/status/`, data);
     },
 
     /** Duplicate content – creates a draft copy, returns the new item. */
@@ -102,9 +101,24 @@ const contentApi = {
         return response.data;
     },
 
-    /** Bulk action on multiple content items. */
-    bulkAction: async (data: BulkActionRequest): Promise<void> => {
-        await apiClient.post("admin/content/bulk-action/", data);
+    /** Partial update of one item of any content type — used by bulk actions
+     * (status / scheduled date / access). */
+    patchItem: async (
+        type: ContentType,
+        id: number,
+        data: Partial<{ status: ContentStatus; published_at: string | null; is_premium: boolean; access_levels: number[] }>,
+    ): Promise<void> => {
+        const typeSlug = type === "mind_session" ? "guided-sessions"
+            : type === "env_sound" ? "env-sounds"
+            : type === "env_visual" ? "env-visuals"
+            : type;
+        await apiClient.patch(`admin/content/${typeSlug}/${id}/`, data);
+    },
+
+    /** Bulk action on many content items in one request (max 500 items, per-item results). */
+    bulkAction: async (data: BulkActionRequest): Promise<BulkActionResponse> => {
+        const response = await apiClient.post<BulkActionResponse>("admin/content/bulk-action/", data);
+        return response.data;
     },
 
     // ── Music ───────────────────────────────────────────────────────────

@@ -65,7 +65,7 @@ const UsersPageInner: React.FC = () => {
                             }`}
                     >
                         <Users className="w-4 h-4" />
-                        Recent Users
+                        All Users
                         {activeTab === 'recent' && (
                             <span className="absolute bottom-0 left-0 w-full h-0.5 bg-purple-600 rounded-t-full" />
                         )}

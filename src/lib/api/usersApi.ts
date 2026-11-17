@@ -93,6 +93,11 @@ const usersApi = {
         return response.data;
     },
 
+    /** Email the user a one-time "set new password" link (expires after 24 hours). */
+    sendPasswordReset: async (id: number): Promise<void> => {
+        await apiClient.post(`admin/users/${id}/send-password-reset/`);
+    },
+
     /** Change user status (active / suspended / banned). */
     changeUserStatus: async (
         id: number,
@@ -105,11 +110,14 @@ const usersApi = {
     updateUser: async (
         id: number,
         data: FormData | Partial<{
+            username: string;
             first_name: string;
             last_name: string;
             email: string;
             phone: string;
             is_premium: boolean;
+            premium_expires_at: string | null;
+            access_levels: number[];
             is_mind_expert: boolean;
             mind_expert_pending: boolean;
         }>,

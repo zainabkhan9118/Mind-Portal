@@ -7,7 +7,11 @@ import Label from "@/components/form/Label";
 import { ValidationItemData } from "./ValidationItem";
 import contentApi from "@/lib/api/contentApi";
 import usersApi from "@/lib/api/usersApi";
+import apiClient from "@/lib/api/axiosInstance";
+import GoalSelector from "@/app/dashboard/admin/content/components/AddMusicModal/GoalSelector";
+import StateEffectSelector from "@/app/dashboard/admin/content/components/AddMusicModal/StateEffectSelector";
 import type { ContentVisibility, UserSearchResult } from "@/lib/api/types";
+import { isPastDateTime, nowLocalTime, todayLocal } from "@/lib/dates";
 
 interface MindReviewModalProps {
     isOpen: boolean;
@@ -38,8 +42,51 @@ const MindReviewModal: React.FC<MindReviewModalProps> = ({ isOpen, onClose, item
     const [isRejecting, setIsRejecting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // Goal / State / Effect taxonomy
+    type Taxonomy = { id: number; name: string };
+    const [goalsList, setGoalsList] = useState<Taxonomy[]>([]);
+    const [statesList, setStatesList] = useState<Taxonomy[]>([]);
+    const [effectsList, setEffectsList] = useState<Taxonomy[]>([]);
+    const [primaryGoal, setPrimaryGoal] = useState<number | null>(null);
+    const [secondaryGoals, setSecondaryGoals] = useState<number[]>([]);
+    const [primaryState, setPrimaryState] = useState<number | null>(null);
+    const [secondaryStates, setSecondaryStates] = useState<number[]>([]);
+    const [primaryEffect, setPrimaryEffect] = useState<number | null>(null);
+    const [secondaryEffects, setSecondaryEffects] = useState<number[]>([]);
+
+    // Load taxonomy lists + the Mind's current values when the modal opens
+    useEffect(() => {
+        if (!isOpen || !item) return;
+        apiClient
+            .get<{ results: Taxonomy[] }>("explore/goals/", { params: { size: 100 } })
+            .then(res => setGoalsList(res.data.results ?? []))
+            .catch(() => {});
+        contentApi.states.list({ size: 100 }).then(res => setStatesList(res.results ?? [])).catch(() => {});
+        contentApi.effects.list({ size: 100 }).then(res => setEffectsList(res.results ?? [])).catch(() => {});
+        contentApi.minds
+            .get(Number(item.id))
+            .then(mind => {
+                setPrimaryGoal(mind.primary_goal ?? null);
+                setSecondaryGoals((mind.secondary_goals ?? []).filter(g => g !== mind.primary_goal));
+                setPrimaryState(mind.primary_state ?? null);
+                setSecondaryStates(mind.secondary_states ?? []);
+                setPrimaryEffect(mind.primary_effect ?? null);
+                setSecondaryEffects(mind.secondary_effects ?? []);
+            })
+            .catch(() => setError("Could not load this Mind's goals, states and effects."));
+    }, [isOpen, item]);
+
+    const withoutId = (id: number | null) => (prev: number[]) => (id == null ? prev : prev.filter(x => x !== id));
+    const toggleIn = (id: number) => (prev: number[]) => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+
     useEffect(() => {
         if (!isOpen) {
+            setPrimaryGoal(null);
+            setSecondaryGoals([]);
+            setPrimaryState(null);
+            setSecondaryStates([]);
+            setPrimaryEffect(null);
+            setSecondaryEffects([]);
             setVisibility("all");
             setPublishDate("");
             setPublishTime("");
@@ -86,12 +133,23 @@ const MindReviewModal: React.FC<MindReviewModalProps> = ({ isOpen, onClose, item
 
     const handleApprove = async () => {
         if (!item) return;
+        if (primaryGoal == null) { setError("Please select a primary goal."); return; }
+        if (primaryState == null) { setError("Please select a primary state."); return; }
+        if (primaryEffect == null) { setError("Please select a primary effect."); return; }
+        if (publishDate && isPastDateTime(publishDate, publishTime)) { setError("The publish date and time must be in the future."); return; }
         setError(null);
         setIsSubmitting(true);
         try {
             const payload: Parameters<typeof contentApi.approveContent>[2] = {
                 status: "published",
                 visibility,
+                primary_goal: primaryGoal,
+                secondary_goals: secondaryGoals,
+                goals: [primaryGoal, ...secondaryGoals],
+                primary_state: primaryState,
+                secondary_states: secondaryStates,
+                primary_effect: primaryEffect,
+                secondary_effects: secondaryEffects,
             };
             const publishedAt = buildPublishedAt();
             if (publishedAt) payload.published_at = publishedAt;
@@ -158,7 +216,41 @@ const MindReviewModal: React.FC<MindReviewModalProps> = ({ isOpen, onClose, item
                     </div>
                 </div>
 
-                <div className="space-y-6">
+                <div className="space-y-6 overflow-y-auto max-h-[60vh] pr-2 custom-scrollbar">
+                    {/* Goals */}
+                    <GoalSelector
+                        goalsList={goalsList}
+                        primaryGoal={primaryGoal}
+                        onPrimaryGoalChange={id => { setPrimaryGoal(id); setSecondaryGoals(withoutId(id)); }}
+                        secondaryGoals={secondaryGoals}
+                        onToggleSecondaryGoal={id => setSecondaryGoals(toggleIn(id))}
+                        required
+                    />
+
+                    {/* State & Effect */}
+                    <StateEffectSelector
+                        statesList={statesList}
+                        primaryState={primaryState}
+                        onPrimaryStateChange={id => { setPrimaryState(id); setSecondaryStates(withoutId(id)); }}
+                        secondaryStates={secondaryStates}
+                        onToggleSecondaryState={id => setSecondaryStates(toggleIn(id))}
+                        onCreateState={async name => {
+                            const created = await contentApi.states.create({ name });
+                            setStatesList(prev => [...prev, created]);
+                        }}
+                        effectsList={effectsList}
+                        primaryEffect={primaryEffect}
+                        onPrimaryEffectChange={id => { setPrimaryEffect(id); setSecondaryEffects(withoutId(id)); }}
+                        secondaryEffects={secondaryEffects}
+                        onToggleSecondaryEffect={id => setSecondaryEffects(toggleIn(id))}
+                        onCreateEffect={async name => {
+                            const created = await contentApi.effects.create({ name });
+                            setEffectsList(prev => [...prev, created]);
+                        }}
+                        stateRequired
+                        effectRequired
+                    />
+
                     {/* Access Level */}
                     <div>
                         <Label className="text-gray-700 dark:text-gray-300 font-semibold mb-2 flex items-center gap-1">
@@ -249,6 +341,7 @@ const MindReviewModal: React.FC<MindReviewModalProps> = ({ isOpen, onClose, item
                                     <input
                                         type="date"
                                         value={publishDate}
+                                        min={todayLocal()}
                                         onChange={e => setPublishDate(e.target.value)}
                                         className="w-full h-11 px-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-purple-500/20"
                                     />
@@ -260,6 +353,7 @@ const MindReviewModal: React.FC<MindReviewModalProps> = ({ isOpen, onClose, item
                                     <input
                                         type="time"
                                         value={publishTime}
+                                    min={publishDate === todayLocal() ? nowLocalTime() : undefined}
                                         onChange={e => setPublishTime(e.target.value)}
                                         className="w-full h-11 px-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-purple-500/20"
                                     />
@@ -289,7 +383,7 @@ const MindReviewModal: React.FC<MindReviewModalProps> = ({ isOpen, onClose, item
                         </Button>
                         <Button
                             onClick={handleApprove}
-                            disabled={isSubmitting || isRejecting || (visibility === "restricted" && allowedUsers.length === 0)}
+                            disabled={isSubmitting || isRejecting || (visibility === "restricted" && allowedUsers.length === 0) || primaryGoal == null || primaryState == null || primaryEffect == null}
                             className="px-6 bg-[#9810FA] hover:bg-[#8000E0] text-white rounded-xl py-2.5 h-auto font-semibold border-none shadow-lg shadow-purple-500/20 disabled:opacity-50"
                         >
                             {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Approve & Schedule"}

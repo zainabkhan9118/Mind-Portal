@@ -8,6 +8,7 @@ import { ValidationItemData } from "./ValidationItem";
 import contentApi from "@/lib/api/contentApi";
 import usersApi from "@/lib/api/usersApi";
 import type { ContentVisibility, UserSearchResult, AdminCategory, ContentType } from "@/lib/api/types";
+import { isPastDateTime, nowLocalTime, todayLocal } from "@/lib/dates";
 
 const KIND_META: Record<string, { label: string; categoryType: ContentType; categoryField: string; icon: typeof Music2 }> = {
     "music": { label: "Music", categoryType: "music", categoryField: "music_category", icon: Music2 },
@@ -119,6 +120,7 @@ const PlaylistReviewModal: React.FC<PlaylistReviewModalProps> = ({ isOpen, onClo
 
     const handleApprove = async () => {
         if (!item) return;
+        if (publishDate && isPastDateTime(publishDate, publishTime)) { setError("The publish date and time must be in the future."); return; }
         setError(null);
         setIsSubmitting(true);
         try {
@@ -316,6 +318,7 @@ const PlaylistReviewModal: React.FC<PlaylistReviewModalProps> = ({ isOpen, onClo
                                 <input
                                     type="date"
                                     value={publishDate}
+                                    min={todayLocal()}
                                     onChange={e => setPublishDate(e.target.value)}
                                     className="w-full h-14 px-5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl text-sm text-gray-900 dark:text-gray-100 outline-none focus:ring-4 focus:ring-purple-500/5"
                                 />
@@ -325,6 +328,7 @@ const PlaylistReviewModal: React.FC<PlaylistReviewModalProps> = ({ isOpen, onClo
                                 <input
                                     type="time"
                                     value={publishTime}
+                                    min={publishDate === todayLocal() ? nowLocalTime() : undefined}
                                     onChange={e => setPublishTime(e.target.value)}
                                     className="w-full h-14 px-5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-2xl text-sm text-gray-900 dark:text-gray-100 outline-none focus:ring-4 focus:ring-purple-500/5"
                                 />

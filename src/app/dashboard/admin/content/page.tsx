@@ -17,8 +17,10 @@ import {
 } from "lucide-react";
 import ContentTable from "./components/ContentTable";
 import ContentFilter from "./components/ContentFilter";
+import BulkActionBar, { type BulkAction } from "./components/BulkActionBar";
 import { contentApi } from "@/lib/api";
 import apiClient from "@/lib/api/axiosInstance";
+import { getApiErrorMessage } from "@/lib/api/errors";
 import { HOME_SCREEN_ONLY_TAG } from "@/lib/contentTags";
 import type {
   AdminMusic,
@@ -29,6 +31,7 @@ import type {
   AdminCategory,
   ContentStatus,
   ContentType,
+  BulkActionName,
 } from "@/lib/api/types";
 import type { ContentItem, EnvironmentSoundItem, MindSessionItem, EnvironmentVisualItem, MindItem } from "./types";
 
@@ -90,6 +93,7 @@ function adaptMusic(item: AdminMusic): ContentItem {
   return {
     id: item.id,
     title: item.name,
+    coverUrl: item.image || item.icon_url || null,
     artist: item.artist,
     url: item.audio_clip,
     state: item.state ?? "",
@@ -109,6 +113,7 @@ function adaptEnvSound(item: AdminEnvironmentSound, goalsMap: Record<number, str
   return {
     id: item.id,
     title: item.name,
+    coverUrl: item.image || item.icon_url || null,
     icon: null,
     category: item.category_names ?? "",
     frequency: item.frequency ?? "",
@@ -128,6 +133,7 @@ function adaptMindSession(item: AdminMindSession, goalsMap: Record<number, strin
   return {
     id: item.id,
     title: item.name,
+    coverUrl: item.image || item.icon_url || null,
     category: item.category_names ?? "",
     voice: item.instructor_name ?? item.artist,
     duration: formatDuration(item.duration),
@@ -146,6 +152,7 @@ function adaptEnvVisual(item: AdminEnvironmentVisual, goalsMap: Record<number, s
   return {
     id: item.id,
     title: item.name,
+    coverUrl: item.image || item.icon_url || null,
     icon: null,
     category: item.category_names ?? "",
     author: item.mood ?? "",
@@ -164,6 +171,7 @@ function adaptMind(item: AdminMind, goalsMap: Record<number, string>): MindItem 
   return {
     id: item.id,
     title: item.name,
+    coverUrl: item.icon_url || null,
     description: item.description ?? "",
     goals: mapGoalNames(item.goals ?? [], goalsMap),
     author: item.author ?? "",
@@ -229,6 +237,11 @@ function ContentManagementPageInner() {
   const [goalsMap, setGoalsMap] = useState<Record<number, string>>({});
 
   const PAGE_SIZE = 10;
+
+  // ── Bulk selection ──────────────────────────────────────────────────────────
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [isBulkRunning, setIsBulkRunning] = useState(false);
+  const [bulkMessage, setBulkMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const fetchCategories = useCallback(async () => {
     // Minds have no Category concept at all (no Category UI, no "Add Category" button).
@@ -360,21 +373,31 @@ function ContentManagementPageInner() {
     setCurrentPage(1);
   }, [activeTab, searchTerm, accessFilter, statusFilter, categoryFilter]);
 
+  // Selection only covers what's visible — clear it whenever the visible set changes
+  useEffect(() => {
+    setSelectedIds(new Set());
+    setBulkMessage(null);
+  }, [activeTab, searchTerm, accessFilter, statusFilter, categoryFilter, currentPage]);
+
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
   // ── Action handlers ─────────────────────────────────────────────────────────
 
+  const deleteOne = async (id: number) => {
+    switch (activeTab) {
+      case "Music":   await contentApi.music.delete(id); break;
+      case "Sounds":  await contentApi.envSounds.delete(id); break;
+      case "Guided":  await contentApi.guidedSessions.delete(id); break;
+      case "Visuals": await contentApi.envVisuals.delete(id); break;
+      case "Minds":   await contentApi.minds.delete(id); break;
+    }
+  };
+
   const handleDelete = async (id: number) => {
     try {
-      switch (activeTab) {
-        case "Music":               await contentApi.music.delete(id); break;
-        case "Sounds":   await contentApi.envSounds.delete(id); break;
-        case "Guided":       await contentApi.guidedSessions.delete(id); break;
-        case "Visuals":  await contentApi.envVisuals.delete(id); break;
-        case "Minds":               await contentApi.minds.delete(id); break;
-      }
+      await deleteOne(id);
       fetchData();
     } catch (err) {
       console.error("Failed to delete:", err);
@@ -403,6 +426,72 @@ function ContentManagementPageInner() {
     } catch (err) {
       console.error("Failed to change status:", err);
     }
+  };
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    setSelectedIds(prev => (data.length > 0 && data.every(item => prev.has(item.id)) ? new Set() : new Set(data.map(item => item.id))));
+  };
+
+  const handleBulkAction = async (action: BulkAction) => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    const type = getContentType(activeTab);
+    setIsBulkRunning(true);
+    setBulkMessage(null);
+
+    // One request to the backend's bulk endpoint (max 500 items; selection is one page)
+    const request = ((): { action: BulkActionName; data?: Record<string, unknown> } => {
+      switch (action.kind) {
+        case "delete":
+          return { action: "delete" };
+        case "access":
+          return {
+            action: "set_access",
+            data: typeof action.level === "number"
+              ? { is_premium: false, access_levels: [action.level] }
+              : { is_premium: action.level === "premium", access_levels: [] },
+          };
+        case "status":
+          return { action: "set_status", data: action.status === "draft" ? { status: "draft", published_at: null } : { status: "published" } };
+        case "schedule":
+          return { action: "set_status", data: { status: "review", published_at: action.publishedAt } };
+      }
+    })();
+
+    let failedIds: number[];
+    let firstError: string | undefined;
+    try {
+      const res = await contentApi.bulkAction({ ...request, items: ids.map(id => ({ type, id })) });
+      const failed = (res.results ?? []).filter(r => !r.ok);
+      failedIds = failed.map(r => r.id);
+      firstError = failed.find(r => r.error)?.error;
+    } catch (err) {
+      console.error("Bulk action failed:", err);
+      failedIds = ids;
+      firstError = getApiErrorMessage(err);
+    }
+    const succeeded = ids.length - failedIds.length;
+
+    const verb = { delete: "Deleted", access: "Updated access for", status: "Updated status for", schedule: "Scheduled" }[action.kind];
+    if (failedIds.length === 0) {
+      setBulkMessage({ type: "success", text: `${verb} ${succeeded} item${succeeded === 1 ? "" : "s"}.` });
+    } else {
+      const titles = data.filter(item => failedIds.includes(item.id)).map(item => item.title).join(", ");
+      setBulkMessage({ type: "error", text: `${verb} ${succeeded} of ${ids.length}. Failed: ${titles}${firstError ? ` (${firstError})` : ""}` });
+    }
+
+    // Keep only the failures selected so they can be retried
+    setSelectedIds(new Set(failedIds));
+    setIsBulkRunning(false);
+    fetchData();
   };
 
   // ── Pagination ───────────────────────────────────────────────────────────────
@@ -493,6 +582,21 @@ function ContentManagementPageInner() {
           onManageCategoriesClick={() => setIsManageCategoriesOpen(true)}
         />
 
+        <BulkActionBar
+          selectedCount={selectedIds.size}
+          isRunning={isBulkRunning}
+          onRun={handleBulkAction}
+          onClear={() => setSelectedIds(new Set())}
+        />
+        {bulkMessage && (
+          <div className={`flex items-start justify-between gap-3 px-4 py-2.5 text-sm border-b ${bulkMessage.type === "success"
+              ? "bg-green-50 text-green-700 border-green-100 dark:bg-green-900/10 dark:text-green-400 dark:border-green-900/30"
+              : "bg-red-50 text-red-600 border-red-100 dark:bg-red-900/10 dark:text-red-400 dark:border-red-900/30"}`}>
+            <span>{bulkMessage.text}</span>
+            <button onClick={() => setBulkMessage(null)} className="shrink-0 opacity-70 hover:opacity-100" aria-label="Dismiss">✕</button>
+          </div>
+        )}
+
         {isLoading ? (
           <div className="flex items-center justify-center py-20 text-gray-400 text-sm">
             Loading...
@@ -505,6 +609,9 @@ function ContentManagementPageInner() {
             onDuplicate={handleDuplicate}
             onChangeStatus={handleChangeStatus}
             onEdit={handleEdit}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
+            onToggleSelectAll={toggleSelectAll}
           />
         )}
 

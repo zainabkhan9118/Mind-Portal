@@ -15,6 +15,7 @@ export { default as analyticsApi } from "./analyticsApi";
 export { default as monetizationApi } from "./monetizationApi";
 export { default as communityApi } from "./communityApi";
 export { default as settingsApi } from "./settingsApi";
+export { default as accessLevelsApi } from "./accessLevelsApi";
 
 // Re-export all types
 export * from "./types";

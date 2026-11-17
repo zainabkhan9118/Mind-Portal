@@ -23,6 +23,7 @@ interface TaxonomyPickerProps {
     onToggleSecondary: (id: number) => void;
     onCreate: (name: string) => Promise<void>;
     accentColorClass: string;
+    required?: boolean;
 }
 
 const TaxonomyPicker: React.FC<TaxonomyPickerProps> = ({
@@ -35,6 +36,7 @@ const TaxonomyPicker: React.FC<TaxonomyPickerProps> = ({
     onToggleSecondary,
     onCreate,
     accentColorClass,
+    required = false,
 }) => {
     const [newName, setNewName] = useState("");
     const [isCreating, setIsCreating] = useState(false);
@@ -60,7 +62,9 @@ const TaxonomyPicker: React.FC<TaxonomyPickerProps> = ({
     return (
         <div className="space-y-3">
             <div>
-                <Label htmlFor={`${idPrefix}-primary`}>Primary {label}</Label>
+                <Label htmlFor={`${idPrefix}-primary`}>
+                    Primary {label} {required && <span className="text-red-500">*</span>}
+                </Label>
                 <select
                     id={`${idPrefix}-primary`}
                     value={primary ?? ""}
@@ -138,6 +142,8 @@ interface StateEffectSelectorProps {
     secondaryEffects: number[];
     onToggleSecondaryEffect: (id: number) => void;
     onCreateEffect: (name: string) => Promise<void>;
+    effectRequired?: boolean;
+    stateRequired?: boolean;
 }
 
 const StateEffectSelector: React.FC<StateEffectSelectorProps> = ({
@@ -153,6 +159,8 @@ const StateEffectSelector: React.FC<StateEffectSelectorProps> = ({
     secondaryEffects,
     onToggleSecondaryEffect,
     onCreateEffect,
+    effectRequired = false,
+    stateRequired = false,
 }) => (
     <div className="space-y-4">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
@@ -170,6 +178,7 @@ const StateEffectSelector: React.FC<StateEffectSelectorProps> = ({
                 onToggleSecondary={onToggleSecondaryState}
                 onCreate={onCreateState}
                 accentColorClass="bg-[#9810FA]"
+                required={stateRequired}
             />
 
             <TaxonomyPicker
@@ -182,6 +191,7 @@ const StateEffectSelector: React.FC<StateEffectSelectorProps> = ({
                 onToggleSecondary={onToggleSecondaryEffect}
                 onCreate={onCreateEffect}
                 accentColorClass="bg-blue-600"
+                required={effectRequired}
             />
         </div>
     </div>

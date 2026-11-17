@@ -14,6 +14,7 @@ import { ContentItem, EnvironmentSoundItem, MindSessionItem, EnvironmentVisualIt
 import StatusBadge from './StatusBadge';
 import TagPill from './TagPill';
 import FileUploadIcon from './FileUploadIcon';
+import SelectCheckbox from '@/components/common/SelectCheckbox';
 
 interface ContentTableProps {
     activeTab: string;
@@ -22,9 +23,31 @@ interface ContentTableProps {
     onDuplicate: (id: number) => void;
     onChangeStatus: (id: number, status: 'published' | 'draft' | 'archived') => void;
     onEdit: (id: number) => void;
+    selectedIds: Set<number>;
+    onToggleSelect: (id: number) => void;
+    onToggleSelectAll: () => void;
 }
 
-const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, onDuplicate, onChangeStatus, onEdit }) => {
+/** Small square thumbnail of the item's cover image; falls back to an icon if missing or broken. */
+const RowThumbnail: React.FC<{ src?: string | null; fallback: React.ReactNode }> = ({ src, fallback }) => {
+    const [failed, setFailed] = useState(false);
+    useEffect(() => setFailed(false), [src]);
+    const showImage = !!src && !failed;
+    return (
+        <div className="w-8 h-8 shrink-0 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500 group-hover:bg-white group-hover:text-purple-600 transition-colors">
+            {showImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={src} alt="" loading="lazy" className="w-full h-full object-cover" onError={() => setFailed(true)} />
+            ) : (
+                fallback
+            )}
+        </div>
+    );
+};
+
+const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, onDuplicate, onChangeStatus, onEdit, selectedIds, onToggleSelect, onToggleSelectAll }) => {
+    const selectedOnPage = data.filter(item => selectedIds.has(item.id)).length;
+    const allSelected = data.length > 0 && selectedOnPage === data.length;
     const [openDropdownId, setOpenDropdownId] = useState<number | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -52,6 +75,14 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
             <Table className="w-full text-left border-collapse">
                 <TableHeader className="border-b border-gray-100 dark:border-gray-700">
                     <TableRow>
+                        <TableCell isHeader className="p-4 w-10">
+                            <SelectCheckbox
+                                label="Select all on this page"
+                                checked={allSelected}
+                                indeterminate={selectedOnPage > 0 && !allSelected}
+                                onChange={onToggleSelectAll}
+                            />
+                        </TableCell>
                         <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">ID</TableCell>
                         <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">
                             <div className="flex items-center gap-1 cursor-pointer">
@@ -71,9 +102,7 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                             <>
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Category</TableCell>
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Frequency</TableCell>
-                                <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Type</TableCell>
-                                <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Goal</TableCell>
-                                <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Details</TableCell>
+                                <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Author</TableCell>
                             </>
                         )}
                         {activeTab === "Guided" && (
@@ -81,16 +110,12 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Category</TableCell>
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Voice</TableCell>
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Duration</TableCell>
-                                <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Goal</TableCell>
-                                <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Details</TableCell>
                             </>
                         )}
                         {activeTab === "Visuals" && (
                             <>
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Category</TableCell>
                                 <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Author</TableCell>
-                                <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Goal</TableCell>
-                                <TableCell isHeader className="p-4 text-xs font-semibold text-gray-500 tracking-wider">Details</TableCell>
                             </>
                         )}
                         {activeTab === "Minds" && (
@@ -117,15 +142,20 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
 
                 <TableBody className="divide-y divide-gray-50 dark:divide-gray-700">
                     {data.map((item) => (
-                        <TableRow key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group">
+                        <TableRow key={item.id} className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group ${selectedIds.has(item.id) ? 'bg-purple-50/60 dark:bg-purple-900/10' : ''}`}>
+                            <TableCell className="p-4 w-10">
+                                <SelectCheckbox
+                                    label={`Select ${item.title}`}
+                                    checked={selectedIds.has(item.id)}
+                                    onChange={() => onToggleSelect(item.id)}
+                                />
+                            </TableCell>
                             <TableCell className="p-4 text-xs text-gray-500">
                                 {item.id < 10 ? `0${item.id}` : item.id}
                             </TableCell>
                             <TableCell className="p-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-500 group-hover:bg-white group-hover:text-purple-600 transition-colors">
-                                        {'icon' in item ? (item.icon) : <Music className="w-4 h-4" />}
-                                    </div>
+                                    <RowThumbnail src={item.coverUrl} fallback={'icon' in item && item.icon ? item.icon : <Music className="w-4 h-4" />} />
                                     <span className="font-medium text-gray-900 dark:text-white whitespace-nowrap">{item.title}</span>
                                 </div>
                             </TableCell>
@@ -146,8 +176,6 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentSoundItem).category}</TableCell>
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentSoundItem).frequency}</TableCell>
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentSoundItem).type}</TableCell>
-                                    <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentSoundItem).goal}</TableCell>
-                                    <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentSoundItem).details}</TableCell>
                                 </>
                             )}
                             {activeTab === "Guided" && (
@@ -155,16 +183,12 @@ const ContentTable: React.FC<ContentTableProps> = ({ activeTab, data, onDelete, 
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as MindSessionItem).category}</TableCell>
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as MindSessionItem).voice}</TableCell>
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as MindSessionItem).duration}</TableCell>
-                                    <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as MindSessionItem).goal}</TableCell>
-                                    <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as MindSessionItem).details}</TableCell>
                                 </>
                             )}
                             {activeTab === "Visuals" && (
                                 <>
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentVisualItem).category}</TableCell>
                                     <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentVisualItem).author}</TableCell>
-                                    <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentVisualItem).goal}</TableCell>
-                                    <TableCell className="p-4 text-sm text-gray-600 dark:text-gray-300 whitespace-nowrap">{(item as EnvironmentVisualItem).details}</TableCell>
                                 </>
                             )}
 

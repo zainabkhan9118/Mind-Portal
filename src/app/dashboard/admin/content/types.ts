@@ -7,6 +7,8 @@ export type UploadStatus = "Uploaded" | "Pending";
 export interface ContentItem {
     id: number;
     title: string;
+    /** Cover image (or icon for Minds) shown as the row thumbnail. */
+    coverUrl?: string | null;
     artist: string;
     url: string;
     state?: string | null;
@@ -20,6 +22,8 @@ export interface ContentItem {
 export interface EnvironmentSoundItem {
     id: number;
     title: string;
+    /** Cover image (or icon for Minds) shown as the row thumbnail. */
+    coverUrl?: string | null;
     icon: React.ReactNode;
     category: string;
     frequency: string;
@@ -37,6 +41,8 @@ export interface EnvironmentSoundItem {
 export interface MindSessionItem {
     id: number;
     title: string;
+    /** Cover image (or icon for Minds) shown as the row thumbnail. */
+    coverUrl?: string | null;
     category: string;
     voice: string;
     duration: string;
@@ -53,6 +59,8 @@ export interface MindSessionItem {
 export interface MindItem {
     id: number;
     title: string;
+    /** Cover image (or icon for Minds) shown as the row thumbnail. */
+    coverUrl?: string | null;
     description: string;
     goals: string;
     author: string;
@@ -66,6 +74,8 @@ export interface MindItem {
 export interface EnvironmentVisualItem {
     id: number;
     title: string;
+    /** Cover image (or icon for Minds) shown as the row thumbnail. */
+    coverUrl?: string | null;
     icon: React.ReactNode;
     category: string;
     author: string;

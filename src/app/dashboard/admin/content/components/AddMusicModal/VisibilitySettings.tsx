@@ -3,6 +3,7 @@ import Select from "@/components/form/Select";
 import DatePicker from "@/components/form/date-picker";
 import Label from "@/components/form/Label";
 import { Clock } from "lucide-react";
+import { nowLocalTime, todayLocal } from "@/lib/dates";
 
 interface VisibilitySettingsProps {
     status: string;
@@ -49,6 +50,7 @@ const VisibilitySettings: React.FC<VisibilitySettingsProps> = ({
                             id="releaseDate"
                             placeholder="Select one..."
                             defaultDate={releaseDate ? new Date(releaseDate) : undefined}
+                            minDate={todayLocal()}
                             onChange={(dates, dateStr) => onReleaseDateChange?.(dateStr)}
                         />
                     </div>
@@ -59,6 +61,7 @@ const VisibilitySettings: React.FC<VisibilitySettingsProps> = ({
                                 type="time"
                                 id="releaseTime"
                                 value={releaseTime ?? ""}
+                                min={releaseDate && releaseDate.slice(0, 10) === todayLocal() ? nowLocalTime() : undefined}
                                 onChange={(e) => onReleaseTimeChange?.(e.target.value)}
                                 className="h-11 w-full rounded-lg border px-4 py-2.5 pr-10 text-sm shadow-theme-xs focus:outline-hidden focus:ring-3 dark:bg-gray-900 dark:text-white/90 bg-white text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700 dark:focus:border-brand-800"
                             />

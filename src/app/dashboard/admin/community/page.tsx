@@ -20,6 +20,9 @@ import RecentPosts from "./components/RecentPosts";
 import StatsCard from "./components/StatsCard";
 import MetricCard from "./components/MetricCard";
 import SearchInput from "./components/SearchInput";
+import BulkDeleteBar from "./components/BulkDeleteBar";
+import { useBulkDelete } from "./components/useBulkDelete";
+import { ConfirmDeleteModal } from "@/components/ui/modal/ConfirmDeleteModal";
 
 const TOP_N = 10;
 
@@ -54,6 +57,52 @@ export default function CommunityPage() {
             })
             .catch(console.error);
     }, []);
+
+    // Re-fetch after deletes so the tables reflect the server
+    const reloadGroups = React.useCallback(() => {
+        communityApi.getGroups({ size: 100 }).then(r => setGroups(r.results)).catch(console.error);
+    }, []);
+    const reloadSessions = React.useCallback(() => {
+        communityApi.getSessions({ size: 100, ordering: "-participants_count" }).then(r => setSessions(r.results)).catch(console.error);
+    }, []);
+
+    const groupBulk = useBulkDelete({
+        items: groups,
+        label: g => g.name,
+        noun: { one: "group", many: "groups" },
+        deleteMany: ids => communityApi.bulkDeleteGroups(ids),
+        onDone: reloadGroups,
+    });
+    const sessionBulk = useBulkDelete({
+        items: sessions,
+        label: s => s.title,
+        noun: { one: "session", many: "sessions" },
+        deleteMany: ids => communityApi.bulkDeleteSessions(ids),
+        onDone: reloadSessions,
+    });
+
+    const groupsToolbar = (
+        <BulkDeleteBar
+            selectedCount={groupBulk.selectedIds.size}
+            noun={{ one: "group", many: "groups" }}
+            isRunning={groupBulk.isRunning}
+            onDeleteClick={() => groupBulk.setConfirmOpen(true)}
+            onClear={groupBulk.clear}
+            message={groupBulk.message}
+            onDismissMessage={() => groupBulk.setMessage(null)}
+        />
+    );
+    const sessionsToolbar = (
+        <BulkDeleteBar
+            selectedCount={sessionBulk.selectedIds.size}
+            noun={{ one: "session", many: "sessions" }}
+            isRunning={sessionBulk.isRunning}
+            onDeleteClick={() => sessionBulk.setConfirmOpen(true)}
+            onClear={sessionBulk.clear}
+            message={sessionBulk.message}
+            onDismissMessage={() => sessionBulk.setMessage(null)}
+        />
+    );
 
     const fmt = (n: number | undefined | null) =>
         n != null ? n.toLocaleString() : "–";
@@ -158,10 +207,14 @@ export default function CommunityPage() {
                     </div>
                 </div>
 
+                {!isGroupsModalOpen && groupsToolbar}
                 <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
                     <GroupsTable
                         groups={topGroups}
                         emptyMessage={groups.length === 0 ? "Loading..." : "No groups found"}
+                        selectedIds={groupBulk.selectedIds}
+                        onToggleSelect={groupBulk.toggle}
+                        onToggleSelectAll={groupBulk.toggleAll}
                     />
                 </div>
             </div>
@@ -187,10 +240,14 @@ export default function CommunityPage() {
                     </div>
                 </div>
 
+                {!isSessionsModalOpen && sessionsToolbar}
                 <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
                     <SessionsTable
                         sessions={topSessions}
                         emptyMessage={sessions.length === 0 ? "Loading..." : "No sessions found"}
+                        selectedIds={sessionBulk.selectedIds}
+                        onToggleSelect={sessionBulk.toggle}
+                        onToggleSelectAll={sessionBulk.toggleAll}
                     />
                 </div>
             </div>
@@ -229,6 +286,10 @@ export default function CommunityPage() {
                 groups={filteredGroups}
                 searchTerm={searchTerm}
                 onSearchChange={setSearchTerm}
+                toolbar={groupsToolbar}
+                selectedIds={groupBulk.selectedIds}
+                onToggleSelect={groupBulk.toggle}
+                onToggleSelectAll={groupBulk.toggleAll}
             />
 
             <SessionsModal
@@ -237,6 +298,30 @@ export default function CommunityPage() {
                 sessions={filteredSessions}
                 searchTerm={sessionSearch}
                 onSearchChange={setSessionSearch}
+                toolbar={sessionsToolbar}
+                selectedIds={sessionBulk.selectedIds}
+                onToggleSelect={sessionBulk.toggle}
+                onToggleSelectAll={sessionBulk.toggleAll}
+            />
+
+            {/* Rendered after the list modals so they stack on top of an open "See All" modal */}
+            <ConfirmDeleteModal
+                isOpen={groupBulk.confirmOpen}
+                title={`Delete ${groupBulk.selectedIds.size} ${groupBulk.selectedIds.size === 1 ? "group" : "groups"}?`}
+                message="The selected groups will be permanently deleted, together with their members list, posts and group sessions. This can't be undone."
+                confirmText={`Delete ${groupBulk.selectedIds.size}`}
+                isLoading={groupBulk.isRunning}
+                onConfirm={groupBulk.run}
+                onClose={() => !groupBulk.isRunning && groupBulk.setConfirmOpen(false)}
+            />
+            <ConfirmDeleteModal
+                isOpen={sessionBulk.confirmOpen}
+                title={`Delete ${sessionBulk.selectedIds.size} ${sessionBulk.selectedIds.size === 1 ? "session" : "sessions"}?`}
+                message="The selected group sessions will be permanently deleted. This can't be undone."
+                confirmText={`Delete ${sessionBulk.selectedIds.size}`}
+                isLoading={sessionBulk.isRunning}
+                onConfirm={sessionBulk.run}
+                onClose={() => !sessionBulk.isRunning && sessionBulk.setConfirmOpen(false)}
             />
         </div>
     );
