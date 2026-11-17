@@ -30,7 +30,7 @@ const SETTINGS_TABS = [
     { id: "Home Screen Environments", slug: "home-screen-environments", icon: <Monitor className="w-4 h-4" /> },
     { id: "MP Gallery", slug: "mp-gallery", icon: <ImageIcon className="w-4 h-4" /> },
     { id: "Access Levels", slug: "access-levels", icon: <KeyRound className="w-4 h-4" /> },
-    { id: "Limits", slug: "limits", icon: <Gauge className="w-4 h-4" /> },
+    { id: "Plans & Limits", slug: "limits", icon: <Gauge className="w-4 h-4" /> },
 ];
 
 function slugToTab(slug: string | null): string | null {
@@ -99,7 +99,7 @@ function SettingsPageInner() {
                 {activeTab === "Home Screen Environments" && <HomeScreenEnvironments />}
                 {activeTab === "MP Gallery" && <ImagesManagement />}
                 {activeTab === "Access Levels" && <AccessLevelsManager />}
-                {activeTab === "Limits" && <LimitsSettings />}
+                {activeTab === "Plans & Limits" && <LimitsSettings />}
             </div>
         </div>
     );

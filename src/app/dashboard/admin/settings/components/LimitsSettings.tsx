@@ -4,9 +4,9 @@ import { CheckCircle, Loader2 } from "lucide-react";
 import Input from "@/components/form/input/InputField";
 import Label from "@/components/form/Label";
 import accessLevelsApi from "@/lib/api/accessLevelsApi";
-import monetizationApi from "@/lib/api/monetizationApi";
 import { getApiErrorMessage } from "@/lib/api/errors";
-import type { AILimitTier, AILimitsSettings, SubscriptionPlan } from "@/lib/api/types";
+import type { AILimitTier, AILimitsSettings } from "@/lib/api/types";
+import PlansSection from "./Plans/PlansSection";
 
 const AI_FIELDS: { key: keyof AILimitTier; label: string; hint: string }[] = [
     { key: "hourly", label: "Per hour", hint: "Interactions" },
@@ -33,7 +33,7 @@ const SaveRow: React.FC<{ state: SaveState; onSave: () => void; disabled?: boole
     </div>
 );
 
-/** Admin Control → Limits: Free Mind limit, AI Mind Coach limits, launch offer progress. */
+/** Admin Control → Plans & Limits: subscription plans, Free Mind limit, AI Mind Coach limits. */
 const LimitsSettings: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
@@ -44,19 +44,15 @@ const LimitsSettings: React.FC = () => {
     const [ai, setAi] = useState<Record<"free" | "premium", Record<keyof AILimitTier, string>> | null>(null);
     const [aiState, setAiState] = useState<SaveState>(idle);
 
-    const [plans, setPlans] = useState<SubscriptionPlan[] | null>(null);
-
     useEffect(() => {
         const toStrings = (t: AILimitTier) => Object.fromEntries(AI_FIELDS.map(f => [f.key, String(t?.[f.key] ?? "")])) as Record<keyof AILimitTier, string>;
         Promise.all([
             accessLevelsApi.getGeneralSettings(),
             accessLevelsApi.getAiLimits(),
-            monetizationApi.getPlans({ size: 50 }).then(r => r.results ?? []).catch(() => null),
         ])
-            .then(([general, limits, planList]) => {
+            .then(([general, limits]) => {
                 setMindLimit(general.free_mind_limit != null ? String(general.free_mind_limit) : "");
                 setAi({ free: toStrings(limits.free), premium: toStrings(limits.premium) });
-                setPlans(planList);
             })
             .catch(err => setLoadError(getApiErrorMessage(err, "Could not load limits.")))
             .finally(() => setIsLoading(false));
@@ -102,8 +98,6 @@ const LimitsSettings: React.FC = () => {
 
     if (isLoading) return <div className="py-20 text-center text-gray-400"><Loader2 className="w-5 h-5 animate-spin inline" /></div>;
     if (loadError) return <p className="py-20 text-center text-red-500">{loadError}</p>;
-
-    const launchPlans = (plans ?? []).filter(p => (p.launch_offer_limit ?? 0) > 0);
 
     return (
         <div className="space-y-6 max-w-4xl">
@@ -165,46 +159,8 @@ const LimitsSettings: React.FC = () => {
                 </section>
             )}
 
-            {/* Launch offer */}
-            <section className={card}>
-                <div>
-                    <h2 className="text-lg font-bold text-gray-900 dark:text-white">Launch offer</h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">Discounted annual price for the first subscribers of a plan.</p>
-                </div>
-                {plans === null ? (
-                    <p className="text-sm text-red-500">Could not load subscription plans.</p>
-                ) : plans.length === 0 ? (
-                    <p className="text-sm text-amber-600 dark:text-amber-400">
-                        No subscription plans are set up yet, so the app can&apos;t show prices. Plans (Premium Monthly / Annual and the launch offer) need to be created first.
-                    </p>
-                ) : launchPlans.length === 0 ? (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">None of the {plans.length} plans has a launch offer configured.</p>
-                ) : (
-                    <div className="space-y-4">
-                        {launchPlans.map(p => {
-                            const limit = p.launch_offer_limit ?? 0;
-                            const claimed = p.launch_offer_claimed_count ?? 0;
-                            const pct = limit ? Math.min(100, Math.round((claimed / limit) * 100)) : 0;
-                            return (
-                                <div key={p.id} className="space-y-2">
-                                    <div className="flex flex-wrap justify-between gap-2 text-sm">
-                                        <span className="font-semibold text-gray-900 dark:text-white">{p.name}</span>
-                                        <span className="text-gray-500 dark:text-gray-400">
-                                            {p.launch_offer_price_yearly ? `${p.launch_offer_price_yearly} ${p.currency?.toUpperCase() ?? ""}/year instead of ${p.price_yearly ?? "—"}` : ""}
-                                        </span>
-                                    </div>
-                                    <div className="h-2.5 rounded-full bg-gray-100 dark:bg-gray-700 overflow-hidden">
-                                        <div className="h-full bg-purple-600 rounded-full" style={{ width: `${pct}%` }} />
-                                    </div>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300">
-                                        <span className="font-semibold">{claimed.toLocaleString()} / {limit.toLocaleString()}</span> claimed · {(p.launch_offer_remaining ?? Math.max(0, limit - claimed)).toLocaleString()} left
-                                    </p>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </section>
+            {/* Plans: prices, launch offer, what's included */}
+            <PlansSection className={card} />
         </div>
     );
 };
