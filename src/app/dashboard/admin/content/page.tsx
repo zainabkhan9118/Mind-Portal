@@ -167,11 +167,30 @@ function adaptEnvVisual(item: AdminEnvironmentVisual, goalsMap: Record<number, s
   };
 }
 
+// Mind id → cover URL (null = has none). Kept for the session so paging back doesn't refetch.
+const mindCoverCache = new Map<number, string | null>();
+
+async function loadMindCovers(ids: number[]): Promise<Record<number, string>> {
+  const toFetch = ids.filter((id) => !mindCoverCache.has(id));
+  await Promise.all(toFetch.map(async (id) => {
+    try {
+      const detail = await apiClient.get<{ image?: string | null }>(`admin/analytics/minds/${id}/`);
+      mindCoverCache.set(id, detail.data?.image || null);
+    } catch {
+      mindCoverCache.set(id, null);
+    }
+  }));
+  const out: Record<number, string> = {};
+  ids.forEach((id) => { const url = mindCoverCache.get(id); if (url) out[id] = url; });
+  return out;
+}
+
 function adaptMind(item: AdminMind, goalsMap: Record<number, string>): MindItem {
   return {
     id: item.id,
     title: item.name,
-    coverUrl: item.icon_url || null,
+    // Cover image first (once the admin endpoint returns it), otherwise the Mind's icon
+    coverUrl: item.image || item.icon_url || null,
     description: item.description ?? "",
     goals: mapGoalNames(item.goals ?? [], goalsMap),
     author: item.author ?? "",
@@ -354,7 +373,18 @@ function ContentManagementPageInner() {
         }
         case "Minds": {
           const res = await contentApi.minds.list(params);
-          setData(res.results.map((item) => adaptMind(item, goalsMap)));
+          const minds = res.results.map((item) => adaptMind(item, goalsMap));
+          setData(minds);
+          // The admin Minds list doesn't return the cover image yet (BACKEND_REQUESTS.md item 12),
+          // so fill it in from the Mind analytics detail, which does — 10 small requests per page.
+          const missing = res.results.filter((m) => !m.image).map((m) => m.id);
+          if (missing.length) {
+            loadMindCovers(missing).then((covers) => {
+              setData((prev) => prev.map((item) =>
+                // Only Mind rows (the admin may have switched tabs while covers loaded)
+                covers[item.id] && "goals" in item && "description" in item ? { ...item, coverUrl: covers[item.id] } : item));
+            });
+          }
           setTotalCount(res.count);
           setTotalPages(res.pages_count ?? Math.ceil(res.count / PAGE_SIZE));
           break;

@@ -533,6 +533,8 @@ export interface AdminMind {
     id: number;
     name: string;
     description?: string | null;
+    /** Cover image. ⚠️ Not yet returned/accepted by the admin Minds endpoint — see BACKEND_REQUESTS.md item 12. */
+    image?: string | null;
     author?: string | null;
     goals: number[];
     state?: string | null;
